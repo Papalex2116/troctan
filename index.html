@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Troctan — prototype</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --bg:#f4f3ee; --card:#ffffff; --border:#e3e1d8; --border-strong:#c9c7bc;
+    --text:#1c1c1a; --text-secondary:#68675f; --text-muted:#94938a;
+    --accent-bg:#e6f1fb; --accent-text:#0c447c; --accent-border:#378add;
+    --success-bg:#eaf3de; --success-text:#27500a;
+    --radius:10px;
+  }
+  :root:not([data-theme="light"]){
+    @media (prefers-color-scheme: dark){
+      --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
+      --text:#f0efe9; --text-secondary:#b4b2a9; --text-muted:#888780;
+      --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
+      --success-bg:#27500a; --success-text:#c0dd97;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
+    --text:#f0efe9; --text-secondary:#b4b2a9; --text-muted:#888780;
+    --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
+    --success-bg:#27500a; --success-text:#c0dd97;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex; justify-content:center; height:100vh; height:100dvh; overflow:hidden;
+  }
+  .phone{
+    width:100%; max-width:420px; height:100vh; height:100dvh; overflow:hidden; background:var(--bg);
+    display:flex; flex-direction:column; position:relative;
+  }
+  header{
+    padding:1rem 1.1rem 0.6rem; display:flex; align-items:center; justify-content:space-between;
+  }
+  header .title{font-size:18px; font-weight:600;}
+  .avatar{
+    width:38px;height:38px;border-radius:50%;background:var(--accent-bg);
+    display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:var(--accent-text);
+  }
+  main{flex:1; padding:0 1.1rem 90px; overflow-y:auto;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+  .balance-card{
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:1rem 1.1rem; margin-bottom:1.1rem; display:flex; justify-content:space-between; align-items:center;
+  }
+  .balance-card .label{font-size:12.5px; color:var(--text-secondary); margin:0;}
+  .balance-card .value{font-size:26px; font-weight:600; margin:2px 0 0;}
+  .section-label{font-size:14px; font-weight:600; margin:0 0 8px;}
+  .list{display:flex; flex-direction:column; gap:8px;}
+  .item-card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:12px; display:flex; gap:10px; align-items:flex-start; cursor:pointer;
+    transition:border-color .15s;
+  }
+  .item-card:active{border-color:var(--border-strong);}
+  .item-card i{font-size:19px; color:var(--text-secondary); margin-top:2px;}
+  .item-card .item-title{font-size:14px; font-weight:600; margin:0;}
+  .item-card .item-sub{font-size:12.5px; color:var(--text-secondary); margin:2px 0 0;}
+  .btn{
+    width:100%; padding:12px; font-size:14.5px; font-weight:600; border-radius:10px;
+    border:none; background:var(--text); color:var(--bg); cursor:pointer; margin-top:10px;
+  }
+  .btn.secondary{background:transparent; border:1px solid var(--border-strong); color:var(--text);}
+  .backbar{display:flex; align-items:center; gap:8px; margin-bottom:14px; cursor:pointer; color:var(--text-secondary); font-size:14px;}
+  .detail-card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:1.1rem; margin-bottom:1rem;}
+  .row-between{display:flex; justify-content:space-between; align-items:center;}
+  .badge{font-size:11.5px; padding:3px 9px; border-radius:8px; font-weight:600;}
+  .badge.success{background:var(--success-bg); color:var(--success-text);}
+  .badge.accent{background:var(--accent-bg); color:var(--accent-text);}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:1rem;}
+  .stat{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:0.8rem; text-align:center;}
+  .stat .n{font-size:20px; font-weight:600; margin:4px 0 0;}
+  .stat .l{font-size:12px; color:var(--text-secondary); margin:0;}
+  nav.tabbar{
+    position:sticky; bottom:0; background:var(--card); border-top:1px solid var(--border);
+    display:flex; justify-content:space-around; padding:12px 0 calc(12px + env(safe-area-inset-bottom));
+    box-shadow:0 -2px 10px rgba(0,0,0,0.06); flex-shrink:0;
+  }
+  nav.tabbar button{
+    background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:4px;
+    color:var(--text-muted); font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit;
+    padding:4px 8px; border-radius:10px; transition:color .15s, background .15s;
+  }
+  nav.tabbar button.active{color:var(--accent-text); background:var(--accent-bg);}
+  nav.tabbar i{font-size:24px;}
+  input, textarea{
+    width:100%; padding:9px 10px; border:1px solid var(--border-strong); border-radius:8px;
+    background:var(--card); color:var(--text); font-size:14px; margin-bottom:10px; font-family:inherit;
+  }
+  label{font-size:12.5px; color:var(--text-secondary); display:block; margin-bottom:4px;}
+
+  nav.tabbar button{position:relative;}
+  .tab-badge{
+    position:absolute; top:2px; right:22%; background:#e0453c; color:#fff; font-size:10px;
+    min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center;
+    padding:0 3px; font-weight:700; line-height:1;
+  }
+  @keyframes fadeInUp{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  .item-card{ animation:fadeInUp .25s ease both; }
+  .btn{ transition:transform .1s ease; }
+  .btn:active{ transform:scale(0.97); }
+  @keyframes softPulse{ 0%,100%{box-shadow:0 0 0 0 rgba(55,138,221,0.15);} 50%{box-shadow:0 0 0 6px rgba(55,138,221,0);} }
+  .balance-card{ animation:softPulse 3s ease-in-out infinite; }
+  .logo-badge{
+    width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#378add,#0c447c);
+    display:flex;align-items:center;justify-content:center;font-size:16px;margin-right:8px;
+  }
+  header{gap:8px;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <header>
+    <div style="display:flex; align-items:center;">
+      <div class="logo-badge">⏳</div>
+      <div>
+        <p style="font-size:12.5px;color:var(--text-secondary);margin:0;">Bonjour <span id="hdr-name">...</span></p>
+        <p class="title" style="margin:2px 0 0;">Troctan</p>
+      </div>
+    </div>
+    <div class="avatar" id="hdr-avatar">··</div>
+  </header>
+
+  <div id="toast" style="display:none; margin:0 1.1rem 8px; font-size:12.5px; padding:8px 10px; border-radius:8px; background:var(--accent-bg); color:var(--accent-text);"></div>
+
+  <!-- CONNEXION -->
+  <section class="screen active" id="login" style="padding:0 1.1rem;">
+    <p class="section-label" style="font-size:18px;margin-top:20px;">Bienvenue sur Troctan</p>
+    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:18px;">Connecte-toi avec ton email — pas de mot de passe, tu recevras un lien de connexion.</p>
+    <label>Ton email</label>
+    <input type="email" id="login-email" placeholder="toi@exemple.com">
+    <button class="btn" id="login-btn">Recevoir un lien de connexion</button>
+    <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin-top:-4px;">Entre un email valide pour continuer.</p>
+    <div id="debug-panel" style="margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
+  </section>
+
+  <!-- VERIFIE TA BOITE MAIL -->
+  <section class="screen" id="check-email" style="padding:0 1.1rem; text-align:center;">
+    <p class="section-label" style="font-size:18px;margin-top:20px;">Vérifie ta boîte mail</p>
+    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;">On t'a envoyé un lien de connexion à <b id="sent-email-display"></b>. Clique dessus pour revenir ici, connecté.</p>
+    <button class="btn secondary" onclick="showScreen('login')">Utiliser un autre email</button>
+  </section>
+
+  <!-- CHOIX DU PRENOM (premiere connexion) -->
+  <section class="screen" id="setup-name" style="padding:0 1.1rem;">
+    <p class="section-label" style="font-size:18px;margin-top:20px;">Encore une étape</p>
+    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:18px;">Comment veux-tu qu'on t'appelle ?</p>
+    <label>Ton prénom</label>
+    <input type="text" id="onboard-name" placeholder="Ex. Marc">
+    <label style="display:flex; align-items:flex-start; gap:8px; margin-top:10px; cursor:pointer;">
+      <input type="checkbox" id="onboard-cgu" style="width:auto; margin:2px 0 0;">
+      <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="showScreen('legal'); event.stopPropagation();" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a></span>
+    </label>
+    <button class="btn" id="onboard-btn">Continuer</button>
+    <p id="onboard-error" style="font-size:12.5px;color:#c23b3b;display:none;margin-top:-4px;">Entre un prénom et accepte les conditions pour continuer.</p>
+  </section>
+
+  <main>
+    <!-- ACCUEIL -->
+    <section class="screen" id="home">
+      <div class="balance-card">
+        <div>
+          <p class="label">Ton solde</p>
+          <p class="value" id="balance-value">0cr</p>
+        </div>
+        <i class="ti ti-clock" style="font-size:26px;color:var(--accent-text);"></i>
+      </div>
+      <p id="offline-note" style="display:none;font-size:12px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:12px;">Impossible de contacter le serveur — vérifie ta connexion.</p>
+      <p class="section-label">Près de chez toi</p>
+      <div class="list" id="home-list"></div>
+      <button class="btn" onclick="showScreen('propose')">+ Proposer un service</button>
+    </section>
+
+    <!-- DETAIL -->
+    <section class="screen" id="detail">
+      <div class="backbar" onclick="showScreen('home')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div class="avatar" id="detail-avatar">SO</div>
+          <div>
+            <p style="font-weight:600;margin:0;" id="detail-name">Sophie</p>
+            <p style="font-size:12.5px;color:var(--text-secondary);margin:2px 0 0;" id="detail-meta">4.9 ★ · 12 échanges · 200m</p>
+          </div>
+        </div>
+        <p style="font-weight:600;margin:0 0 6px;" id="detail-title">Coup de main jardinage</p>
+        <p style="font-size:13.5px;color:var(--text-secondary);line-height:1.5;margin:0 0 10px;" id="detail-desc">Taille de haies et entretien de potager. Matériel fourni.</p>
+        <div style="display:flex;gap:14px;font-size:12.5px;color:var(--text-secondary);">
+          <span><i class="ti ti-clock" style="font-size:13px;"></i> <span id="detail-duration">1 crédit</span></span>
+          <span><i class="ti ti-calendar" style="font-size:13px;"></i> Cette semaine</span>
+        </div>
+      </div>
+      <div class="detail-card row-between">
+        <span style="font-size:13px;color:var(--text-secondary);">Ton solde si accepté</span>
+        <span style="font-weight:600;" id="detail-balance">+7h</span>
+      </div>
+      <button class="btn" onclick="requestExchange()">Demander cet échange</button>
+      <button class="btn secondary" style="color:#c23b3b;" onclick="reportService()">Signaler ce service</button>
+    </section>
+
+    <!-- PROPOSER -->
+    <section class="screen" id="propose">
+      <div class="backbar" onclick="showScreen('home')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <p class="section-label" style="font-size:16px;">Proposer un service</p>
+      <label>Titre</label>
+      <input type="text" placeholder="Ex. Cours de guitare débutant" id="p-title">
+      <label>Description</label>
+      <textarea rows="3" placeholder="Décris ce que tu proposes" id="p-desc"></textarea>
+      <label>Durée estimée (en crédits)</label>
+      <input type="number" min="0.5" step="0.5" placeholder="Ex. 1" id="p-hours">
+      <button class="btn" onclick="publishService()">Publier</button>
+      <button class="btn secondary" onclick="showScreen('home')">Annuler</button>
+    </section>
+
+    <!-- PROFIL -->
+    <section class="screen" id="profile">
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:1rem;">
+        <div class="avatar" style="width:56px;height:56px;font-size:18px;margin-bottom:8px;" id="profile-avatar">··</div>
+        <p style="font-weight:600;margin:0;" id="profile-name">...</p>
+        <p style="font-size:12.5px;color:var(--text-secondary);margin:2px 0 0;">Membre de Troctan</p>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><p class="l">Solde actuel</p><p class="n" id="profile-balance">0cr</p></div>
+        <div class="stat"><p class="l">Note reçue</p><p class="n" id="profile-rating">–</p></div>
+      </div>
+      <p class="section-label">Mes services publiés</p>
+      <div class="list" id="profile-services"></div>
+      <p id="location-status" style="font-size:12.5px;color:var(--text-secondary);margin-top:14px;">Position : non configurée</p>
+      <button class="btn secondary" onclick="updateLocation()">Mettre à jour ma position</button>
+      <button class="btn secondary" onclick="showScreen('legal')">Confidentialité &amp; conditions</button>
+      <button class="btn secondary" style="color:#c23b3b;" onclick="logout()">Se déconnecter</button>
+      <button class="btn secondary" style="color:#c23b3b;" onclick="deleteAccount()">Supprimer mon compte</button>
+    </section>
+
+    <!-- CONFIDENTIALITE -->
+    <section class="screen" id="legal">
+      <div class="backbar" onclick="showScreen('profile')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <div style="font-size:13.5px; line-height:1.6; color:var(--text-secondary); white-space:pre-line;" id="legal-text"></div>
+    </section>
+
+    <!-- CARTE -->
+    <section class="screen" id="map">
+      <p class="section-label">Services autour de toi</p>
+      <div id="leaflet-map" style="height:65vh; border-radius:12px; overflow:hidden; border:1px solid var(--border);"></div>
+    </section>
+
+    <!-- DEMANDES -->
+    <section class="screen" id="requests">
+      <p class="section-label">Échanges en cours</p>
+      <div class="list" id="requests-active"></div>
+      <p class="section-label" style="margin-top:1.2rem;">Demandes reçues</p>
+      <div class="list" id="requests-received"></div>
+      <p class="section-label" style="margin-top:1.2rem;">Demandes envoyées</p>
+      <div class="list" id="requests-sent"></div>
+    </section>
+
+    <!-- DISCUSSION -->
+    <section class="screen" id="chat">
+      <div class="backbar" onclick="showScreen('requests')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <p class="section-label" id="chat-title">Discussion</p>
+      <div id="chat-messages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="chat-input" placeholder="Écris un message..." style="margin-bottom:0;">
+        <button class="btn" style="width:auto; margin-top:0; padding:10px 16px;" onclick="sendChatMessage()">Envoyer</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="home" onclick="goHome()"><i class="ti ti-home"></i>Accueil<span class="tab-badge" id="badge-home"></span></button>
+    <button class="tab-btn" data-tab="map" onclick="showScreen('map'); fetchServices().then(renderMap);"><i class="ti ti-map"></i>Carte</button>
+    <button class="tab-btn" data-tab="requests" onclick="showScreen('requests'); fetchExchanges(); fetchActiveExchanges();"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
+    <button class="tab-btn" data-tab="propose" onclick="showScreen('propose')"><i class="ti ti-plus"></i>Proposer</button>
+    <button class="tab-btn" data-tab="profile" onclick="showScreen('profile')"><i class="ti ti-user"></i>Profil</button>
+  </nav>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+function log(msg){
+  const panel = document.getElementById('debug-panel');
+  if(panel) panel.textContent = msg;
+  const toast = document.getElementById('toast');
+  if(toast){ toast.textContent = msg; toast.style.display = 'block'; }
+  console.log(msg);
+}
+
+window.onerror = function(message){
+  log('Erreur JS : ' + message);
+  return true;
+};
+
+log('Script chargé, vérification de Supabase...');
+
+const SUPABASE_URL = 'https://bhhdzjrmxsrzoermijyu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_JCGZxtJauhU3GfXqzRR__w_F8RDn7m4';
+let sb = null;
+try{
+  if(typeof supabase === 'undefined'){
+    log("Problème : la librairie Supabase ne s'est pas chargée depuis internet.");
+  } else {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    log('Supabase connecté. Prêt.');
+  }
+}catch(e){
+  log('Erreur au démarrage de Supabase : ' + e.message);
+}
+
+let myId = null;
+let myEmail = null;
+let myName = null;
+let currentServices = [];
+let currentDetail = null;
+let myBalanceCache = 0;
+let myRatingAvg = 0, myRatingCount = 0;
+let myLat = null, myLng = null;
+let mapInstance = null;
+let mapMarkersLayer = null;
+
+function initials(name){
+  return name.trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join('');
+}
+
+const AUTH_SCREENS = ['login', 'check-email', 'setup-name'];
+
+function renderScreenOnly(id){
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+
+  const nav = document.querySelector('nav.tabbar');
+  if(nav) nav.style.display = AUTH_SCREENS.includes(id) ? 'none' : 'flex';
+}
+
+function showScreen(id){
+  renderScreenOnly(id);
+  if(!AUTH_SCREENS.includes(id)){
+    history.pushState({screen: id}, '', '#' + id);
+  }
+}
+
+window.addEventListener('popstate', (e) => {
+  const id = (e.state && e.state.screen) || 'home';
+  if(document.getElementById(id)) renderScreenOnly(id);
+});
+
+async function sendMagicLink(){
+  const emailInput = document.getElementById('login-email');
+  const email = emailInput.value.trim();
+  if(!email || !email.includes('@')){
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+  document.getElementById('login-error').style.display = 'none';
+  log('Envoi du lien de connexion...');
+  try{
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin }
+    });
+    if(error){ log('Erreur : ' + error.message); return; }
+    document.getElementById('sent-email-display').textContent = email;
+    showScreen('check-email');
+    log('Lien envoyé. Vérifie ta boîte mail.');
+  }catch(e){ log('Erreur réseau : ' + e.message); }
+}
+
+function finishNameSetup(){
+  log('Clic reçu sur Continuer.');
+  const nameInput = document.getElementById('onboard-name');
+  const name = nameInput.value.trim();
+  const cguChecked = document.getElementById('onboard-cgu').checked;
+  if(!name || !cguChecked){
+    document.getElementById('onboard-error').style.display = 'block';
+    return;
+  }
+  document.getElementById('onboard-error').style.display = 'none';
+  myName = name;
+  saveProfile(0);
+  sb.from('profiles').update({cgu_accepted_at: new Date().toISOString()}).eq('id', myId).then(()=>{});
+  applyIdentity();
+  showScreen('home');
+  fetchServices();
+  checkNotifications();
+  subscribeRealtime();
+
+  if(navigator.geolocation){
+    log('Localisation en cours...');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        myLat = jitter(pos.coords.latitude);
+        myLng = jitter(pos.coords.longitude);
+        saveProfile(myBalanceCache, myLat, myLng);
+        log('Position enregistrée (approximative, pour ta vie privée).');
+      },
+      err => { log("Position non disponible (" + err.message + "), tu peux continuer sans."); },
+      {timeout: 8000}
+    );
+  }
+}
+
+async function logout(){
+  unsubscribeRealtime();
+  try{ await sb.auth.signOut(); }catch(e){ /* on nettoie quand même localement */ }
+  myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null;
+  currentServices = [];
+  showScreen('login');
+}
+
+async function reportService(){
+  if(!currentDetail) return;
+  const reason = prompt("Pourquoi signales-tu ce service ?");
+  if(!reason || !reason.trim()) return;
+  try{
+    const { error } = await sb.from('reports').insert({
+      reporter_id: myId,
+      reported_service_id: currentDetail.id,
+      reported_user_id: currentDetail.authorId,
+      reason: reason.trim()
+    });
+    if(error){ log('Erreur : ' + error.message); return; }
+    log('Signalement envoyé, merci.');
+  }catch(e){ log('Erreur réseau : ' + e.message); }
+}
+
+function jitter(coord){
+  return coord + (Math.random() - 0.5) * 0.0015;
+}
+
+function applyIdentity(){
+  document.getElementById('hdr-name').textContent = myName;
+  document.getElementById('hdr-avatar').textContent = initials(myName);
+  document.getElementById('profile-name').textContent = myName;
+  document.getElementById('profile-avatar').textContent = initials(myName);
+}
+
+async function saveProfile(balance, lat, lng){
+  myBalanceCache = balance;
+  const payload = {id: myId, name: myName, balance: balance};
+  if(lat !== undefined && lng !== undefined){ payload.lat = lat; payload.lng = lng; }
+  try{
+    const { error } = await sb.from('profiles').upsert(payload);
+    if(error) log('Erreur Supabase (profil) : ' + error.message);
+  }catch(e){ log('Erreur réseau (profil) : ' + e.message); }
+}
+
+function distanceLabel(s){
+  if(myLat === null || s.lat == null || s.lng == null) return '';
+  const R = 6371000;
+  const dLat = (s.lat - myLat) * Math.PI / 180;
+  const dLng = (s.lng - myLng) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(myLat*Math.PI/180) * Math.cos(s.lat*Math.PI/180) * Math.sin(dLng/2)**2;
+  const d = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return d < 1000 ? Math.round(d) + 'm' : (d/1000).toFixed(1) + 'km';
+}
+
+function renderHome(){
+  const list = document.getElementById('home-list');
+  const others = currentServices.filter(s => s.authorId !== myId);
+  if(others.length === 0){
+    list.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun service publié pour l'instant.</p>";
+    return;
+  }
+  list.innerHTML = others.map((s) => {
+    const dist = distanceLabel(s);
+    return `
+    <div class="item-card" onclick="openDetail('${s.id}')">
+      <i class="ti ${s.icon || 'ti-hand-stop'}"></i>
+      <div>
+        <p class="item-title">${s.title}</p>
+        <p class="item-sub">${s.authorName} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
+      </div>
+    </div>
+  `;}).join('');
+}
+
+function openDetail(id){
+  const s = currentServices.find(x => x.id === id);
+  if(!s) return;
+  currentDetail = s;
+  document.getElementById('detail-avatar').textContent = initials(s.authorName);
+  document.getElementById('detail-name').textContent = s.authorName;
+  document.getElementById('detail-meta').textContent = s.authorId === myId ? 'Ton propre service' : 'Membre Troctan';
+  document.getElementById('detail-title').textContent = s.title;
+  document.getElementById('detail-desc').textContent = s.desc;
+  document.getElementById('detail-duration').textContent = s.hours + 'cr';
+  document.getElementById('detail-balance').textContent = (myBalanceCache - s.hours) + 'cr';
+  showScreen('detail');
+}
+
+async function requestExchange(){
+  if(!myId){ log('Connecte-toi avant de demander un échange.'); showScreen('login'); return; }
+  if(!currentDetail) return;
+  if(currentDetail.authorId === myId){
+    log("C'est ton propre service, pas besoin de l'échanger avec toi-même.");
+    return;
+  }
+  if(myBalanceCache - currentDetail.hours < -10){
+    log("Cette demande ferait passer ton solde sous la limite de -10 crédits. Reçois d'abord des crédits avant d'en demander davantage.");
+    return;
+  }
+  try{
+    const { error } = await sb.from('exchanges').insert({
+      service_id: currentDetail.id, service_title: currentDetail.title,
+      requester_id: myId, requester_name: myName,
+      provider_id: currentDetail.authorId, provider_name: currentDetail.authorName,
+      hours: currentDetail.hours, status: 'pending'
+    });
+    if(error){ log('Erreur Supabase (demande) : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau (demande) : ' + e.message); return; }
+
+  log('Demande envoyée à ' + currentDetail.authorName + ' ! En attente de sa réponse.');
+  showScreen('requests');
+  fetchExchanges();
+}
+
+let currentChatExchangeId = null;
+
+async function fetchActiveExchanges(){
+  try{
+    const { data } = await sb.from('exchanges').select('*')
+      .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
+      .eq('status', 'accepted')
+      .order('created_at', {ascending:false});
+
+    const ids = (data || []).map(r => r.id);
+    let unreadByExchange = new Set();
+    if(ids.length){
+      const { data: msgs } = await sb.from('messages').select('exchange_id, created_at').in('exchange_id', ids).neq('sender_id', myId);
+      (msgs || []).forEach(m => {
+        const lastSeen = localStorage.getItem('tt_chat_seen_' + m.exchange_id) || '1970-01-01';
+        if(m.created_at > lastSeen) unreadByExchange.add(m.exchange_id);
+      });
+    }
+
+    const list = document.getElementById('requests-active');
+    list.innerHTML = (data && data.length) ? data.map(r => {
+      const otherName = r.requester_id === myId ? r.provider_name : r.requester_name;
+      const hasUnread = unreadByExchange.has(r.id);
+      return `
+      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <i class="ti ti-exchange"></i>
+          <div style="flex:1;">
+            <p class="item-title">${r.service_title}${hasUnread ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:4px;"></span>' : ''}</p>
+            <p class="item-sub">Avec ${otherName}${hasUnread ? ' · nouveau message' : ''}</p>
+          </div>
+        </div>
+        <button class="btn secondary" style="margin-top:8px;" onclick="openChat('${r.id}', '${otherName.replace(/'/g,"")}')">Discuter${hasUnread ? ' (1)' : ''}</button>
+      </div>`;
+    }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange en cours.</p>";
+  }catch(e){ log('Erreur : ' + e.message); }
+}
+
+function openChat(exchangeId, otherName){
+  currentChatExchangeId = exchangeId;
+  document.getElementById('chat-title').textContent = 'Discussion avec ' + otherName;
+  localStorage.setItem('tt_chat_seen_' + exchangeId, new Date().toISOString());
+  showScreen('chat');
+  fetchChatMessages();
+  checkNotifications();
+}
+
+async function fetchChatMessages(){
+  if(!currentChatExchangeId) return;
+  try{
+    const { data } = await sb.from('messages').select('*').eq('exchange_id', currentChatExchangeId).order('created_at', {ascending:true});
+    const box = document.getElementById('chat-messages');
+    box.innerHTML = (data || []).map(m => {
+      const mine = m.sender_id === myId;
+      return `<div style="align-self:${mine ? 'flex-end' : 'flex-start'}; max-width:80%; background:${mine ? 'var(--accent-bg)' : 'var(--card)'}; border:1px solid var(--border); border-radius:12px; padding:8px 12px;">
+        <p style="font-size:13.5px; margin:0;">${m.content}</p>
+      </div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }catch(e){ log('Erreur : ' + e.message); }
+}
+
+async function sendChatMessage(){
+  const input = document.getElementById('chat-input');
+  const content = input.value.trim();
+  if(!content || !currentChatExchangeId) return;
+  try{
+    const { error } = await sb.from('messages').insert({
+      exchange_id: currentChatExchangeId, sender_id: myId, sender_name: myName, content
+    });
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+  input.value = '';
+  fetchChatMessages();
+}
+
+async function fetchExchanges(){
+  if(!myId) return;
+  try{
+    const { data: received, error: err1 } = await sb.from('exchanges').select('*').eq('provider_id', myId).in('status', ['pending','cancelled']).order('created_at', {ascending:false}).limit(20);
+    const { data: sent, error: err2 } = await sb.from('exchanges').select('*').eq('requester_id', myId).order('created_at', {ascending:false}).limit(20);
+    if(err1 || err2){ log('Erreur en chargeant les demandes : ' + ((err1||err2).message)); return; }
+
+    const reviewableReceivedIds = (received || []).filter(r => r.status === 'cancelled').map(r => r.id);
+    const reviewableSentIds = (sent || []).filter(r => r.status === 'accepted' || r.status === 'refused').map(r => r.id);
+    const allReviewableIds = [...reviewableReceivedIds, ...reviewableSentIds];
+    let reviewedIds = new Set();
+    if(allReviewableIds.length){
+      const { data: myReviews } = await sb.from('reviews').select('exchange_id').eq('reviewer_id', myId).in('exchange_id', allReviewableIds);
+      reviewedIds = new Set((myReviews || []).map(r => r.exchange_id));
+    }
+
+    const recList = document.getElementById('requests-received');
+    recList.innerHTML = (received && received.length) ? received.map(r => {
+      if(r.status === 'cancelled'){
+        return `
+        <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <i class="ti ti-exchange"></i>
+            <div style="flex:1;">
+              <p class="item-title">${r.service_title}</p>
+              <p class="item-sub">${r.requester_name} · Annulée par le demandeur</p>
+            </div>
+          </div>
+          ${!reviewedIds.has(r.id) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.requester_id}', '${r.requester_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
+        </div>`;
+      }
+      return `
+      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <i class="ti ti-exchange"></i>
+          <div style="flex:1;">
+            <p class="item-title">${r.service_title}</p>
+            <p class="item-sub">${r.requester_name} demande ${r.hours}cr</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn" style="margin-top:0;" onclick="respondExchange('${r.id}', 'accepted')">Accepter</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="respondExchange('${r.id}', 'refused')">Refuser</button>
+        </div>
+      </div>`;
+    }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucune demande en attente.</p>";
+
+    const sentList = document.getElementById('requests-sent');
+    const statusLabel = {pending: 'En attente', accepted: 'Acceptée ✓', refused: 'Refusée', cancelled: 'Annulée'};
+
+    sentList.innerHTML = (sent && sent.length) ? sent.map(r => `
+      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <i class="ti ti-exchange"></i>
+          <div style="flex:1;">
+            <p class="item-title">${r.service_title}</p>
+            <p class="item-sub">Chez ${r.provider_name} · ${statusLabel[r.status] || r.status}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
+          </div>
+        </div>
+        ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', '${r.provider_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
+        ${r.status === 'pending' ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>` : ''}
+      </div>
+    `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucune demande envoyée.</p>";
+
+    (sent || []).forEach(r => localStorage.setItem('tt_status_seen_' + r.id, r.status));
+    checkNotifications();
+  }catch(e){ log('Erreur en chargeant les demandes : ' + e.message); }
+}
+
+async function cancelExchange(exchangeId){
+  if(!confirm("Annuler cette demande d'échange ?")) return;
+  try{
+    const { error } = await sb.from('exchanges').update({status: 'cancelled'}).eq('id', exchangeId).eq('requester_id', myId);
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+  log('Demande annulée.');
+  fetchExchanges();
+}
+
+async function leaveReview(exchangeId, providerId, providerName){
+  const ratingStr = prompt("Note pour " + providerName + " sur 5 (1 à 5) :");
+  const rating = parseInt(ratingStr);
+  if(!rating || rating < 1 || rating > 5){ log("Note invalide, entre 1 et 5."); return; }
+  const comment = prompt("Un petit commentaire (optionnel) :") || '';
+  try{
+    const { error } = await sb.from('reviews').insert({
+      exchange_id: exchangeId, reviewer_id: myId, reviewed_id: providerId,
+      rating, comment
+    });
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+  log('Merci pour ton avis !');
+  fetchExchanges();
+}
+
+async function respondExchange(exchangeId, decision){
+  try{
+    const { data: ex, error: fetchErr } = await sb.from('exchanges').select('*').eq('id', exchangeId).maybeSingle();
+    if(fetchErr || !ex){ log('Demande introuvable.'); return; }
+
+    if(decision === 'accepted'){
+      if(myBalanceCache + ex.hours > 20){
+        log("Tu ne peux pas accepter : ton solde dépasserait la limite de +20 crédits.");
+        return;
+      }
+      const { data: requesterProfile } = await sb.from('profiles').select('*').eq('id', ex.requester_id).maybeSingle();
+      const requesterCurrentBalance = requesterProfile ? (requesterProfile.balance || 0) : 0;
+      if(requesterCurrentBalance - ex.hours < -10){
+        log("Impossible d'accepter : le solde du demandeur passerait sous -10 crédits.");
+        return;
+      }
+    }
+
+    const { error } = await sb.from('exchanges').update({status: decision}).eq('id', exchangeId);
+    if(error){ log('Erreur Supabase : ' + error.message); return; }
+
+    if(decision === 'accepted'){
+      const newMyBalance = myBalanceCache + ex.hours;
+      await saveProfile(newMyBalance);
+      document.getElementById('balance-value').textContent = myBalanceCache + 'cr';
+
+      const { data: requesterProfile } = await sb.from('profiles').select('*').eq('id', ex.requester_id).maybeSingle();
+      const requesterBalance = (requesterProfile ? (requesterProfile.balance || 0) : 0) - ex.hours;
+      await sb.from('profiles').upsert({id: ex.requester_id, name: ex.requester_name, balance: requesterBalance});
+      log('Échange accepté ! Ton solde passe à ' + myBalanceCache + 'cr.');
+    } else {
+      log('Demande refusée.');
+    }
+    fetchExchanges();
+    renderProfile();
+  }catch(e){ log('Erreur : ' + e.message); }
+}
+
+async function publishService(){
+  if(!myId){ log('Connecte-toi avant de publier un service.'); showScreen('login'); return; }
+  const title = document.getElementById('p-title').value.trim();
+  const desc = document.getElementById('p-desc').value.trim();
+  const hours = parseFloat(document.getElementById('p-hours').value);
+  if(!title){ log('Ajoute un titre pour continuer.'); return; }
+  if(!hours || hours <= 0){ log('Indique une durée en heures valide.'); return; }
+
+  try{
+    const { error } = await sb.from('services').insert({
+      title, description: desc || '', hours,
+      icon: 'ti-hand-stop',
+      author_id: myId, author_name: myName,
+      lat: myLat, lng: myLng
+    });
+    if(error){
+      log("Erreur Supabase (service) : " + error.message);
+      return;
+    }
+  }catch(e){
+    log("Erreur réseau (service) : " + e.message);
+    return;
+  }
+
+  document.getElementById('p-title').value = '';
+  document.getElementById('p-desc').value = '';
+  document.getElementById('p-hours').value = '';
+  await fetchServices();
+  renderProfile();
+  showScreen('home');
+}
+
+function renderProfile(){
+  document.getElementById('profile-balance').textContent = myBalanceCache + 'cr';
+  const locStatus = document.getElementById('location-status');
+  if(locStatus) locStatus.textContent = myLat !== null ? 'Position : activée ✓' : 'Position : non configurée';
+  const mine = currentServices.filter(s => s.authorId === myId);
+  document.getElementById('profile-rating').textContent = myRatingCount > 0 ? myRatingAvg.toFixed(1) + '★' : '–';
+  const list = document.getElementById('profile-services');
+  list.innerHTML = mine.length ? mine.map(s => `
+    <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+      <div style="display:flex; gap:10px; align-items:flex-start;">
+        <i class="ti ${s.icon || 'ti-hand-stop'}"></i>
+        <div style="flex:1;">
+          <p class="item-title">${s.title}</p>
+          <p class="item-sub">${s.hours}cr proposé</p>
+        </div>
+      </div>
+      <button class="btn secondary" style="margin-top:8px; color:#c23b3b; padding:8px;" onclick="deleteMyService('${s.id}')">Retirer ce service</button>
+    </div>
+  `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Tu n'as encore rien publié.</p>";
+}
+
+async function fetchServices(){
+  try{
+    const { data, error } = await sb.from('services').select('*').order('created_at', {ascending:false}).limit(50);
+    if(error) throw error;
+    currentServices = (data || []).map(r => ({
+      id: r.id, title: r.title, desc: r.description, hours: r.hours,
+      icon: r.icon, authorId: r.author_id, authorName: r.author_name,
+      lat: r.lat, lng: r.lng
+    }));
+    renderHome();
+    document.getElementById('offline-note').style.display = 'none';
+  }catch(e){
+    document.getElementById('offline-note').style.display = 'block';
+    document.getElementById('offline-note').textContent = 'Erreur : ' + (e.message || JSON.stringify(e));
+    log('Erreur en récupérant les services : ' + (e.message || JSON.stringify(e)));
+  }
+}
+
+async function fetchMyProfile(){
+  if(!myId) return;
+  try{
+    const { data } = await sb.from('profiles').select('*').eq('id', myId).maybeSingle();
+    myBalanceCache = data ? (data.balance || 0) : 0;
+    if(data && data.lat != null){ myLat = data.lat; myLng = data.lng; }
+    document.getElementById('balance-value').textContent = myBalanceCache + 'cr';
+  }catch(e){ /* on garde le solde en cache si le réseau échoue */ }
+}
+
+function goHome(){
+  showScreen('home');
+  fetchServices().then(() => {
+    localStorage.setItem('tt_last_seen_service', new Date().toISOString());
+    setBadge('badge-home', 0);
+  });
+}
+
+function setBadge(id, count){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(count > 0){ el.textContent = count > 9 ? '9+' : count; el.style.display = 'flex'; }
+  else { el.style.display = 'none'; }
+}
+
+async function checkNotifications(){
+  if(!sb || !myId) return;
+  let pendingCount = 0;
+  try{
+    const { count } = await sb.from('exchanges').select('*', {count:'exact', head:true}).eq('provider_id', myId).eq('status', 'pending');
+    pendingCount = count || 0;
+  }catch(e){ /* silencieux, ce n'est qu'une pastille */ }
+
+  let unreadMsgCount = 0;
+  try{
+    const { data: active } = await sb.from('exchanges').select('id').or(`requester_id.eq.${myId},provider_id.eq.${myId}`).eq('status', 'accepted');
+    const ids = (active || []).map(a => a.id);
+    if(ids.length){
+      const { data: msgs } = await sb.from('messages').select('exchange_id, created_at').in('exchange_id', ids).neq('sender_id', myId);
+      const seenExchanges = new Set();
+      (msgs || []).forEach(m => {
+        const lastSeen = localStorage.getItem('tt_chat_seen_' + m.exchange_id) || '1970-01-01';
+        if(m.created_at > lastSeen) seenExchanges.add(m.exchange_id);
+      });
+      unreadMsgCount = seenExchanges.size;
+    }
+  }catch(e){ /* silencieux */ }
+
+  let statusChangeCount = 0;
+  try{
+    const { data: sentAll } = await sb.from('exchanges').select('id, status').eq('requester_id', myId);
+    (sentAll || []).forEach(r => {
+      if(r.status === 'pending') return;
+      const seenStatus = localStorage.getItem('tt_status_seen_' + r.id);
+      if(seenStatus !== r.status) statusChangeCount++;
+    });
+  }catch(e){ /* silencieux */ }
+
+  setBadge('badge-requests', pendingCount + unreadMsgCount + statusChangeCount);
+
+  try{
+    const { data } = await sb.from('services').select('id, created_at').order('created_at', {ascending:false}).limit(50);
+    const lastSeen = localStorage.getItem('tt_last_seen_service') || '1970-01-01';
+    const newCount = (data || []).filter(s => s.created_at > lastSeen).length;
+    setBadge('badge-home', newCount);
+  }catch(e){ /* silencieux */ }
+}
+
+setInterval(checkNotifications, 20000);
+
+async function handleSession(session){
+  if(!session){
+    myId = null; myEmail = null; myName = null;
+    showScreen('login');
+    return;
+  }
+  myId = session.user.id;
+  myEmail = session.user.email;
+
+  try{
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', myId).maybeSingle();
+    if(profile){
+      myName = profile.name;
+      myBalanceCache = profile.balance || 0;
+      myRatingAvg = profile.rating_avg || 0;
+      myRatingCount = profile.rating_count || 0;
+      if(profile.lat != null){ myLat = profile.lat; myLng = profile.lng; }
+      applyIdentity();
+      document.getElementById('balance-value').textContent = myBalanceCache + 'cr';
+      showScreen('home');
+      await fetchServices();
+      renderProfile();
+      checkNotifications();
+      subscribeRealtime();
+    } else {
+      showScreen('setup-name');
+    }
+  }catch(e){
+    log('Erreur en chargeant ton profil : ' + e.message);
+  }
+}
+
+let realtimeChannel = null;
+function subscribeRealtime(){
+  if(realtimeChannel) return; // déjà abonné
+  realtimeChannel = sb.channel('troctan-live')
+    .on('postgres_changes', {event:'*', schema:'public', table:'services'}, () => {
+      fetchServices();
+      checkNotifications();
+    })
+    .on('postgres_changes', {event:'*', schema:'public', table:'exchanges'}, () => {
+      checkNotifications();
+      const requestsScreen = document.getElementById('requests');
+      if(requestsScreen && requestsScreen.classList.contains('active')){ fetchExchanges(); fetchActiveExchanges(); }
+    })
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'messages'}, (payload) => {
+      if(payload.new.exchange_id === currentChatExchangeId){
+        const chatScreen = document.getElementById('chat');
+        if(chatScreen && chatScreen.classList.contains('active')) fetchChatMessages();
+      }
+      if(payload.new.sender_id !== myId) checkNotifications();
+    })
+    .subscribe();
+}
+
+function unsubscribeRealtime(){
+  if(realtimeChannel){ sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+}
+
+const LEGAL_TEXT = `Politique de confidentialité
+
+Dernière mise à jour : septembre 2026
+
+Troctan est une application d'entraide locale basée sur l'échange de temps entre particuliers. Cette page explique quelles données sont collectées et pourquoi.
+
+1. Données collectées
+- Ton prénom (tel que tu le saisis)
+- Ton adresse email (pour te connecter, jamais affichée aux autres)
+- Une position géographique approximative (avec un flou volontaire d'environ 100m, jamais ton adresse exacte)
+- Les services que tu publies et les demandes d'échange que tu effectues
+
+2. Pourquoi ces données
+Uniquement pour faire fonctionner l'application : te permettre de te connecter, afficher les services autour de toi, et suivre ton solde de crédits. Ces données ne sont jamais vendues, partagées avec des tiers à des fins commerciales, ou utilisées pour de la publicité.
+
+3. Qui peut voir quoi
+- Ton prénom et les services que tu publies sont visibles par toute personne utilisant l'application.
+- Ton email n'est jamais visible par les autres utilisateurs.
+- Ta position n'est visible qu'approximativement, sous forme de point sur une carte.
+
+4. Durée de conservation
+Tes données sont conservées tant que ton compte existe. Tu peux demander leur suppression à tout moment, directement depuis cette appli.
+
+5. Tes droits (conformément à la loi suisse sur la protection des données, nLPD)
+Tu as le droit de consulter, corriger ou supprimer tes données à tout moment.
+
+—
+
+Conditions d'utilisation
+
+En utilisant Troctan, tu acceptes de :
+- Rester respectueux envers les autres membres
+- Ne publier que des services réels, que tu es en mesure d'offrir
+- Ne pas utiliser l'application à des fins commerciales ou illégales
+
+Troctan met en relation des particuliers mais n'est pas partie aux échanges effectués. Chaque utilisateur reste responsable des services qu'il propose et de la qualité de leur réalisation.
+
+Un compte peut être suspendu en cas de comportement abusif signalé par d'autres membres.`;
+
+document.getElementById('legal-text').textContent = LEGAL_TEXT;
+
+async function deleteMyService(id){
+  if(!confirm("Retirer définitivement ce service de la liste ?")) return;
+  try{
+    const { error } = await sb.from('services').delete().eq('id', id).eq('author_id', myId);
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+  await fetchServices();
+  renderProfile();
+  log('Service retiré.');
+}
+
+async function deleteAccount(){
+  if(!confirm("Supprimer définitivement ton compte et toutes tes données ? Cette action est irréversible.")){
+    return;
+  }
+  try{
+    await sb.from('services').delete().eq('author_id', myId);
+    await sb.from('profiles').delete().eq('id', myId);
+    await sb.auth.signOut();
+  }catch(e){ log('Erreur lors de la suppression : ' + e.message); return; }
+  myId = null; myEmail = null; myName = null;
+  showScreen('login');
+  log('Ton compte et tes données ont été supprimés.');
+}
+
+async function boot(){
+  if(!sb) return;
+  sb.auth.onAuthStateChange((event, session) => {
+    handleSession(session);
+  });
+  const { data: { session } } = await sb.auth.getSession();
+  await handleSession(session);
+}
+
+function updateLocation(){
+  if(!navigator.geolocation){
+    log("Ton navigateur ne permet pas la localisation.");
+    return;
+  }
+  log('Localisation en cours...');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      myLat = jitter(pos.coords.latitude);
+      myLng = jitter(pos.coords.longitude);
+      saveProfile(myBalanceCache, myLat, myLng);
+      document.getElementById('location-status').textContent = 'Position : activée ✓';
+      log('Position mise à jour.');
+      renderHome();
+    },
+    err => {
+      log("Position non disponible : " + err.message + ". Vérifie que la localisation est autorisée pour ce site dans les réglages de ton navigateur.");
+    },
+    {timeout: 8000}
+  );
+}
+
+async function renderMap(){
+  const center = (myLat !== null) ? [myLat, myLng] : [46.5197, 6.6323];
+  if(!mapInstance){
+    mapInstance = L.map('leaflet-map').setView(center, 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(mapInstance);
+    mapMarkersLayer = L.layerGroup().addTo(mapInstance);
+  } else {
+    mapInstance.setView(center, mapInstance.getZoom());
+  }
+  setTimeout(() => mapInstance.invalidateSize(), 100);
+
+  mapMarkersLayer.clearLayers();
+  currentServices.filter(s => s.authorId !== myId).forEach(s => {
+    if(s.lat == null || s.lng == null) return;
+    const marker = L.marker([s.lat, s.lng]).addTo(mapMarkersLayer);
+    marker.bindPopup('<b>' + s.title + '</b><br>' + s.authorName + ' · ' + s.hours + 'cr');
+    marker.on('click', () => openDetail(s.id));
+  });
+
+  if(myLat !== null){
+    L.circleMarker([myLat, myLng], {radius:7, color:'#378add', fillColor:'#378add', fillOpacity:0.8}).addTo(mapMarkersLayer).bindPopup('Toi (approximatif)');
+  }
+}
+
+document.getElementById('login-btn').addEventListener('click', sendMagicLink);
+document.getElementById('onboard-btn').addEventListener('click', finishNameSetup);
+log("Page prête, en attente d'action.");
+boot();
+</script>
+</body>
+</html>
