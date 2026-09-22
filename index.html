@@ -277,8 +277,8 @@
 
   <nav class="tabbar">
     <button class="tab-btn active" data-tab="home" onclick="goHome()"><i class="ti ti-home"></i>Accueil<span class="tab-badge" id="badge-home"></span></button>
-    <button class="tab-btn" data-tab="map" onclick="showScreen('map'); fetchServices().then(renderMap);"><i class="ti ti-map"></i>Carte</button>
-    <button class="tab-btn" data-tab="requests" onclick="showScreen('requests'); fetchExchanges(); fetchActiveExchanges();"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
+    <button class="tab-btn" data-tab="map" onclick="showScreen('map');"><i class="ti ti-map"></i>Carte</button>
+    <button class="tab-btn" data-tab="requests" onclick="showScreen('requests');"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
     <button class="tab-btn" data-tab="propose" onclick="showScreen('propose')"><i class="ti ti-plus"></i>Proposer</button>
     <button class="tab-btn" data-tab="profile" onclick="showScreen('profile')"><i class="ti ti-user"></i>Profil</button>
   </nav>
@@ -340,6 +340,16 @@ function renderScreenOnly(id){
 
   const nav = document.querySelector('nav.tabbar');
   if(nav) nav.style.display = AUTH_SCREENS.includes(id) ? 'none' : 'flex';
+
+  refreshForScreen(id);
+}
+
+function refreshForScreen(id){
+  if(!myId) return;
+  if(id === 'home') fetchServices();
+  else if(id === 'map') fetchServices().then(renderMap);
+  else if(id === 'requests'){ fetchExchanges(); fetchActiveExchanges(); }
+  else if(id === 'profile') renderProfile();
 }
 
 function showScreen(id){
