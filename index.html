@@ -176,6 +176,8 @@
         <i class="ti ti-clock" style="font-size:26px;color:var(--accent-text);"></i>
       </div>
       <p id="offline-note" style="display:none;font-size:12px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:12px;">Impossible de contacter le serveur — vérifie ta connexion.</p>
+      <input type="text" id="home-search" placeholder="Rechercher un service..." oninput="renderHome()" style="margin-bottom:10px;">
+      <div id="category-filters" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px;"></div>
       <p class="section-label">Près de chez toi</p>
       <div class="list" id="home-list"></div>
       <button class="btn" onclick="showScreen('propose')">+ Proposer un service</button>
@@ -215,6 +217,17 @@
       <input type="text" placeholder="Ex. Cours de guitare débutant" id="p-title">
       <label>Description</label>
       <textarea rows="3" placeholder="Décris ce que tu proposes" id="p-desc"></textarea>
+      <label>Catégorie</label>
+      <select id="p-category" style="width:100%; padding:9px 10px; border:1px solid var(--border-strong); border-radius:8px; background:var(--card); color:var(--text); font-size:14px; margin-bottom:10px;">
+        <option value="jardinage">🌱 Jardinage</option>
+        <option value="bricolage">🔨 Bricolage</option>
+        <option value="cours">📚 Cours & soutien scolaire</option>
+        <option value="garde">🧒 Garde d'enfants</option>
+        <option value="informatique">💻 Informatique</option>
+        <option value="cuisine">🍳 Cuisine</option>
+        <option value="menage">🧹 Ménage</option>
+        <option value="autre" selected>✨ Autre</option>
+      </select>
       <label>Durée estimée (en crédits)</label>
       <input type="number" min="0.5" step="0.5" placeholder="Ex. 1" id="p-hours">
       <button class="btn" onclick="publishService()">Publier</button>
@@ -234,11 +247,26 @@
       </div>
       <p class="section-label">Mes services publiés</p>
       <div class="list" id="profile-services"></div>
+      <p class="section-label" style="margin-top:1.2rem;">Historique des échanges</p>
+      <div class="list" id="profile-history"></div>
       <p id="location-status" style="font-size:12.5px;color:var(--text-secondary);margin-top:14px;">Position : non configurée</p>
       <button class="btn secondary" onclick="updateLocation()">Mettre à jour ma position</button>
+      <button class="btn secondary" onclick="showScreen('communities')">Mes communautés</button>
       <button class="btn secondary" onclick="showScreen('legal')">Confidentialité &amp; conditions</button>
       <button class="btn secondary" style="color:#c23b3b;" onclick="logout()">Se déconnecter</button>
       <button class="btn secondary" style="color:#c23b3b;" onclick="deleteAccount()">Supprimer mon compte</button>
+    </section>
+
+    <!-- COMMUNAUTES -->
+    <section class="screen" id="communities">
+      <div class="backbar" onclick="showScreen('profile')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <p class="section-label">Mes communautés</p>
+      <div class="list" id="my-communities"></div>
+      <p class="section-label" style="margin-top:1.2rem;">Rejoindre une communauté</p>
+      <div class="list" id="other-communities"></div>
+      <p class="section-label" style="margin-top:1.2rem;">Créer une communauté</p>
+      <input type="text" id="new-community-name" placeholder="Ex. Quartier des Tilleuls">
+      <button class="btn secondary" onclick="createCommunity()">Créer</button>
     </section>
 
     <!-- CONFIDENTIALITE -->
@@ -321,6 +349,99 @@ let myEmail = null;
 let myName = null;
 let currentServices = [];
 let currentDetail = null;
+const CATEGORIES = {
+  jardinage: {emoji:'🌱', label:'Jardinage', icon:'ti-plant-2'},
+  bricolage: {emoji:'🔨', label:'Bricolage', icon:'ti-hammer'},
+  cours: {emoji:'📚', label:'Cours', icon:'ti-book'},
+  garde: {emoji:'🧒', label:'Garde', icon:'ti-baby-carriage'},
+  informatique: {emoji:'💻', label:'Info', icon:'ti-device-laptop'},
+  cuisine: {emoji:'🍳', label:'Cuisine', icon:'ti-tools-kitchen-2'},
+  menage: {emoji:'🧹', label:'Ménage', icon:'ti-broom'},
+  autre: {emoji:'✨', label:'Autre', icon:'ti-hand-stop'}
+};
+let activeCategory = null;
+
+function renderCategoryFilters(){
+  const box = document.getElementById('category-filters');
+  if(!box || box.dataset.rendered) return;
+  box.dataset.rendered = '1';
+  box.innerHTML = Object.entries(CATEGORIES).map(([key, c]) => `
+    <button class="btn secondary" data-cat="${key}" style="margin-top:0; width:auto; white-space:nowrap; padding:8px 12px; font-size:13px;" onclick="toggleCategoryFilter('${key}')">${c.emoji} ${c.label}</button>
+  `).join('');
+}
+
+function toggleCategoryFilter(key){
+  activeCategory = (activeCategory === key) ? null : key;
+  document.querySelectorAll('#category-filters button').forEach(b => {
+    b.style.background = (b.dataset.cat === activeCategory) ? 'var(--accent-bg)' : '';
+    b.style.color = (b.dataset.cat === activeCategory) ? 'var(--accent-text)' : '';
+  });
+  renderHome();
+}
+
+let myCommunityIds = new Set();
+
+async function fetchCommunities(){
+  if(!myId) return;
+  try{
+    const { data: myMemberships } = await sb.from('community_members').select('community_id').eq('user_id', myId);
+    myCommunityIds = new Set((myMemberships || []).map(m => m.community_id));
+
+    const { data: all } = await sb.from('communities').select('*').order('created_at', {ascending:false});
+
+    const mineList = document.getElementById('my-communities');
+    const others = (all || []).filter(c => !myCommunityIds.has(c.id));
+    const mine = (all || []).filter(c => myCommunityIds.has(c.id));
+
+    mineList.innerHTML = mine.length ? mine.map(c => `
+      <div class="item-card" style="cursor:default;">
+        <i class="ti ti-users"></i>
+        <div style="flex:1;">
+          <p class="item-title">${c.name}</p>
+          <p class="item-sub">${c.description || ''}</p>
+        </div>
+        <button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px;" onclick="leaveCommunity('${c.id}')">Quitter</button>
+      </div>
+    `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Tu n'as encore rejoint aucune communauté.</p>";
+
+    const otherList = document.getElementById('other-communities');
+    otherList.innerHTML = others.length ? others.map(c => `
+      <div class="item-card" style="cursor:default;">
+        <i class="ti ti-users"></i>
+        <div style="flex:1;">
+          <p class="item-title">${c.name}</p>
+          <p class="item-sub">${c.description || ''}</p>
+        </div>
+        <button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px;" onclick="joinCommunity('${c.id}')">Rejoindre</button>
+      </div>
+    `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucune autre communauté pour l'instant.</p>";
+  }catch(e){ log('Erreur : ' + e.message); }
+}
+
+async function createCommunity(){
+  const name = document.getElementById('new-community-name').value.trim();
+  if(!name) return;
+  try{
+    const { data, error } = await sb.from('communities').insert({name, creator_id: myId}).select().maybeSingle();
+    if(error){ log('Erreur : ' + error.message); return; }
+    if(data) await sb.from('community_members').insert({community_id: data.id, user_id: myId});
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+  document.getElementById('new-community-name').value = '';
+  fetchCommunities();
+}
+
+async function joinCommunity(id){
+  try{ await sb.from('community_members').insert({community_id: id, user_id: myId}); }
+  catch(e){ log('Erreur : ' + e.message); return; }
+  fetchCommunities();
+}
+
+async function leaveCommunity(id){
+  try{ await sb.from('community_members').delete().eq('community_id', id).eq('user_id', myId); }
+  catch(e){ log('Erreur : ' + e.message); return; }
+  fetchCommunities();
+}
+
 let myBalanceCache = 0;
 let myRatingAvg = 0, myRatingCount = 0;
 let myLat = null, myLng = null;
@@ -350,6 +471,7 @@ function refreshForScreen(id){
   else if(id === 'map') fetchServices().then(renderMap);
   else if(id === 'requests'){ fetchExchanges(); fetchActiveExchanges(); }
   else if(id === 'profile') renderProfile();
+  else if(id === 'communities') fetchCommunities();
 }
 
 function showScreen(id){
@@ -475,17 +597,25 @@ function distanceLabel(s){
 }
 
 function renderHome(){
+  renderCategoryFilters();
   const list = document.getElementById('home-list');
-  const others = currentServices.filter(s => s.authorId !== myId);
+  const searchInput = document.getElementById('home-search');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+  let others = currentServices.filter(s => s.authorId !== myId);
+  if(activeCategory) others = others.filter(s => (s.category || 'autre') === activeCategory);
+  if(query) others = others.filter(s => (s.title + ' ' + (s.desc || '')).toLowerCase().includes(query));
+
   if(others.length === 0){
-    list.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun service publié pour l'instant.</p>";
+    list.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun service ne correspond pour l'instant.</p>";
     return;
   }
   list.innerHTML = others.map((s) => {
     const dist = distanceLabel(s);
+    const cat = CATEGORIES[s.category] || CATEGORIES.autre;
     return `
     <div class="item-card" onclick="openDetail('${s.id}')">
-      <i class="ti ${s.icon || 'ti-hand-stop'}"></i>
+      <i class="ti ${cat.icon}"></i>
       <div>
         <p class="item-title">${s.title}</p>
         <p class="item-sub">${s.authorName} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
@@ -748,12 +878,13 @@ async function publishService(){
   const title = document.getElementById('p-title').value.trim();
   const desc = document.getElementById('p-desc').value.trim();
   const hours = parseFloat(document.getElementById('p-hours').value);
+  const category = document.getElementById('p-category').value;
   if(!title){ log('Ajoute un titre pour continuer.'); return; }
   if(!hours || hours <= 0){ log('Indique une durée en heures valide.'); return; }
 
   try{
     const { error } = await sb.from('services').insert({
-      title, description: desc || '', hours,
+      title, description: desc || '', hours, category,
       icon: 'ti-hand-stop',
       author_id: myId, author_name: myName,
       lat: myLat, lng: myLng
@@ -781,6 +912,7 @@ function renderProfile(){
   if(locStatus) locStatus.textContent = myLat !== null ? 'Position : activée ✓' : 'Position : non configurée';
   const mine = currentServices.filter(s => s.authorId === myId);
   document.getElementById('profile-rating').textContent = myRatingCount > 0 ? myRatingAvg.toFixed(1) + '★' : '–';
+  fetchHistory();
   const list = document.getElementById('profile-services');
   list.innerHTML = mine.length ? mine.map(s => `
     <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
@@ -803,7 +935,7 @@ async function fetchServices(){
     currentServices = (data || []).map(r => ({
       id: r.id, title: r.title, desc: r.description, hours: r.hours,
       icon: r.icon, authorId: r.author_id, authorName: r.author_name,
-      lat: r.lat, lng: r.lng
+      lat: r.lat, lng: r.lng, category: r.category, communityId: r.community_id
     }));
     renderHome();
     document.getElementById('offline-note').style.display = 'none';
@@ -1007,6 +1139,39 @@ async function deleteAccount(){
   myId = null; myEmail = null; myName = null;
   showScreen('login');
   log('Ton compte et tes données ont été supprimés.');
+}
+
+async function fetchHistory(){
+  if(!myId) return;
+  try{
+    const { data } = await sb.from('exchanges').select('*')
+      .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
+      .in('status', ['accepted','refused','cancelled'])
+      .order('created_at', {ascending:false})
+      .limit(30);
+
+    const list = document.getElementById('profile-history');
+    if(!list) return;
+    list.innerHTML = (data && data.length) ? data.map(r => {
+      const iAmRequester = r.requester_id === myId;
+      const otherName = iAmRequester ? r.provider_name : r.requester_name;
+      const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
+      let line;
+      if(r.status === 'accepted'){
+        line = iAmRequester ? `-${r.hours}cr · ${otherName}` : `+${r.hours}cr · ${otherName}`;
+      } else {
+        line = `${r.status === 'refused' ? 'Refusée' : 'Annulée'} · ${otherName}`;
+      }
+      return `
+      <div class="item-card" style="cursor:default;">
+        <i class="ti ti-history" style="color:var(--text-muted);"></i>
+        <div>
+          <p class="item-title">${r.service_title}</p>
+          <p class="item-sub">${date} · ${line}</p>
+        </div>
+      </div>`;
+    }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
+  }catch(e){ /* silencieux */ }
 }
 
 async function boot(){
