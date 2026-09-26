@@ -1184,12 +1184,24 @@ async function deleteAccount(){
 function renderGroupedByStatus(items, statusOrder, itemRenderFn, emptyText){
   if(!items || !items.length) return `<p style="font-size:13px;color:var(--text-muted);">${emptyText}</p>`;
   const labels = {pending:'En attente', accepted:'Acceptées', refused:'Refusées', cancelled:'Annulées'};
+  const colors = {pending:'accent', accepted:'success', refused:'danger', cancelled:'muted'};
+  const pillStyles = {
+    accent: 'background:var(--accent-bg); color:var(--accent-text);',
+    success: 'background:var(--success-bg); color:var(--success-text);',
+    danger: 'background:#f6dede; color:#a02020;',
+    muted: 'background:var(--card); color:var(--text-muted); border:1px solid var(--border);'
+  };
   let html = '';
+  let groupIndex = 0;
   statusOrder.forEach(status => {
     const group = items.filter(r => r.status === status);
     if(!group.length) return;
-    html += `<p style="font-size:12px; font-weight:600; color:var(--text-muted); margin:10px 0 6px; text-transform:uppercase; letter-spacing:0.03em;">${labels[status]} (${group.length})</p>`;
-    html += group.map(itemRenderFn).join('');
+    groupIndex++;
+    html += `<div style="display:flex; align-items:center; gap:10px; margin:${groupIndex > 1 ? '20px' : '4px'} 0 10px;">
+      <span style="font-size:11.5px; font-weight:700; white-space:nowrap; padding:5px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:0.03em; ${pillStyles[colors[status]]}">${labels[status]} · ${group.length}</span>
+      <div style="flex:1; height:1px; background:var(--border);"></div>
+    </div>`;
+    html += `<div style="display:flex; flex-direction:column; gap:8px;">${group.map(itemRenderFn).join('')}</div>`;
   });
   return html || `<p style="font-size:13px;color:var(--text-muted);">${emptyText}</p>`;
 }
