@@ -808,6 +808,7 @@ async function fetchExchanges(){
             </div>
           </div>
           ${!reviewedIds.has(r.id) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.requester_id}', '${r.requester_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
+          <button onclick="deleteExchangeRecord('${r.id}', 'received')" style="align-self:flex-end; background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:4px 6px; margin-top:4px;" title="Supprimer">✕</button>
         </div>`;
       }
       return `
@@ -841,6 +842,7 @@ async function fetchExchanges(){
         </div>
         ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', '${r.provider_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
         ${r.status === 'pending' ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>` : ''}
+        ${r.status !== 'pending' ? `<button onclick="deleteExchangeRecord('${r.id}', 'sent')" style="align-self:flex-end; background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:4px 6px; margin-top:4px;" title="Supprimer">✕</button>` : ''}
       </div>
     `;}, 'Aucune demande envoyée.', 'dd-sent-g');
 
@@ -1234,19 +1236,20 @@ async function fetchHistory(){
           <p class="item-title">${r.service_title}</p>
           <p class="item-sub">${date} · ${line}</p>
         </div>
-        <button onclick="deleteHistoryItem('${r.id}')" style="background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:4px 6px;" title="Supprimer">✕</button>
+        <button onclick="deleteExchangeRecord('${r.id}', 'history')" style="background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:4px 6px;" title="Supprimer">✕</button>
       </div>`;
     }, "Aucun échange terminé pour l'instant.", 'dd-history-g');
   }catch(e){ /* silencieux */ }
 }
 
-async function deleteHistoryItem(exchangeId){
-  if(!confirm("Supprimer définitivement cette ligne de ton historique ?")) return;
+async function deleteExchangeRecord(exchangeId, context){
+  if(!confirm("Supprimer définitivement cette ligne ?")) return;
   try{
     const { error } = await sb.from('exchanges').delete().eq('id', exchangeId);
     if(error){ log('Erreur : ' + error.message); return; }
   }catch(e){ log('Erreur réseau : ' + e.message); return; }
-  fetchHistory();
+  if(context === 'history') fetchHistory();
+  else fetchExchanges();
 }
 
 async function boot(){
