@@ -781,7 +781,7 @@ async function fetchExchanges(){
     }
 
     const recList = document.getElementById('requests-received');
-    recList.innerHTML = (received && received.length) ? received.map(r => {
+    recList.innerHTML = renderGroupedByStatus(received, ['pending','cancelled'], (r) => {
       if(r.status === 'cancelled'){
         return `
         <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
@@ -809,24 +809,23 @@ async function fetchExchanges(){
           <button class="btn secondary" style="margin-top:0;" onclick="respondExchange('${r.id}', 'refused')">Refuser</button>
         </div>
       </div>`;
-    }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucune demande en attente.</p>";
+    }, 'Aucune demande en attente.');
 
     const sentList = document.getElementById('requests-sent');
-    const statusLabel = {pending: 'En attente', accepted: 'Acceptée ✓', refused: 'Refusée', cancelled: 'Annulée'};
 
-    sentList.innerHTML = (sent && sent.length) ? sent.map(r => `
+    sentList.innerHTML = renderGroupedByStatus(sent, ['pending','accepted','refused','cancelled'], (r) => `
       <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
             <p class="item-title">${r.service_title}</p>
-            <p class="item-sub">Chez ${r.provider_name} · ${statusLabel[r.status] || r.status}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
+            <p class="item-sub">Chez ${r.provider_name}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
           </div>
         </div>
         ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', '${r.provider_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
         ${r.status === 'pending' ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>` : ''}
       </div>
-    `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucune demande envoyée.</p>";
+    `, 'Aucune demande envoyée.');
 
     (sent || []).forEach(r => localStorage.setItem('tt_status_seen_' + r.id, r.status));
     checkNotifications();
@@ -1165,6 +1164,19 @@ async function deleteAccount(){
   log('Ton compte et tes données ont été supprimés.');
 }
 
+function renderGroupedByStatus(items, statusOrder, itemRenderFn, emptyText){
+  if(!items || !items.length) return `<p style="font-size:13px;color:var(--text-muted);">${emptyText}</p>`;
+  const labels = {pending:'En attente', accepted:'Acceptées', refused:'Refusées', cancelled:'Annulées'};
+  let html = '';
+  statusOrder.forEach(status => {
+    const group = items.filter(r => r.status === status);
+    if(!group.length) return;
+    html += `<p style="font-size:12px; font-weight:600; color:var(--text-muted); margin:10px 0 6px; text-transform:uppercase; letter-spacing:0.03em;">${labels[status]} (${group.length})</p>`;
+    html += group.map(itemRenderFn).join('');
+  });
+  return html || `<p style="font-size:13px;color:var(--text-muted);">${emptyText}</p>`;
+}
+
 async function fetchHistory(){
   if(!myId) return;
   try{
@@ -1176,16 +1188,13 @@ async function fetchHistory(){
 
     const list = document.getElementById('profile-history');
     if(!list) return;
-    list.innerHTML = (data && data.length) ? data.map(r => {
+    list.innerHTML = renderGroupedByStatus(data, ['accepted','refused','cancelled'], (r) => {
       const iAmRequester = r.requester_id === myId;
       const otherName = iAmRequester ? r.provider_name : r.requester_name;
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
-      let line;
-      if(r.status === 'accepted'){
-        line = iAmRequester ? `-${r.hours}cr · ${otherName}` : `+${r.hours}cr · ${otherName}`;
-      } else {
-        line = `${r.status === 'refused' ? 'Refusée' : 'Annulée'} · ${otherName}`;
-      }
+      const line = r.status === 'accepted'
+        ? (iAmRequester ? `-${r.hours}cr · ${otherName}` : `+${r.hours}cr · ${otherName}`)
+        : `${otherName}`;
       return `
       <div class="item-card" style="cursor:default;">
         <i class="ti ti-history" style="color:var(--text-muted);"></i>
@@ -1194,7 +1203,7 @@ async function fetchHistory(){
           <p class="item-sub">${date} · ${line}</p>
         </div>
       </div>`;
-    }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
+    }, "Aucun échange terminé pour l'instant.");
   }catch(e){ /* silencieux */ }
 }
 
