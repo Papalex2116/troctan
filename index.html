@@ -489,6 +489,20 @@ function renderScreenOnly(id){
   refreshForScreen(id);
 }
 
+function setupDropdownPersistence(){
+  document.querySelectorAll('.dropdown-section[id], .dropdown-section').forEach((el, i) => {
+    if(el.dataset.persistSetup) return;
+    el.dataset.persistSetup = '1';
+    const key = 'tt_dropdown_' + (el.id || el.closest('section').id + '_' + i);
+    const saved = localStorage.getItem(key);
+    if(saved === '1') el.setAttribute('open', '');
+    else if(saved === '0') el.removeAttribute('open');
+    el.addEventListener('toggle', () => {
+      localStorage.setItem(key, el.open ? '1' : '0');
+    });
+  });
+}
+
 function refreshForScreen(id){
   if(!myId) return;
   if(id === 'home') fetchServices();
@@ -782,6 +796,7 @@ async function fetchExchanges(){
 
     const recList = document.getElementById('requests-received');
     recList.innerHTML = renderGroupedByStatus(received, ['pending','cancelled'], (r) => {
+      const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
       if(r.status === 'cancelled'){
         return `
         <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
@@ -789,7 +804,7 @@ async function fetchExchanges(){
             <i class="ti ti-exchange"></i>
             <div style="flex:1;">
               <p class="item-title">${r.service_title}</p>
-              <p class="item-sub">${r.requester_name} · Annulée par le demandeur</p>
+              <p class="item-sub">${date} · ${r.requester_name} · Annulée par le demandeur</p>
             </div>
           </div>
           ${!reviewedIds.has(r.id) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.requester_id}', '${r.requester_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
@@ -801,7 +816,7 @@ async function fetchExchanges(){
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
             <p class="item-title">${r.service_title}</p>
-            <p class="item-sub">${r.requester_name} demande ${r.hours}cr</p>
+            <p class="item-sub">${date} · ${r.requester_name} demande ${r.hours}cr</p>
           </div>
         </div>
         <div style="display:flex; gap:8px; margin-top:10px;">
@@ -813,19 +828,21 @@ async function fetchExchanges(){
 
     const sentList = document.getElementById('requests-sent');
 
-    sentList.innerHTML = renderGroupedByStatus(sent, ['pending','accepted','refused','cancelled'], (r) => `
+    sentList.innerHTML = renderGroupedByStatus(sent, ['pending','accepted','refused','cancelled'], (r) => {
+      const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
+      return `
       <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
             <p class="item-title">${r.service_title}</p>
-            <p class="item-sub">Chez ${r.provider_name}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
+            <p class="item-sub">${date} · Chez ${r.provider_name}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
           </div>
         </div>
         ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', '${r.provider_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
         ${r.status === 'pending' ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>` : ''}
       </div>
-    `, 'Aucune demande envoyée.');
+    `;}, 'Aucune demande envoyée.');
 
     (sent || []).forEach(r => localStorage.setItem('tt_status_seen_' + r.id, r.status));
     checkNotifications();
@@ -1272,6 +1289,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
 
+setupDropdownPersistence();
 boot();
 </script>
 </body>
