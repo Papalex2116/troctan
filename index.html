@@ -1230,13 +1230,23 @@ async function fetchHistory(){
       return `
       <div class="item-card" style="cursor:default;">
         <i class="ti ti-history" style="color:var(--text-muted);"></i>
-        <div>
+        <div style="flex:1;">
           <p class="item-title">${r.service_title}</p>
           <p class="item-sub">${date} · ${line}</p>
         </div>
+        <button onclick="deleteHistoryItem('${r.id}')" style="background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:4px 6px;" title="Supprimer">✕</button>
       </div>`;
     }, "Aucun échange terminé pour l'instant.", 'dd-history-g');
   }catch(e){ /* silencieux */ }
+}
+
+async function deleteHistoryItem(exchangeId){
+  if(!confirm("Supprimer définitivement cette ligne de ton historique ?")) return;
+  try{
+    const { error } = await sb.from('exchanges').delete().eq('id', exchangeId);
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+  fetchHistory();
 }
 
 async function boot(){
