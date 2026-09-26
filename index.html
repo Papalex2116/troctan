@@ -259,11 +259,11 @@
         <div class="stat"><p class="l">Solde actuel</p><p class="n" id="profile-balance">0cr</p></div>
         <div class="stat"><p class="l">Note reçue</p><p class="n" id="profile-rating">–</p></div>
       </div>
-      <details class="dropdown-section">
+      <details class="dropdown-section" id="dd-profile-services">
         <summary class="section-label">Mes services publiés</summary>
         <div class="list" id="profile-services" style="margin-top:10px;"></div>
       </details>
-      <details class="dropdown-section" style="margin-top:1.2rem;">
+      <details class="dropdown-section" id="dd-profile-history" style="margin-top:1.2rem;">
         <summary class="section-label">Historique des échanges</summary>
         <div class="list" id="profile-history" style="margin-top:10px;"></div>
       </details>
@@ -301,15 +301,15 @@
 
     <!-- DEMANDES -->
     <section class="screen" id="requests">
-      <details class="dropdown-section" open>
+      <details class="dropdown-section" id="dd-active" open>
         <summary class="section-label">Échanges en cours</summary>
         <div class="list" id="requests-active" style="margin-top:10px;"></div>
       </details>
-      <details class="dropdown-section" open style="margin-top:1.2rem;">
+      <details class="dropdown-section" id="dd-received" open style="margin-top:1.2rem;">
         <summary class="section-label">Demandes reçues</summary>
         <div class="list" id="requests-received" style="margin-top:10px;"></div>
       </details>
-      <details class="dropdown-section" style="margin-top:1.2rem;">
+      <details class="dropdown-section" id="dd-sent" style="margin-top:1.2rem;">
         <summary class="section-label">Demandes envoyées</summary>
         <div class="list" id="requests-sent" style="margin-top:10px;"></div>
       </details>
@@ -490,10 +490,10 @@ function renderScreenOnly(id){
 }
 
 function setupDropdownPersistence(){
-  document.querySelectorAll('.dropdown-section[id], .dropdown-section').forEach((el, i) => {
-    if(el.dataset.persistSetup) return;
+  document.querySelectorAll('.dropdown-section').forEach((el) => {
+    if(!el.id || el.dataset.persistSetup) return;
     el.dataset.persistSetup = '1';
-    const key = 'tt_dropdown_' + (el.id || el.closest('section').id + '_' + i);
+    const key = 'tt_dropdown_' + el.id;
     const saved = localStorage.getItem(key);
     if(saved === '1') el.setAttribute('open', '');
     else if(saved === '0') el.removeAttribute('open');
@@ -824,7 +824,7 @@ async function fetchExchanges(){
           <button class="btn secondary" style="margin-top:0;" onclick="respondExchange('${r.id}', 'refused')">Refuser</button>
         </div>
       </div>`;
-    }, 'Aucune demande en attente.');
+    }, 'Aucune demande en attente.', 'dd-received-g');
 
     const sentList = document.getElementById('requests-sent');
 
@@ -842,7 +842,7 @@ async function fetchExchanges(){
         ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', '${r.provider_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
         ${r.status === 'pending' ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>` : ''}
       </div>
-    `;}, 'Aucune demande envoyée.');
+    `;}, 'Aucune demande envoyée.', 'dd-sent-g');
 
     (sent || []).forEach(r => localStorage.setItem('tt_status_seen_' + r.id, r.status));
     checkNotifications();
@@ -1181,7 +1181,7 @@ async function deleteAccount(){
   log('Ton compte et tes données ont été supprimés.');
 }
 
-function renderGroupedByStatus(items, statusOrder, itemRenderFn, emptyText){
+function renderGroupedByStatus(items, statusOrder, itemRenderFn, emptyText, sectionKey){
   if(!items || !items.length) return `<p style="font-size:13px;color:var(--text-muted);">${emptyText}</p>`;
   const labels = {pending:'En attente', accepted:'Acceptées', refused:'Refusées', cancelled:'Annulées'};
   const colors = {pending:'accent', accepted:'success', refused:'danger', cancelled:'muted'};
@@ -1191,18 +1191,21 @@ function renderGroupedByStatus(items, statusOrder, itemRenderFn, emptyText){
     danger: 'background:#f6dede; color:#a02020;',
     muted: 'background:var(--card); color:var(--text-muted); border:1px solid var(--border);'
   };
+  const defaultOpen = {pending:true, accepted:true, refused:false, cancelled:false};
   let html = '';
-  let groupIndex = 0;
   statusOrder.forEach(status => {
     const group = items.filter(r => r.status === status);
     if(!group.length) return;
-    groupIndex++;
-    html += `<div style="display:flex; align-items:center; gap:10px; margin:${groupIndex > 1 ? '20px' : '4px'} 0 10px;">
-      <span style="font-size:11.5px; font-weight:700; white-space:nowrap; padding:5px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:0.03em; ${pillStyles[colors[status]]}">${labels[status]} · ${group.length}</span>
-      <div style="flex:1; height:1px; background:var(--border);"></div>
-    </div>`;
-    html += `<div style="display:flex; flex-direction:column; gap:8px;">${group.map(itemRenderFn).join('')}</div>`;
+    const groupId = sectionKey + '_' + status;
+    html += `<details class="dropdown-section sub-dropdown" id="${groupId}" style="margin-bottom:10px;" ${defaultOpen[status] ? 'open' : ''}>
+      <summary style="display:flex; align-items:center; gap:10px; padding:2px 0;">
+        <span style="font-size:11.5px; font-weight:700; white-space:nowrap; padding:5px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:0.03em; ${pillStyles[colors[status]]}">${labels[status]} · ${group.length}</span>
+        <div style="flex:1; height:1px; background:var(--border);"></div>
+      </summary>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">${group.map(itemRenderFn).join('')}</div>
+    </details>`;
   });
+  setTimeout(setupDropdownPersistence, 0);
   return html || `<p style="font-size:13px;color:var(--text-muted);">${emptyText}</p>`;
 }
 
@@ -1232,7 +1235,7 @@ async function fetchHistory(){
           <p class="item-sub">${date} · ${line}</p>
         </div>
       </div>`;
-    }, "Aucun échange terminé pour l'instant.");
+    }, "Aucun échange terminé pour l'instant.", 'dd-history-g');
   }catch(e){ /* silencieux */ }
 }
 
