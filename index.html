@@ -199,7 +199,6 @@
       </div>
       <p id="offline-note" style="display:none;font-size:12px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:12px;">Impossible de contacter le serveur — vérifie ta connexion.</p>
       <input type="text" id="home-search" placeholder="Rechercher un service..." oninput="renderHome()" style="margin-bottom:10px;">
-      <div id="category-filters" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px;"></div>
       <p class="section-label">Près de chez toi</p>
       <div class="list" id="home-list"></div>
       <button class="btn" onclick="showScreen('propose')">+ Proposer un service</button>
@@ -245,6 +244,7 @@
         <option value="bricolage">🔨 Bricolage</option>
         <option value="cours">📚 Cours & soutien scolaire</option>
         <option value="garde">🧒 Garde d'enfants</option>
+        <option value="animaux">🐾 Animaux domestiques</option>
         <option value="informatique">💻 Informatique</option>
         <option value="cuisine">🍳 Cuisine</option>
         <option value="menage">🧹 Ménage</option>
@@ -386,29 +386,42 @@ const CATEGORIES = {
   bricolage: {emoji:'🔨', label:'Bricolage', icon:'ti-hammer'},
   cours: {emoji:'📚', label:'Cours', icon:'ti-book'},
   garde: {emoji:'🧒', label:'Garde', icon:'ti-baby-carriage'},
+  animaux: {emoji:'🐾', label:'Animaux', icon:'ti-paw'},
   informatique: {emoji:'💻', label:'Info', icon:'ti-device-laptop'},
   cuisine: {emoji:'🍳', label:'Cuisine', icon:'ti-tools-kitchen-2'},
   menage: {emoji:'🧹', label:'Ménage', icon:'ti-broom'},
   autre: {emoji:'✨', label:'Autre', icon:'ti-hand-stop'}
 };
-let activeCategory = null;
 
-function renderCategoryFilters(){
-  const box = document.getElementById('category-filters');
-  if(!box || box.dataset.rendered) return;
-  box.dataset.rendered = '1';
-  box.innerHTML = Object.entries(CATEGORIES).map(([key, c]) => `
-    <button class="btn secondary" data-cat="${key}" style="margin-top:0; width:auto; white-space:nowrap; padding:8px 12px; font-size:13px;" onclick="toggleCategoryFilter('${key}')">${c.emoji} ${c.label}</button>
-  `).join('');
-}
-
-function toggleCategoryFilter(key){
-  activeCategory = (activeCategory === key) ? null : key;
-  document.querySelectorAll('#category-filters button').forEach(b => {
-    b.style.background = (b.dataset.cat === activeCategory) ? 'var(--accent-bg)' : '';
-    b.style.color = (b.dataset.cat === activeCategory) ? 'var(--accent-text)' : '';
+function renderGroupedByCategory(services, sectionKey){
+  if(!services.length) return '';
+  let html = '';
+  Object.entries(CATEGORIES).forEach(([key, cat]) => {
+    const group = services.filter(s => (s.category || 'autre') === key);
+    if(!group.length) return;
+    const groupId = sectionKey + '_' + key;
+    html += `<details class="dropdown-section sub-dropdown" id="${groupId}" style="margin-bottom:10px;" open>
+      <summary style="display:flex; align-items:center; gap:10px; padding:2px 0;">
+        <span style="font-size:11.5px; font-weight:700; white-space:nowrap; padding:5px 12px; border-radius:20px; background:var(--accent-bg); color:var(--accent-text);">${cat.emoji} ${cat.label} · ${group.length}</span>
+        <div style="flex:1; height:1px; background:var(--border);"></div>
+      </summary>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+        ${group.map(s => {
+          const dist = distanceLabel(s);
+          return `
+          <div class="item-card" onclick="openDetail('${s.id}')">
+            <i class="ti ${cat.icon}"></i>
+            <div>
+              <p class="item-title">${s.title}</p>
+              <p class="item-sub">${s.authorName} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </details>`;
   });
-  renderHome();
+  setTimeout(setupDropdownPersistence, 0);
+  return html;
 }
 
 let myCommunityIds = new Set();
@@ -643,31 +656,18 @@ function distanceLabel(s){
 }
 
 function renderHome(){
-  renderCategoryFilters();
   const list = document.getElementById('home-list');
   const searchInput = document.getElementById('home-search');
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
   let others = currentServices.filter(s => s.authorId !== myId);
-  if(activeCategory) others = others.filter(s => (s.category || 'autre') === activeCategory);
   if(query) others = others.filter(s => (s.title + ' ' + (s.desc || '')).toLowerCase().includes(query));
 
   if(others.length === 0){
     list.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun service ne correspond pour l'instant.</p>";
     return;
   }
-  list.innerHTML = others.map((s) => {
-    const dist = distanceLabel(s);
-    const cat = CATEGORIES[s.category] || CATEGORIES.autre;
-    return `
-    <div class="item-card" onclick="openDetail('${s.id}')">
-      <i class="ti ${cat.icon}"></i>
-      <div>
-        <p class="item-title">${s.title}</p>
-        <p class="item-sub">${s.authorName} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
-      </div>
-    </div>
-  `;}).join('');
+  list.innerHTML = renderGroupedByCategory(others, 'dd-home-cat');
 }
 
 function openDetail(id){
