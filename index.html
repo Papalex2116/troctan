@@ -199,6 +199,7 @@
       </div>
       <p id="offline-note" style="display:none;font-size:12px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:12px;">Impossible de contacter le serveur — vérifie ta connexion.</p>
       <input type="text" id="home-search" placeholder="Rechercher un service..." oninput="renderHome()" style="margin-bottom:10px;">
+      <div id="category-filters" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:4px;"></div>
       <p class="section-label">Près de chez toi</p>
       <div class="list" id="home-list"></div>
       <button class="btn" onclick="showScreen('propose')">+ Proposer un service</button>
@@ -392,6 +393,25 @@ const CATEGORIES = {
   menage: {emoji:'🧹', label:'Ménage', icon:'ti-broom'},
   autre: {emoji:'✨', label:'Autre', icon:'ti-hand-stop'}
 };
+let activeCategory = null;
+
+function renderCategoryFilters(){
+  const box = document.getElementById('category-filters');
+  if(!box || box.dataset.rendered) return;
+  box.dataset.rendered = '1';
+  box.innerHTML = Object.entries(CATEGORIES).map(([key, c]) => `
+    <button class="btn secondary" data-cat="${key}" style="margin-top:0; width:auto; white-space:nowrap; padding:8px 12px; font-size:13px;" onclick="toggleCategoryFilter('${key}')">${c.emoji} ${c.label}</button>
+  `).join('');
+}
+
+function toggleCategoryFilter(key){
+  activeCategory = (activeCategory === key) ? null : key;
+  document.querySelectorAll('#category-filters button').forEach(b => {
+    b.style.background = (b.dataset.cat === activeCategory) ? 'var(--accent-bg)' : '';
+    b.style.color = (b.dataset.cat === activeCategory) ? 'var(--accent-text)' : '';
+  });
+  renderHome();
+}
 
 function renderGroupedByCategory(services, sectionKey){
   if(!services.length) return '';
@@ -656,11 +676,13 @@ function distanceLabel(s){
 }
 
 function renderHome(){
+  renderCategoryFilters();
   const list = document.getElementById('home-list');
   const searchInput = document.getElementById('home-search');
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
   let others = currentServices.filter(s => s.authorId !== myId);
+  if(activeCategory) others = others.filter(s => (s.category || 'autre') === activeCategory);
   if(query) others = others.filter(s => (s.title + ' ' + (s.desc || '')).toLowerCase().includes(query));
 
   if(others.length === 0){
