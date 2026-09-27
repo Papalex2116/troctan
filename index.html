@@ -147,6 +147,14 @@
 
   <div id="toast" style="display:none; margin:0 1.1rem 8px; font-size:12.5px; padding:8px 10px; border-radius:8px; background:var(--accent-bg); color:var(--accent-text);"></div>
 
+  <div id="bulk-delete-bar" style="display:none; margin:0 1.1rem 10px; padding:10px 14px; border-radius:12px; background:var(--text); color:var(--bg); align-items:center; justify-content:space-between; box-shadow:0 4px 14px rgba(0,0,0,0.15);">
+    <span id="bulk-delete-count" style="font-size:13.5px; font-weight:600;"></span>
+    <div style="display:flex; gap:8px;">
+      <button onclick="cancelBulkSelection()" style="background:none; border:1px solid var(--bg); color:var(--bg); border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer;">Annuler</button>
+      <button onclick="bulkDeleteSelected()" style="background:#e0453c; border:none; color:white; border-radius:8px; padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer;">Supprimer</button>
+    </div>
+  </div>
+
   <!-- CONNEXION -->
   <section class="screen active" id="login" style="padding:0 1.1rem;">
     <p class="section-label" style="font-size:18px;margin-top:20px;">Bienvenue sur Troctan</p>
@@ -808,7 +816,7 @@ async function fetchExchanges(){
             </div>
           </div>
           ${!reviewedIds.has(r.id) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.requester_id}', '${r.requester_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
-          <button onclick="deleteExchangeRecord('${r.id}', 'received')" style="align-self:flex-end; background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:4px 6px; margin-top:4px;" title="Supprimer">✕</button>
+          <input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">
         </div>`;
       }
       return `
@@ -842,7 +850,7 @@ async function fetchExchanges(){
         </div>
         ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', '${r.provider_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
         ${r.status === 'pending' ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>` : ''}
-        ${r.status !== 'pending' ? `<button onclick="deleteExchangeRecord('${r.id}', 'sent')" style="align-self:flex-end; background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:4px 6px; margin-top:4px;" title="Supprimer">✕</button>` : ''}
+        ${r.status !== 'pending' ? `<input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">` : ''}
       </div>
     `;}, 'Aucune demande envoyée.', 'dd-sent-g');
 
@@ -1236,20 +1244,48 @@ async function fetchHistory(){
           <p class="item-title">${r.service_title}</p>
           <p class="item-sub">${date} · ${line}</p>
         </div>
-        <button onclick="deleteExchangeRecord('${r.id}', 'history')" style="background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:4px 6px;" title="Supprimer">✕</button>
+        <input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="width:18px; height:18px;" title="Sélectionner pour supprimer">
       </div>`;
     }, "Aucun échange terminé pour l'instant.", 'dd-history-g');
   }catch(e){ /* silencieux */ }
 }
 
-async function deleteExchangeRecord(exchangeId, context){
-  if(!confirm("Supprimer définitivement cette ligne ?")) return;
+let selectedForDelete = new Set();
+
+function toggleSelect(id, checkboxEl){
+  if(checkboxEl.checked) selectedForDelete.add(id);
+  else selectedForDelete.delete(id);
+  updateBulkBar();
+}
+
+function updateBulkBar(){
+  const bar = document.getElementById('bulk-delete-bar');
+  const count = selectedForDelete.size;
+  if(count > 0){
+    bar.style.display = 'flex';
+    document.getElementById('bulk-delete-count').textContent = count + (count > 1 ? ' sélectionnées' : ' sélectionnée');
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function cancelBulkSelection(){
+  selectedForDelete.clear();
+  document.querySelectorAll('.del-check').forEach(c => c.checked = false);
+  updateBulkBar();
+}
+
+async function bulkDeleteSelected(){
+  if(selectedForDelete.size === 0) return;
+  if(!confirm(`Supprimer définitivement ces ${selectedForDelete.size} élément(s) ?`)) return;
   try{
-    const { error } = await sb.from('exchanges').delete().eq('id', exchangeId);
+    const { error } = await sb.from('exchanges').delete().in('id', Array.from(selectedForDelete));
     if(error){ log('Erreur : ' + error.message); return; }
   }catch(e){ log('Erreur réseau : ' + e.message); return; }
-  if(context === 'history') fetchHistory();
-  else fetchExchanges();
+  selectedForDelete.clear();
+  updateBulkBar();
+  fetchHistory();
+  fetchExchanges();
 }
 
 async function boot(){
