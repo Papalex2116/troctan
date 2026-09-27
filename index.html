@@ -370,7 +370,9 @@ try{
   if(typeof supabase === 'undefined'){
     log("Problème : la librairie Supabase ne s'est pas chargée depuis internet.");
   } else {
-    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { flowType: 'implicit' }
+    });
     log('Supabase connecté. Prêt.');
   }
 }catch(e){
