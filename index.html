@@ -209,6 +209,7 @@
     <section class="screen" id="detail">
       <div class="backbar" onclick="showScreen('home')"><i class="ti ti-arrow-left"></i> Retour</div>
       <div class="detail-card">
+        <img id="detail-photo" src="" alt="" style="display:none; width:100%; max-height:220px; object-fit:cover; border-radius:10px; margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
           <div class="avatar" id="detail-avatar">SO</div>
           <div>
@@ -253,6 +254,8 @@
       </select>
       <label>Durée estimée (en crédits)</label>
       <input type="number" min="0.5" step="0.5" placeholder="Ex. 1" id="p-hours">
+      <label>Photo (optionnel)</label>
+      <input type="file" accept="image/*" id="p-photo" style="margin-bottom:10px;">
       <button class="btn" onclick="publishService()">Publier</button>
       <button class="btn secondary" onclick="showScreen('home')">Annuler</button>
     </section>
@@ -432,7 +435,7 @@ function renderGroupedByCategory(services, sectionKey){
           const dist = distanceLabel(s);
           return `
           <div class="item-card" onclick="openDetail('${s.id}')">
-            <i class="ti ${cat.icon}"></i>
+            ${s.photoUrl ? `<img src="${s.photoUrl}" alt="" style="width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0;">` : `<i class="ti ${cat.icon}"></i>`}
             <div>
               <p class="item-title">${s.title}</p>
               <p class="item-sub">${s.authorName} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
@@ -701,6 +704,9 @@ function openDetail(id){
   document.getElementById('detail-avatar').textContent = initials(s.authorName);
   document.getElementById('detail-name').textContent = s.authorName;
   document.getElementById('detail-meta').textContent = s.authorId === myId ? 'Ton propre service' : 'Membre Troctan';
+  const detailPhoto = document.getElementById('detail-photo');
+  if(s.photoUrl){ detailPhoto.src = s.photoUrl; detailPhoto.style.display = 'block'; }
+  else { detailPhoto.style.display = 'none'; }
   document.getElementById('detail-title').textContent = s.title;
   document.getElementById('detail-desc').textContent = s.desc;
   document.getElementById('detail-duration').textContent = s.hours + 'cr';
@@ -947,19 +953,53 @@ async function respondExchange(exchangeId, decision){
   }catch(e){ log('Erreur : ' + e.message); }
 }
 
+async function resizeImage(file, maxSize){
+  return new Promise((resolve) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; };
+    img.onload = () => {
+      let { width, height } = img;
+      if(width > height && width > maxSize){ height = height * (maxSize / width); width = maxSize; }
+      else if(height > maxSize){ width = width * (maxSize / height); height = maxSize; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function publishService(){
   if(!myId){ log('Connecte-toi avant de publier un service.'); showScreen('login'); return; }
   const title = document.getElementById('p-title').value.trim();
   const desc = document.getElementById('p-desc').value.trim();
   const hours = parseFloat(document.getElementById('p-hours').value);
   const category = document.getElementById('p-category').value;
+  const photoFile = document.getElementById('p-photo').files[0];
   if(!title){ log('Ajoute un titre pour continuer.'); return; }
   if(!hours || hours <= 0){ log('Indique une durée en heures valide.'); return; }
+
+  let photoUrl = null;
+  if(photoFile){
+    log('Envoi de la photo...');
+    try{
+      const resized = await resizeImage(photoFile, 800);
+      const path = myId + '/' + Date.now() + '.jpg';
+      const { error: uploadError } = await sb.storage.from('service-photos').upload(path, resized, {contentType:'image/jpeg'});
+      if(uploadError){ log('Erreur photo : ' + uploadError.message); }
+      else{
+        const { data } = sb.storage.from('service-photos').getPublicUrl(path);
+        photoUrl = data.publicUrl;
+      }
+    }catch(e){ log('Erreur photo : ' + e.message); }
+  }
 
   try{
     const { error } = await sb.from('services').insert({
       title, description: desc || '', hours, category,
-      icon: 'ti-hand-stop',
+      icon: 'ti-hand-stop', photo_url: photoUrl,
       author_id: myId, author_name: myName,
       lat: myLat, lng: myLng
     });
@@ -1009,7 +1049,7 @@ async function fetchServices(){
     currentServices = (data || []).map(r => ({
       id: r.id, title: r.title, desc: r.description, hours: r.hours,
       icon: r.icon, authorId: r.author_id, authorName: r.author_name,
-      lat: r.lat, lng: r.lng, category: r.category, communityId: r.community_id
+      lat: r.lat, lng: r.lng, category: r.category, communityId: r.community_id, photoUrl: r.photo_url
     }));
     renderHome();
     document.getElementById('offline-note').style.display = 'none';
