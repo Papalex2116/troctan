@@ -203,6 +203,7 @@
       <p class="section-label">Près de chez toi</p>
       <div class="list" id="home-list"></div>
       <button class="btn" onclick="showScreen('propose')">+ Proposer un service</button>
+      <button class="btn secondary" onclick="shareApp()">Inviter des voisins</button>
     </section>
 
     <!-- DETAIL -->
@@ -267,6 +268,7 @@
         <p style="font-weight:600;margin:0;" id="profile-name">...</p>
         <p style="font-size:12.5px;color:var(--text-secondary);margin:2px 0 0;">Membre de Troctan</p>
       </div>
+      <button class="btn secondary" onclick="openEditProfile()" style="margin-top:0; margin-bottom:14px;">✏️ Modifier mon profil</button>
       <div class="stat-grid">
         <div class="stat"><p class="l">Solde actuel</p><p class="n" id="profile-balance">0cr</p></div>
         <div class="stat"><p class="l">Note reçue</p><p class="n" id="profile-rating">–</p></div>
@@ -282,9 +284,58 @@
       <p id="location-status" style="font-size:12.5px;color:var(--text-secondary);margin-top:14px;">Position : non configurée</p>
       <button class="btn secondary" onclick="updateLocation()">Mettre à jour ma position</button>
       <button class="btn secondary" onclick="showScreen('communities')">Mes communautés</button>
+      <button class="btn secondary" onclick="shareApp()">Partager Troctan</button>
+      <button class="btn secondary" onclick="showTutorial()">Revoir le tutoriel</button>
+      <button class="btn secondary" onclick="exportMyData()">Télécharger mes données</button>
       <button class="btn secondary" onclick="showScreen('legal')">Confidentialité &amp; conditions</button>
       <button class="btn secondary" style="color:#c23b3b;" onclick="logout()">Se déconnecter</button>
       <button class="btn secondary" style="color:#c23b3b;" onclick="deleteAccount()">Supprimer mon compte</button>
+    </section>
+
+    <!-- TUTORIEL -->
+    <section class="screen" id="tutorial" style="padding:0 1.1rem; text-align:center;">
+      <div style="margin-top:36px; min-height:250px;">
+        <div id="tut-emoji" style="font-size:56px;"></div>
+        <p id="tut-title" class="section-label" style="font-size:20px; margin-top:16px;"></p>
+        <p id="tut-text" style="font-size:14.5px; color:var(--text-secondary); line-height:1.6;"></p>
+      </div>
+      <div id="tut-dots" style="display:flex; justify-content:center; gap:8px; margin:18px 0;"></div>
+      <button class="btn" id="tut-next" onclick="tutorialNext()">Suivant</button>
+      <button class="btn secondary" onclick="finishTutorial()">Passer</button>
+    </section>
+
+    <!-- MODIFIER MON PROFIL -->
+    <section class="screen" id="edit-profile">
+      <div class="backbar" onclick="showScreen('profile')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <p class="section-label" style="font-size:16px;">Modifier mon profil</p>
+
+      <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:16px;">
+        <div class="avatar" id="ep-avatar" style="width:84px; height:84px; font-size:28px;">··</div>
+        <label for="ep-avatar-file" style="margin:10px 0 0; padding:8px 14px; border:1px solid var(--border-strong); border-radius:10px; cursor:pointer; color:var(--text); font-size:13px; font-weight:600; display:inline-block;">Changer la photo</label>
+        <input type="file" id="ep-avatar-file" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+      </div>
+
+      <label>Prénom</label>
+      <input type="text" id="ep-name" maxlength="40">
+
+      <p style="font-size:12.5px; color:var(--text-muted); line-height:1.5; margin:14px 0 8px;">🔒 Ces coordonnées ne sont <b>jamais visibles publiquement</b>. Elles ne peuvent être vues que par un membre avec qui tu as un échange accepté, et seulement si tu coches « visible ».</p>
+
+      <label>Numéro de téléphone (optionnel)</label>
+      <input type="tel" id="ep-phone" maxlength="30" placeholder="Ex. 079 123 45 67">
+      <label style="display:flex; align-items:center; gap:8px; margin:-2px 0 14px; cursor:pointer;">
+        <input type="checkbox" id="ep-show-phone" style="width:auto; margin:0;">
+        <span style="font-size:13px; color:var(--text);">Visible par mes partenaires d'échange</span>
+      </label>
+
+      <label>Adresse postale (optionnel)</label>
+      <input type="text" id="ep-address" maxlength="120" placeholder="Ex. Rue de la Gare 5, 1003 Lausanne">
+      <label style="display:flex; align-items:center; gap:8px; margin:-2px 0 14px; cursor:pointer;">
+        <input type="checkbox" id="ep-show-address" style="width:auto; margin:0;">
+        <span style="font-size:13px; color:var(--text);">Visible par mes partenaires d'échange</span>
+      </label>
+
+      <button class="btn" onclick="saveProfileEdits()">Enregistrer</button>
+      <button class="btn secondary" onclick="showScreen('profile')">Annuler</button>
     </section>
 
     <!-- COMMUNAUTES -->
@@ -331,6 +382,7 @@
     <section class="screen" id="chat">
       <div class="backbar" onclick="showScreen('requests')"><i class="ti ti-arrow-left"></i> Retour</div>
       <p class="section-label" id="chat-title">Discussion</p>
+      <div id="chat-contact" style="display:none; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; color:var(--text-secondary); line-height:1.6;"></div>
       <div id="chat-messages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
       <div style="display:flex; gap:8px;">
         <input type="text" id="chat-input" placeholder="Écris un message..." style="margin-bottom:0;">
@@ -358,6 +410,15 @@ function log(msg){
   if(toast){ toast.textContent = msg; toast.style.display = 'block'; }
   console.log(msg);
 }
+
+// Neutralise le texte saisi par les utilisateurs avant de l'afficher dans la page
+function esc(v){
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+// Pour passer un texte libre en argument d'un onclick="..." (échappement JS puis HTML)
+function jsArg(v){ return esc(JSON.stringify(String(v == null ? '' : v))); }
 
 window.onerror = function(message){
   log('Erreur JS : ' + message);
@@ -435,10 +496,10 @@ function renderGroupedByCategory(services, sectionKey){
           const dist = distanceLabel(s);
           return `
           <div class="item-card" onclick="openDetail('${s.id}')">
-            ${s.photoUrl ? `<img src="${s.photoUrl}" alt="" style="width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0;">` : `<i class="ti ${cat.icon}"></i>`}
+            ${s.photoUrl ? `<img src="${esc(s.photoUrl)}" alt="" style="width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0;">` : `<i class="ti ${cat.icon}"></i>`}
             <div>
-              <p class="item-title">${s.title}</p>
-              <p class="item-sub">${s.authorName} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
+              <p class="item-title">${esc(s.title)}</p>
+              <p class="item-sub">${esc(s.authorName)} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
             </div>
           </div>`;
         }).join('')}
@@ -467,8 +528,8 @@ async function fetchCommunities(){
       <div class="item-card" style="cursor:default;">
         <i class="ti ti-users"></i>
         <div style="flex:1;">
-          <p class="item-title">${c.name}</p>
-          <p class="item-sub">${c.description || ''}</p>
+          <p class="item-title">${esc(c.name)}</p>
+          <p class="item-sub">${esc(c.description)}</p>
         </div>
         <button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px;" onclick="leaveCommunity('${c.id}')">Quitter</button>
       </div>
@@ -479,8 +540,8 @@ async function fetchCommunities(){
       <div class="item-card" style="cursor:default;">
         <i class="ti ti-users"></i>
         <div style="flex:1;">
-          <p class="item-title">${c.name}</p>
-          <p class="item-sub">${c.description || ''}</p>
+          <p class="item-title">${esc(c.name)}</p>
+          <p class="item-sub">${esc(c.description)}</p>
         </div>
         <button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px;" onclick="joinCommunity('${c.id}')">Rejoindre</button>
       </div>
@@ -514,6 +575,8 @@ async function leaveCommunity(id){
 
 let myBalanceCache = 0;
 let myRatingAvg = 0, myRatingCount = 0;
+let myAvatarUrl = null;
+let pendingAvatarBlob = null;
 let myLat = null, myLng = null;
 let mapInstance = null;
 let mapMarkersLayer = null;
@@ -522,7 +585,7 @@ function initials(name){
   return name.trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join('');
 }
 
-const AUTH_SCREENS = ['login', 'check-email', 'setup-name'];
+const AUTH_SCREENS = ['login', 'check-email', 'setup-name', 'tutorial'];
 
 function renderScreenOnly(id){
   document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
@@ -606,6 +669,7 @@ function finishNameSetup(){
   sb.from('profiles').update({cgu_accepted_at: new Date().toISOString()}).eq('id', myId).then(()=>{});
   applyIdentity();
   showScreen('home');
+  if(!localStorage.getItem('tt_tutorial_seen')) showTutorial();
   fetchServices();
   checkNotifications();
   subscribeRealtime();
@@ -628,7 +692,7 @@ function finishNameSetup(){
 async function logout(){
   unsubscribeRealtime();
   try{ await sb.auth.signOut(); }catch(e){ /* on nettoie quand même localement */ }
-  myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null;
+  myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null; myAvatarUrl = null;
   currentServices = [];
   showScreen('login');
 }
@@ -653,11 +717,24 @@ function jitter(coord){
   return coord + (Math.random() - 0.5) * 0.0015;
 }
 
+function renderAvatar(el, name, url){
+  if(!el) return;
+  if(url){
+    el.style.backgroundImage = 'url("' + url + '")';
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundPosition = 'center';
+    el.textContent = '';
+  } else {
+    el.style.backgroundImage = '';
+    el.textContent = initials(name || '?');
+  }
+}
+
 function applyIdentity(){
   document.getElementById('hdr-name').textContent = myName;
-  document.getElementById('hdr-avatar').textContent = initials(myName);
+  renderAvatar(document.getElementById('hdr-avatar'), myName, myAvatarUrl);
   document.getElementById('profile-name').textContent = myName;
-  document.getElementById('profile-avatar').textContent = initials(myName);
+  renderAvatar(document.getElementById('profile-avatar'), myName, myAvatarUrl);
 }
 
 async function saveProfile(balance, lat, lng){
@@ -701,7 +778,7 @@ function openDetail(id){
   const s = currentServices.find(x => x.id === id);
   if(!s) return;
   currentDetail = s;
-  document.getElementById('detail-avatar').textContent = initials(s.authorName);
+  renderAvatar(document.getElementById('detail-avatar'), s.authorName, null);
   document.getElementById('detail-name').textContent = s.authorName;
   document.getElementById('detail-meta').textContent = s.authorId === myId ? 'Ton propre service' : 'Membre Troctan';
   const detailPhoto = document.getElementById('detail-photo');
@@ -712,6 +789,20 @@ function openDetail(id){
   document.getElementById('detail-duration').textContent = s.hours + 'cr';
   document.getElementById('detail-balance').textContent = (myBalanceCache - s.hours) + 'cr';
   showScreen('detail');
+  loadAuthorInfo(s);
+}
+
+async function loadAuthorInfo(s){
+  try{
+    const { data } = await sb.from('profiles').select('name, avatar_url, rating_avg, rating_count').eq('id', s.authorId).maybeSingle();
+    if(!data || !currentDetail || currentDetail.id !== s.id) return;
+    renderAvatar(document.getElementById('detail-avatar'), data.name || s.authorName, data.avatar_url);
+    if(s.authorId !== myId){
+      document.getElementById('detail-meta').textContent = data.rating_count > 0
+        ? Number(data.rating_avg).toFixed(1) + '★ · ' + data.rating_count + (data.rating_count > 1 ? ' avis' : ' avis')
+        : 'Nouveau membre';
+    }
+  }catch(e){ /* silencieux */ }
 }
 
 async function requestExchange(){
@@ -762,29 +853,54 @@ async function fetchActiveExchanges(){
     const list = document.getElementById('requests-active');
     list.innerHTML = (data && data.length) ? data.map(r => {
       const otherName = r.requester_id === myId ? r.provider_name : r.requester_name;
+      const otherId = r.requester_id === myId ? r.provider_id : r.requester_id;
       const hasUnread = unreadByExchange.has(r.id);
       return `
       <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
-            <p class="item-title">${r.service_title}${hasUnread ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:4px;"></span>' : ''}</p>
-            <p class="item-sub">Avec ${otherName}${hasUnread ? ' · nouveau message' : ''}</p>
+            <p class="item-title">${esc(r.service_title)}${hasUnread ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:4px;"></span>' : ''}</p>
+            <p class="item-sub">Avec ${esc(otherName)}${hasUnread ? ' · nouveau message' : ''}</p>
           </div>
         </div>
-        <button class="btn secondary" style="margin-top:8px;" onclick="openChat('${r.id}', '${otherName.replace(/'/g,"")}')">Discuter${hasUnread ? ' (1)' : ''}</button>
+        <button class="btn secondary" style="margin-top:8px;" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')">Discuter${hasUnread ? ' (1)' : ''}</button>
       </div>`;
     }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange en cours.</p>";
   }catch(e){ log('Erreur : ' + e.message); }
 }
 
-function openChat(exchangeId, otherName){
+function openChat(exchangeId, otherName, otherId){
   currentChatExchangeId = exchangeId;
   document.getElementById('chat-title').textContent = 'Discussion avec ' + otherName;
   localStorage.setItem('tt_chat_seen_' + exchangeId, new Date().toISOString());
   showScreen('chat');
   fetchChatMessages();
+  loadPartnerContact(otherId);
   checkNotifications();
+}
+
+async function loadPartnerContact(otherId){
+  const box = document.getElementById('chat-contact');
+  box.style.display = 'none';
+  if(!otherId) return;
+  try{
+    const { data, error } = await sb.rpc('get_contact_info', {target_user: otherId});
+    if(error || !data) return;
+    const lines = [];
+    if(data.phone) lines.push('📞 ' + data.phone);
+    if(data.address) lines.push('📍 ' + data.address);
+    box.textContent = '';
+    if(lines.length){
+      const title = document.createElement('b');
+      title.textContent = 'Coordonnées partagées';
+      box.appendChild(title);
+      lines.forEach(l => { box.appendChild(document.createElement('br')); box.appendChild(document.createTextNode(l)); });
+    } else {
+      box.textContent = "Ton partenaire n'a partagé aucune coordonnée — utilise la discussion ci-dessous pour convenir d'un rendez-vous.";
+    }
+    box.style.display = 'block';
+  }catch(e){ /* silencieux */ }
 }
 
 async function fetchChatMessages(){
@@ -795,7 +911,7 @@ async function fetchChatMessages(){
     box.innerHTML = (data || []).map(m => {
       const mine = m.sender_id === myId;
       return `<div style="align-self:${mine ? 'flex-end' : 'flex-start'}; max-width:80%; background:${mine ? 'var(--accent-bg)' : 'var(--card)'}; border:1px solid var(--border); border-radius:12px; padding:8px 12px;">
-        <p style="font-size:13.5px; margin:0;">${m.content}</p>
+        <p style="font-size:13.5px; margin:0;">${esc(m.content)}</p>
       </div>`;
     }).join('');
     box.scrollTop = box.scrollHeight;
@@ -841,11 +957,11 @@ async function fetchExchanges(){
           <div style="display:flex; gap:10px; align-items:flex-start;">
             <i class="ti ti-exchange"></i>
             <div style="flex:1;">
-              <p class="item-title">${r.service_title}</p>
-              <p class="item-sub">${date} · ${r.requester_name} · Annulée par le demandeur</p>
+              <p class="item-title">${esc(r.service_title)}</p>
+              <p class="item-sub">${date} · ${esc(r.requester_name)} · Annulée par le demandeur</p>
             </div>
           </div>
-          ${!reviewedIds.has(r.id) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.requester_id}', '${r.requester_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
+          ${!reviewedIds.has(r.id) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.requester_id}', ${jsArg(r.requester_name)})">Laisser un avis</button>` : ''}
           <input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">
         </div>`;
       }
@@ -854,8 +970,8 @@ async function fetchExchanges(){
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
-            <p class="item-title">${r.service_title}</p>
-            <p class="item-sub">${date} · ${r.requester_name} demande ${r.hours}cr</p>
+            <p class="item-title">${esc(r.service_title)}</p>
+            <p class="item-sub">${date} · ${esc(r.requester_name)} demande ${r.hours}cr</p>
           </div>
         </div>
         <div style="display:flex; gap:8px; margin-top:10px;">
@@ -874,11 +990,11 @@ async function fetchExchanges(){
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
-            <p class="item-title">${r.service_title}</p>
-            <p class="item-sub">${date} · Chez ${r.provider_name}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
+            <p class="item-title">${esc(r.service_title)}</p>
+            <p class="item-sub">${date} · Chez ${esc(r.provider_name)}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
           </div>
         </div>
-        ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', '${r.provider_name.replace(/'/g,"")}')">Laisser un avis</button>` : ''}
+        ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', ${jsArg(r.provider_name)})">Laisser un avis</button>` : ''}
         ${r.status === 'pending' ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>` : ''}
         ${r.status !== 'pending' ? `<input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">` : ''}
       </div>
@@ -1033,7 +1149,7 @@ function renderProfile(){
       <div style="display:flex; gap:10px; align-items:flex-start;">
         <i class="ti ${s.icon || 'ti-hand-stop'}"></i>
         <div style="flex:1;">
-          <p class="item-title">${s.title}</p>
+          <p class="item-title">${esc(s.title)}</p>
           <p class="item-sub">${s.hours}cr proposé</p>
         </div>
       </div>
@@ -1136,6 +1252,8 @@ async function handleSession(session){
     showScreen('login');
     return;
   }
+  // Même utilisateur déjà chargé (ex. simple renouvellement de session) : on ne touche à rien
+  if(myId === session.user.id && myName){ return; }
   myId = session.user.id;
   myEmail = session.user.email;
 
@@ -1146,10 +1264,12 @@ async function handleSession(session){
       myBalanceCache = profile.balance || 0;
       myRatingAvg = profile.rating_avg || 0;
       myRatingCount = profile.rating_count || 0;
+      myAvatarUrl = profile.avatar_url || null;
       if(profile.lat != null){ myLat = profile.lat; myLng = profile.lng; }
       applyIdentity();
       document.getElementById('balance-value').textContent = myBalanceCache + 'cr';
       showScreen('home');
+      if(!localStorage.getItem('tt_tutorial_seen')) showTutorial();
       await fetchServices();
       renderProfile();
       checkNotifications();
@@ -1189,44 +1309,59 @@ function unsubscribeRealtime(){
   if(realtimeChannel){ sb.removeChannel(realtimeChannel); realtimeChannel = null; }
 }
 
+const CONTACT_EMAIL = '';
+
 const LEGAL_TEXT = `Politique de confidentialité
 
 Dernière mise à jour : septembre 2026
 
-Troctan est une application d'entraide locale basée sur l'échange de temps entre particuliers. Cette page explique quelles données sont collectées et pourquoi.
+Troctan est un projet d'entraide locale basé sur l'échange de crédits-temps entre particuliers, édité à titre privé depuis la Suisse.${CONTACT_EMAIL ? '\n\nContact : ' + CONTACT_EMAIL : ''}
 
-1. Données collectées
-- Ton prénom (tel que tu le saisis)
-- Ton adresse email (pour te connecter, jamais affichée aux autres)
-- Une position géographique approximative (avec un flou volontaire d'environ 100m, jamais ton adresse exacte)
-- Les services que tu publies et les demandes d'échange que tu effectues
+1. Données que nous traitons
+- Compte : ton adresse email (uniquement pour te connecter, jamais visible des autres membres), ton prénom et, si tu le souhaites, une photo de profil (visible des autres membres).
+- Position : une position approximative, volontairement floutée (environ 100 m), jamais ton adresse exacte. Elle sert à afficher tes annonces sur la carte et à calculer des distances.
+- Contenu : tes annonces (titre, description, catégorie, photo facultative), tes demandes d'échange, les messages échangés avec ton partenaire, les avis donnés et reçus, les communautés que tu rejoins.
+- Coordonnées facultatives : numéro de téléphone et adresse postale. Elles sont stockées séparément du reste de ton profil et ne sont JAMAIS visibles publiquement. Seul un membre avec qui tu as un échange accepté peut les voir, et uniquement les champs que tu as toi-même rendus visibles. Tu peux modifier ces choix, ou effacer ces données, à tout moment depuis « Modifier mon profil ».
+- Données techniques : un identifiant de session est conservé dans ton navigateur pour te garder connecté. Nous n'utilisons ni publicité, ni outil de mesure d'audience, ni suivi par des tiers.
 
-2. Pourquoi ces données
-Uniquement pour faire fonctionner l'application : te permettre de te connecter, afficher les services autour de toi, et suivre ton solde de crédits. Ces données ne sont jamais vendues, partagées avec des tiers à des fins commerciales, ou utilisées pour de la publicité.
+2. Pourquoi
+Uniquement pour faire fonctionner l'application : te connecter, afficher les annonces autour de toi, permettre les échanges, suivre ton solde de crédits et instaurer la confiance entre membres. Tes données ne sont ni vendues, ni louées, ni utilisées à des fins publicitaires.
 
 3. Qui peut voir quoi
-- Ton prénom et les services que tu publies sont visibles par toute personne utilisant l'application.
-- Ton email n'est jamais visible par les autres utilisateurs.
-- Ta position n'est visible qu'approximativement, sous forme de point sur une carte.
+- Visibles de tous les membres : ton prénom, ta photo de profil, ta note moyenne, tes annonces (avec leur photo et leur position approximative).
+- Visibles uniquement des deux personnes concernées : une demande d'échange et la discussion associée.
+- Visibles uniquement d'un partenaire d'échange accepté, si tu l'as choisi : ton téléphone et/ou ton adresse postale.
+- Jamais visibles des autres membres : ton adresse email.
 
-4. Durée de conservation
-Tes données sont conservées tant que ton compte existe. Tu peux demander leur suppression à tout moment, directement depuis cette appli.
+4. Prestataires techniques
+Pour fonctionner, Troctan s'appuie sur : Supabase (base de données, connexion, stockage des photos), GitHub Pages (hébergement du site), Resend (envoi des emails de connexion), Infomaniak (nom de domaine) et OpenStreetMap (fond de carte : ton navigateur charge les cartes depuis leurs serveurs, ce qui leur transmet ton adresse IP et la zone affichée). Certains de ces prestataires peuvent traiter des données hors de Suisse, notamment dans l'Union européenne ou aux États-Unis.
 
-5. Tes droits (conformément à la loi suisse sur la protection des données, nLPD)
-Tu as le droit de consulter, corriger ou supprimer tes données à tout moment.
+5. Durée de conservation et suppression
+Tes données sont conservées tant que ton compte existe. Le bouton « Supprimer mon compte » efface ton profil, tes annonces, tes photos, tes coordonnées privées et tes appartenances aux communautés. Les échanges et messages que tu as eus avec d'autres membres peuvent subsister dans leur propre historique, car ils les concernent aussi.
+
+6. Tes droits (loi fédérale sur la protection des données, nLPD)
+- Accès : « Télécharger mes données » (profil) te fournit une copie de tes données au format JSON.
+- Rectification : « Modifier mon profil » te permet de corriger tes informations.
+- Suppression : « Supprimer mon compte ».
+- Pour toute autre demande, contacte-nous à l'adresse indiquée ci-dessus.
+
+7. Sécurité
+La connexion se fait par un lien envoyé sur ton email, et les échanges avec le serveur sont chiffrés (HTTPS). Chaque membre ne peut lire et modifier que les données qui le concernent. Aucun système n'est infaillible : si tu constates un problème, signale-le-nous.
 
 —
 
 Conditions d'utilisation
 
 En utilisant Troctan, tu acceptes de :
-- Rester respectueux envers les autres membres
-- Ne publier que des services réels, que tu es en mesure d'offrir
-- Ne pas utiliser l'application à des fins commerciales ou illégales
+- Rester respectueux envers les autres membres.
+- Ne publier que des services réels, que tu es en mesure de rendre.
+- Ne publier que des photos dont tu es l'auteur ou que tu as le droit d'utiliser, et ne pas publier de photo d'une personne sans son accord.
+- Ne pas publier de contenu illégal, discriminatoire, violent ou trompeur.
+- Ne pas utiliser l'application à des fins commerciales : les crédits n'ont pas de valeur monétaire et ne peuvent pas être échangés contre de l'argent.
 
-Troctan met en relation des particuliers mais n'est pas partie aux échanges effectués. Chaque utilisateur reste responsable des services qu'il propose et de la qualité de leur réalisation.
+Troctan met des particuliers en relation mais n'est pas partie aux échanges effectués. Chaque membre reste responsable des services qu'il propose et de leur réalisation. Rencontre tes partenaires avec le même bon sens que pour n'importe quel échange entre particuliers.
 
-Un compte peut être suspendu en cas de comportement abusif signalé par d'autres membres.`;
+Troctan est un projet en phase de test : des erreurs ou des interruptions peuvent survenir. Un compte peut être suspendu en cas de comportement abusif, notamment après signalement par d'autres membres.`;
 
 document.getElementById('legal-text').textContent = LEGAL_TEXT;
 
@@ -1241,16 +1376,168 @@ async function deleteMyService(id){
   log('Service retiré.');
 }
 
+const TUTORIAL_STEPS = [
+  {emoji:'⏳', title:'Bienvenue sur Troctan', text:"Ici, on s'entraide entre voisins sans argent : on échange du temps. Ce que tu donnes aux autres, tu peux le recevoir en retour."},
+  {emoji:'🔄', title:'1 crédit = 1 heure', text:"Chaque heure de service que tu rends te rapporte des crédits, chaque heure reçue en coûte. Ton solde reste entre -10 et +20 crédits pour que les échanges restent équilibrés."},
+  {emoji:'🤝', title:'Comment ça marche', text:"Trouve une annonce près de chez toi (ou publie la tienne), envoie une demande, et une fois qu'elle est acceptée, discutez pour fixer l'heure et le lieu."},
+  {emoji:'⭐', title:'La confiance avant tout', text:"Après chaque échange, laisse un avis. Tu peux signaler une annonce douteuse, et tes coordonnées privées ne sont partagées que si tu le décides."}
+];
+let tutStep = 0;
+
+function renderTutorial(){
+  const s = TUTORIAL_STEPS[tutStep];
+  document.getElementById('tut-emoji').textContent = s.emoji;
+  document.getElementById('tut-title').textContent = s.title;
+  document.getElementById('tut-text').textContent = s.text;
+  document.getElementById('tut-dots').innerHTML = TUTORIAL_STEPS.map((_, i) =>
+    '<span style="width:8px; height:8px; border-radius:50%; background:' + (i === tutStep ? 'var(--accent-border)' : 'var(--border-strong)') + ';"></span>'
+  ).join('');
+  document.getElementById('tut-next').textContent = (tutStep === TUTORIAL_STEPS.length - 1) ? "C'est parti !" : 'Suivant';
+}
+
+function showTutorial(){
+  tutStep = 0;
+  renderTutorial();
+  showScreen('tutorial');
+}
+
+function tutorialNext(){
+  if(tutStep >= TUTORIAL_STEPS.length - 1){ finishTutorial(); return; }
+  tutStep++;
+  renderTutorial();
+}
+
+function finishTutorial(){
+  localStorage.setItem('tt_tutorial_seen', '1');
+  showScreen('home');
+}
+
+async function shareApp(){
+  const url = 'https://troctan.ch';
+  const text = "Troctan : échange de services entre voisins, sans argent — 1 crédit = 1 heure.";
+  if(navigator.share){
+    try{ await navigator.share({title: 'Troctan', text: text, url: url}); }catch(e){ /* partage annulé */ }
+  } else {
+    try{ await navigator.clipboard.writeText(url); log('Lien copié : ' + url); }
+    catch(e){ log('Copie ce lien pour inviter tes voisins : ' + url); }
+  }
+}
+
+async function openEditProfile(){
+  document.getElementById('ep-name').value = myName || '';
+  renderAvatar(document.getElementById('ep-avatar'), myName, myAvatarUrl);
+  document.getElementById('ep-avatar-file').value = '';
+  pendingAvatarBlob = null;
+  showScreen('edit-profile');
+  try{
+    const { data } = await sb.from('profile_private').select('*').eq('user_id', myId).maybeSingle();
+    document.getElementById('ep-phone').value = (data && data.phone) || '';
+    document.getElementById('ep-address').value = (data && data.address) || '';
+    document.getElementById('ep-show-phone').checked = !!(data && data.show_phone);
+    document.getElementById('ep-show-address').checked = !!(data && data.show_address);
+  }catch(e){ log('Erreur : ' + e.message); }
+}
+
+async function previewAvatar(input){
+  const file = input.files[0];
+  if(!file) return;
+  pendingAvatarBlob = await resizeImage(file, 400);
+  const el = document.getElementById('ep-avatar');
+  el.style.backgroundImage = 'url("' + URL.createObjectURL(pendingAvatarBlob) + '")';
+  el.style.backgroundSize = 'cover';
+  el.style.backgroundPosition = 'center';
+  el.textContent = '';
+}
+
+async function saveProfileEdits(){
+  const newName = document.getElementById('ep-name').value.trim();
+  if(!newName){ log('Le prénom ne peut pas être vide.'); return; }
+  const phone = document.getElementById('ep-phone').value.trim();
+  const address = document.getElementById('ep-address').value.trim();
+  const showPhone = document.getElementById('ep-show-phone').checked;
+  const showAddress = document.getElementById('ep-show-address').checked;
+
+  let newAvatarUrl = myAvatarUrl;
+  try{
+    if(pendingAvatarBlob){
+      const path = myId + '/avatar-' + Date.now() + '.jpg';
+      const { error: upErr } = await sb.storage.from('avatars').upload(path, pendingAvatarBlob, {contentType:'image/jpeg'});
+      if(upErr){ log('Erreur photo : ' + upErr.message); return; }
+      newAvatarUrl = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+    }
+    const { error: pErr } = await sb.from('profiles').update({name: newName, avatar_url: newAvatarUrl}).eq('id', myId);
+    if(pErr){ log('Erreur : ' + pErr.message); return; }
+    const { error: privErr } = await sb.from('profile_private').upsert({
+      user_id: myId, phone: phone || null, address: address || null,
+      show_phone: showPhone, show_address: showAddress, updated_at: new Date().toISOString()
+    });
+    if(privErr){ log('Erreur : ' + privErr.message); return; }
+    if(newName !== myName){
+      await sb.from('services').update({author_name: newName}).eq('author_id', myId);
+    }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+
+  myName = newName; myAvatarUrl = newAvatarUrl; pendingAvatarBlob = null;
+  applyIdentity();
+  fetchServices();
+  log('Profil enregistré ✓');
+  showScreen('profile');
+}
+
+async function exportMyData(){
+  log('Préparation de ton export...');
+  try{
+    const [profile, priv, services, exchanges, given, received, messages, memberships] = await Promise.all([
+      sb.from('profiles').select('*').eq('id', myId).maybeSingle(),
+      sb.from('profile_private').select('*').eq('user_id', myId).maybeSingle(),
+      sb.from('services').select('*').eq('author_id', myId),
+      sb.from('exchanges').select('*').or('requester_id.eq.' + myId + ',provider_id.eq.' + myId),
+      sb.from('reviews').select('*').eq('reviewer_id', myId),
+      sb.from('reviews').select('*').eq('reviewed_id', myId),
+      sb.from('messages').select('*').eq('sender_id', myId),
+      sb.from('community_members').select('*').eq('user_id', myId)
+    ]);
+    const payload = {
+      exporte_le: new Date().toISOString(),
+      email: myEmail,
+      profil: profile.data,
+      coordonnees_privees: priv.data,
+      annonces: services.data,
+      echanges: exchanges.data,
+      avis_donnes: given.data,
+      avis_recus: received.data,
+      messages_envoyes: messages.data,
+      communautes: memberships.data
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'troctan-mes-donnees.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    log('Export téléchargé ✓');
+  }catch(e){ log('Erreur export : ' + e.message); }
+}
+
 async function deleteAccount(){
   if(!confirm("Supprimer définitivement ton compte et toutes tes données ? Cette action est irréversible.")){
     return;
   }
   try{
+    for(const bucket of ['service-photos', 'avatars']){
+      try{
+        const { data: files } = await sb.storage.from(bucket).list(myId);
+        if(files && files.length) await sb.storage.from(bucket).remove(files.map(f => myId + '/' + f.name));
+      }catch(e){ /* on continue */ }
+    }
     await sb.from('services').delete().eq('author_id', myId);
+    await sb.from('community_members').delete().eq('user_id', myId);
+    await sb.from('profile_private').delete().eq('user_id', myId);
     await sb.from('profiles').delete().eq('id', myId);
+    unsubscribeRealtime();
     await sb.auth.signOut();
   }catch(e){ log('Erreur lors de la suppression : ' + e.message); return; }
-  myId = null; myEmail = null; myName = null;
+  myId = null; myEmail = null; myName = null; myAvatarUrl = null;
   showScreen('login');
   log('Ton compte et tes données ont été supprimés.');
 }
@@ -1299,13 +1586,13 @@ async function fetchHistory(){
       const otherName = iAmRequester ? r.provider_name : r.requester_name;
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
       const line = r.status === 'accepted'
-        ? (iAmRequester ? `-${r.hours}cr · ${otherName}` : `+${r.hours}cr · ${otherName}`)
-        : `${otherName}`;
+        ? (iAmRequester ? `-${r.hours}cr · ${esc(otherName)}` : `+${r.hours}cr · ${esc(otherName)}`)
+        : `${esc(otherName)}`;
       return `
       <div class="item-card" style="cursor:default;">
         <i class="ti ti-history" style="color:var(--text-muted);"></i>
         <div style="flex:1;">
-          <p class="item-title">${r.service_title}</p>
+          <p class="item-title">${esc(r.service_title)}</p>
           <p class="item-sub">${date} · ${line}</p>
         </div>
         <input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="width:18px; height:18px;" title="Sélectionner pour supprimer">
@@ -1401,7 +1688,7 @@ async function renderMap(){
   currentServices.filter(s => s.authorId !== myId).forEach(s => {
     if(s.lat == null || s.lng == null) return;
     const marker = L.marker([s.lat, s.lng]).addTo(mapMarkersLayer);
-    marker.bindPopup('<b>' + s.title + '</b><br>' + s.authorName + ' · ' + s.hours + 'cr');
+    marker.bindPopup('<b>' + esc(s.title) + '</b><br>' + esc(s.authorName) + ' · ' + s.hours + 'cr');
     marker.on('click', () => openDetail(s.id));
   });
 
