@@ -202,7 +202,7 @@
       <div id="category-filters" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:4px;"></div>
       <p class="section-label">Près de chez toi</p>
       <div class="list" id="home-list"></div>
-      <button class="btn" onclick="showScreen('propose')">+ Proposer un service</button>
+      <button class="btn" onclick="resetProposeForm(); showScreen('propose')">+ Proposer un service</button>
       <button class="btn secondary" onclick="shareApp()">Inviter des voisins</button>
     </section>
 
@@ -236,7 +236,7 @@
     <!-- PROPOSER -->
     <section class="screen" id="propose">
       <div class="backbar" onclick="showScreen('home')"><i class="ti ti-arrow-left"></i> Retour</div>
-      <p class="section-label" style="font-size:16px;">Proposer un service</p>
+      <p class="section-label" style="font-size:16px;" id="propose-title">Proposer un service</p>
       <label>Titre</label>
       <input type="text" placeholder="Ex. Cours de guitare débutant" id="p-title">
       <label>Description</label>
@@ -256,9 +256,10 @@
       <label>Durée estimée (en crédits)</label>
       <input type="number" min="0.5" step="0.5" placeholder="Ex. 1" id="p-hours">
       <label>Photo (optionnel)</label>
+      <p id="p-photo-current" style="font-size:12.5px; color:var(--text-muted); margin:-4px 0 6px; display:none;">Une photo est déjà en place — choisis-en une nouvelle pour la remplacer, sinon laisse tel quel.</p>
       <input type="file" accept="image/*" id="p-photo" style="margin-bottom:10px;">
-      <button class="btn" onclick="publishService()">Publier</button>
-      <button class="btn secondary" onclick="showScreen('home')">Annuler</button>
+      <button class="btn" id="propose-submit-btn" onclick="publishService()">Publier</button>
+      <button class="btn secondary" onclick="cancelProposeForm()">Annuler</button>
     </section>
 
     <!-- PROFIL -->
@@ -974,9 +975,10 @@ async function fetchExchanges(){
             <p class="item-sub">${date} · ${esc(r.requester_name)} demande ${r.hours}cr</p>
           </div>
         </div>
-        <div style="display:flex; gap:8px; margin-top:10px;">
+        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
           <button class="btn" style="margin-top:0;" onclick="respondExchange('${r.id}', 'accepted')">Accepter</button>
           <button class="btn secondary" style="margin-top:0;" onclick="respondExchange('${r.id}', 'refused')">Refuser</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.requester_name)}, '${r.requester_id}')">Discuter</button>
         </div>
       </div>`;
     }, 'Aucune demande en attente.', 'dd-received-g');
@@ -995,7 +997,10 @@ async function fetchExchanges(){
           </div>
         </div>
         ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', ${jsArg(r.provider_name)})">Laisser un avis</button>` : ''}
-        ${r.status === 'pending' ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>` : ''}
+        ${r.status === 'pending' ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')">Discuter</button>
+          <button class="btn secondary" style="margin-top:0; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>
+        </div>` : ''}
         ${r.status !== 'pending' ? `<input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">` : ''}
       </div>
     `;}, 'Aucune demande envoyée.', 'dd-sent-g');
@@ -1087,6 +1092,40 @@ async function resizeImage(file, maxSize){
   });
 }
 
+let editingServiceId = null;
+
+function openEditService(id){
+  const s = currentServices.find(x => x.id === id && x.authorId === myId);
+  if(!s) return;
+  editingServiceId = id;
+  document.getElementById('p-title').value = s.title;
+  document.getElementById('p-desc').value = s.desc || '';
+  document.getElementById('p-category').value = s.category || 'autre';
+  document.getElementById('p-hours').value = s.hours;
+  document.getElementById('p-photo').value = '';
+  document.getElementById('p-photo-current').style.display = s.photoUrl ? 'block' : 'none';
+  document.getElementById('propose-title').textContent = "Modifier l'annonce";
+  document.getElementById('propose-submit-btn').textContent = 'Enregistrer les modifications';
+  showScreen('propose');
+}
+
+function resetProposeForm(){
+  editingServiceId = null;
+  document.getElementById('p-title').value = '';
+  document.getElementById('p-desc').value = '';
+  document.getElementById('p-hours').value = '';
+  document.getElementById('p-photo').value = '';
+  document.getElementById('p-photo-current').style.display = 'none';
+  document.getElementById('p-category').value = 'autre';
+  document.getElementById('propose-title').textContent = 'Proposer un service';
+  document.getElementById('propose-submit-btn').textContent = 'Publier';
+}
+
+function cancelProposeForm(){
+  resetProposeForm();
+  showScreen('home');
+}
+
 async function publishService(){
   if(!myId){ log('Connecte-toi avant de publier un service.'); showScreen('login'); return; }
   const title = document.getElementById('p-title').value.trim();
@@ -1097,7 +1136,7 @@ async function publishService(){
   if(!title){ log('Ajoute un titre pour continuer.'); return; }
   if(!hours || hours <= 0){ log('Indique une durée en heures valide.'); return; }
 
-  let photoUrl = null;
+  let photoUrl = editingServiceId ? undefined : null; // undefined = ne pas toucher au champ en édition si pas de nouvelle photo
   if(photoFile){
     log('Envoi de la photo...');
     try{
@@ -1113,24 +1152,27 @@ async function publishService(){
   }
 
   try{
-    const { error } = await sb.from('services').insert({
-      title, description: desc || '', hours, category,
-      icon: 'ti-hand-stop', photo_url: photoUrl,
-      author_id: myId, author_name: myName,
-      lat: myLat, lng: myLng
-    });
-    if(error){
-      log("Erreur Supabase (service) : " + error.message);
-      return;
+    if(editingServiceId){
+      const payload = { title, description: desc || '', hours, category };
+      if(photoUrl !== undefined) payload.photo_url = photoUrl;
+      const { error } = await sb.from('services').update(payload).eq('id', editingServiceId).eq('author_id', myId);
+      if(error){ log("Erreur Supabase (modification) : " + error.message); return; }
+      log('Annonce modifiée ✓');
+    } else {
+      const { error } = await sb.from('services').insert({
+        title, description: desc || '', hours, category,
+        icon: 'ti-hand-stop', photo_url: photoUrl,
+        author_id: myId, author_name: myName,
+        lat: myLat, lng: myLng
+      });
+      if(error){ log("Erreur Supabase (service) : " + error.message); return; }
     }
   }catch(e){
     log("Erreur réseau (service) : " + e.message);
     return;
   }
 
-  document.getElementById('p-title').value = '';
-  document.getElementById('p-desc').value = '';
-  document.getElementById('p-hours').value = '';
+  resetProposeForm();
   await fetchServices();
   renderProfile();
   showScreen('home');
@@ -1153,7 +1195,10 @@ function renderProfile(){
           <p class="item-sub">${s.hours}cr proposé</p>
         </div>
       </div>
-      <button class="btn secondary" style="margin-top:8px; color:#c23b3b; padding:8px;" onclick="deleteMyService('${s.id}')">Retirer ce service</button>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn secondary" style="margin-top:0; padding:8px;" onclick="openEditService('${s.id}')">Modifier</button>
+        <button class="btn secondary" style="margin-top:0; color:#c23b3b; padding:8px;" onclick="deleteMyService('${s.id}')">Retirer</button>
+      </div>
     </div>
   `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Tu n'as encore rien publié.</p>";
 }
