@@ -231,6 +231,7 @@
       </div>
       <button class="btn" onclick="requestExchange()">Demander cet échange</button>
       <button class="btn secondary" style="color:#c23b3b;" onclick="reportService()">Signaler ce service</button>
+      <button class="btn secondary" style="color:#c23b3b;" onclick="blockUserFromDetail()">Bloquer cette personne</button>
     </section>
 
     <!-- PROPOSER -->
@@ -285,6 +286,7 @@
       <p id="location-status" style="font-size:12.5px;color:var(--text-secondary);margin-top:14px;">Position : non configurée</p>
       <button class="btn secondary" onclick="updateLocation()">Mettre à jour ma position</button>
       <button class="btn secondary" onclick="showScreen('communities')">Mes communautés</button>
+      <button class="btn secondary" onclick="showBlockedUsers()">Personnes bloquées</button>
       <button class="btn secondary" onclick="shareApp()">Partager Troctan</button>
       <button class="btn secondary" onclick="showTutorial()">Revoir le tutoriel</button>
       <button class="btn secondary" onclick="exportMyData()">Télécharger mes données</button>
@@ -351,6 +353,28 @@
       <button class="btn secondary" onclick="createCommunity()">Créer</button>
     </section>
 
+    <!-- FIL DE COMMUNAUTE -->
+    <section class="screen" id="community-feed">
+      <div class="backbar" onclick="showScreen('communities')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <p class="section-label" id="feed-title" style="font-size:18px;">Communauté</p>
+
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:14px;">
+        <textarea id="post-caption" rows="2" placeholder="Écris une légende..." style="margin-bottom:8px;"></textarea>
+        <div id="post-link-row" style="display:none; font-size:12.5px; color:var(--accent-text); background:var(--accent-bg); border-radius:8px; padding:6px 10px; margin-bottom:8px;"></div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <label for="post-photo" style="padding:8px 12px; border:1px solid var(--border-strong); border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">📷 Photo</label>
+          <input type="file" id="post-photo" accept="image/*" style="display:none;" onchange="previewPostPhoto(this)">
+          <select id="post-link-service" onchange="onPostLinkChange()" style="flex:1; min-width:140px; padding:8px 10px; border:1px solid var(--border-strong); border-radius:8px; background:var(--card); color:var(--text); font-size:12.5px;">
+            <option value="">Lier une de mes annonces (optionnel)</option>
+          </select>
+          <button class="btn" style="width:auto; margin-top:0; padding:8px 16px;" onclick="publishCommunityPost()">Publier</button>
+        </div>
+        <img id="post-photo-preview" style="display:none; width:100%; max-height:160px; object-fit:cover; border-radius:8px; margin-top:8px;">
+      </div>
+
+      <div id="community-posts-feed"></div>
+    </section>
+
     <!-- CONFIDENTIALITE -->
     <section class="screen" id="legal">
       <div class="backbar" onclick="showScreen('profile')"><i class="ti ti-arrow-left"></i> Retour</div>
@@ -389,6 +413,7 @@
       <p class="section-label" id="chat-title">Discussion</p>
       <div id="chat-review" style="display:none; background:var(--success-bg); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; color:var(--success-text); line-height:1.6;"></div>
       <div id="chat-contact" style="display:none; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; color:var(--text-secondary); line-height:1.6;"></div>
+      <button class="btn secondary" id="chat-block-btn" style="color:#c23b3b; font-size:12.5px; padding:8px;" onclick="blockUserFromChat()">Bloquer cette personne</button>
       <div id="chat-messages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
       <div style="display:flex; gap:8px;">
         <input type="text" id="chat-input" placeholder="Écris un message..." style="margin-bottom:0;">
@@ -517,6 +542,15 @@ function renderGroupedByCategory(services, sectionKey){
 }
 
 let myCommunityIds = new Set();
+let myBlockedIds = new Set();
+
+async function fetchBlockedIds(){
+  if(!myId) return;
+  try{
+    const { data } = await sb.from('blocked_users').select('blocked_id').eq('blocker_id', myId);
+    myBlockedIds = new Set((data || []).map(b => b.blocked_id));
+  }catch(e){ /* silencieux */ }
+}
 
 async function fetchCommunities(){
   if(!myId) return;
@@ -531,13 +565,13 @@ async function fetchCommunities(){
     const mine = (all || []).filter(c => myCommunityIds.has(c.id));
 
     mineList.innerHTML = mine.length ? mine.map(c => `
-      <div class="item-card" style="cursor:default;">
+      <div class="item-card" onclick="openCommunityFeed('${c.id}', ${jsArg(c.name)})">
         <i class="ti ti-users"></i>
         <div style="flex:1;">
           <p class="item-title">${esc(c.name)}</p>
           <p class="item-sub">${esc(c.description)}</p>
         </div>
-        <button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px;" onclick="leaveCommunity('${c.id}')">Quitter</button>
+        <button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px;" onclick="event.stopPropagation(); leaveCommunity('${c.id}')">Quitter</button>
       </div>
     `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Tu n'as encore rejoint aucune communauté.</p>";
 
@@ -618,6 +652,183 @@ function setupDropdownPersistence(){
   });
 }
 
+let currentFeedCommunityId = null;
+let pendingPostPhotoBlob = null;
+let pendingPostLinkedService = null;
+
+async function openCommunityFeed(communityId, name){
+  currentFeedCommunityId = communityId;
+  document.getElementById('feed-title').textContent = esc(name);
+  document.getElementById('post-caption').value = '';
+  document.getElementById('post-photo').value = '';
+  document.getElementById('post-photo-preview').style.display = 'none';
+  document.getElementById('post-link-row').style.display = 'none';
+  pendingPostPhotoBlob = null;
+  pendingPostLinkedService = null;
+  showScreen('community-feed');
+
+  const sel = document.getElementById('post-link-service');
+  const mine = currentServices.filter(s => s.authorId === myId);
+  sel.innerHTML = '<option value="">Lier une de mes annonces (optionnel)</option>' +
+    mine.map(s => `<option value="${s.id}" data-title="${esc(s.title)}">${esc(s.title)}</option>`).join('');
+
+  fetchCommunityFeed();
+}
+
+function onPostLinkChange(){
+  const sel = document.getElementById('post-link-service');
+  const opt = sel.options[sel.selectedIndex];
+  const row = document.getElementById('post-link-row');
+  if(sel.value){
+    pendingPostLinkedService = { id: sel.value, title: opt.dataset.title };
+    row.textContent = '🔗 Lié à : ' + opt.dataset.title;
+    row.style.display = 'block';
+  } else {
+    pendingPostLinkedService = null;
+    row.style.display = 'none';
+  }
+}
+
+async function previewPostPhoto(input){
+  const file = input.files[0];
+  if(!file) return;
+  pendingPostPhotoBlob = await resizeImage(file, 1080);
+  const img = document.getElementById('post-photo-preview');
+  img.src = URL.createObjectURL(pendingPostPhotoBlob);
+  img.style.display = 'block';
+}
+
+async function publishCommunityPost(){
+  if(!currentFeedCommunityId) return;
+  if(!pendingPostPhotoBlob){ log('Ajoute une photo pour publier.'); return; }
+  const caption = document.getElementById('post-caption').value.trim();
+  log('Publication en cours...');
+  try{
+    const path = myId + '/' + Date.now() + '.jpg';
+    const { error: upErr } = await sb.storage.from('community-photos').upload(path, pendingPostPhotoBlob, {contentType:'image/jpeg'});
+    if(upErr){ log('Erreur photo : ' + upErr.message); return; }
+    const photoUrl = sb.storage.from('community-photos').getPublicUrl(path).data.publicUrl;
+
+    const { error } = await sb.from('community_posts').insert({
+      community_id: currentFeedCommunityId,
+      author_id: myId, author_name: myName,
+      photo_url: photoUrl, caption: caption || null,
+      linked_service_id: pendingPostLinkedService ? pendingPostLinkedService.id : null,
+      linked_service_title: pendingPostLinkedService ? pendingPostLinkedService.title : null
+    });
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+
+  document.getElementById('post-caption').value = '';
+  document.getElementById('post-photo').value = '';
+  document.getElementById('post-photo-preview').style.display = 'none';
+  document.getElementById('post-link-row').style.display = 'none';
+  document.getElementById('post-link-service').value = '';
+  pendingPostPhotoBlob = null; pendingPostLinkedService = null;
+  log('Publié ✓');
+  fetchCommunityFeed();
+}
+
+async function fetchCommunityFeed(){
+  if(!currentFeedCommunityId) return;
+  const box = document.getElementById('community-posts-feed');
+  try{
+    const { data: posts, error } = await sb.from('community_posts').select('*')
+      .eq('community_id', currentFeedCommunityId).order('created_at', {ascending:false}).limit(50);
+    if(error){ box.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">" + esc(error.message) + "</p>"; return; }
+    if(!posts || !posts.length){
+      box.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Aucune publication pour l'instant — sois le premier !</p>";
+      return;
+    }
+
+    const ids = posts.map(p => p.id);
+    const [{ data: likes }, { data: myLikes }, { data: comments }] = await Promise.all([
+      sb.from('community_likes').select('post_id'),
+      sb.from('community_likes').select('post_id').eq('user_id', myId),
+      sb.from('community_comments').select('*').in('post_id', ids).order('created_at', {ascending:true})
+    ]);
+    const likeCounts = {};
+    (likes || []).forEach(l => { likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1; });
+    const myLikedSet = new Set((myLikes || []).map(l => l.post_id));
+    const commentsByPost = {};
+    (comments || []).forEach(cm => { (commentsByPost[cm.post_id] = commentsByPost[cm.post_id] || []).push(cm); });
+
+    box.innerHTML = posts.map(p => {
+      const date = new Date(p.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
+      const liked = myLikedSet.has(p.id);
+      const count = likeCounts[p.id] || 0;
+      const postComments = commentsByPost[p.id] || [];
+      const previewComments = postComments.slice(-2);
+      return `
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:16px; overflow:hidden;">
+        <div style="display:flex; align-items:center; gap:8px; padding:10px 12px;">
+          <div class="avatar" style="width:30px; height:30px; font-size:12px;">${esc(initials(p.author_name))}</div>
+          <div style="flex:1;">
+            <p style="font-size:13px; font-weight:600; margin:0;">${esc(p.author_name)}</p>
+            <p style="font-size:11px; color:var(--text-muted); margin:0;">${date}</p>
+          </div>
+          ${p.author_id === myId ? `<button onclick="deleteCommunityPost('${p.id}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;" title="Supprimer">✕</button>` : ''}
+        </div>
+        <img src="${esc(p.photo_url)}" style="width:100%; max-height:420px; object-fit:cover; display:block;">
+        <div style="padding:10px 12px;">
+          <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
+            <button onclick="toggleCommunityLike('${p.id}', ${liked})" style="background:none; border:none; cursor:pointer; font-size:20px; color:${liked ? '#e0453c' : 'var(--text-muted)'};">${liked ? '❤️' : '🤍'}</button>
+            <span style="font-size:12.5px; color:var(--text-secondary);" id="like-count-${p.id}">${count} j'aime</span>
+          </div>
+          ${p.caption ? `<p style="font-size:13.5px; margin:0 0 6px;"><b>${esc(p.author_name)}</b> ${esc(p.caption)}</p>` : ''}
+          ${p.linked_service_id ? `<p style="font-size:12.5px; margin:0 0 8px;"><a href="#" onclick="event.preventDefault(); openDetail('${p.linked_service_id}');" style="color:var(--accent-text);">🔗 ${esc(p.linked_service_title)}</a></p>` : ''}
+          <div id="comments-${p.id}">
+            ${postComments.length > 2 ? `<p style="font-size:12px; color:var(--text-muted); margin:0 0 4px; cursor:pointer;" onclick="showAllComments('${p.id}')">Voir les ${postComments.length} commentaires</p>` : ''}
+            <div id="comments-list-${p.id}">
+              ${previewComments.map(cm => `<p style="font-size:13px; margin:2px 0;"><b>${esc(cm.author_name)}</b> ${esc(cm.content)}</p>`).join('')}
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <input type="text" placeholder="Ajouter un commentaire..." id="comment-input-${p.id}" style="flex:1; margin-bottom:0; padding:8px 10px; font-size:13px;" onkeydown="if(event.key==='Enter') addCommunityComment('${p.id}')">
+            <button onclick="addCommunityComment('${p.id}')" style="background:none; border:none; color:var(--accent-text); font-weight:600; font-size:13px; cursor:pointer;">Publier</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    window._commentsByPost = commentsByPost;
+  }catch(e){ log('Erreur : ' + e.message); }
+}
+
+function showAllComments(postId){
+  const all = (window._commentsByPost && window._commentsByPost[postId]) || [];
+  document.getElementById('comments-list-' + postId).innerHTML =
+    all.map(cm => `<p style="font-size:13px; margin:2px 0;"><b>${esc(cm.author_name)}</b> ${esc(cm.content)}</p>`).join('');
+  const box = document.getElementById('comments-' + postId);
+  box.querySelector('p').style.display = 'none';
+}
+
+async function toggleCommunityLike(postId, currentlyLiked){
+  try{
+    if(currentlyLiked) await sb.from('community_likes').delete().eq('post_id', postId).eq('user_id', myId);
+    else await sb.from('community_likes').insert({post_id: postId, user_id: myId});
+  }catch(e){ log('Erreur : ' + e.message); return; }
+  fetchCommunityFeed();
+}
+
+async function addCommunityComment(postId){
+  const input = document.getElementById('comment-input-' + postId);
+  const content = input.value.trim();
+  if(!content) return;
+  try{
+    const { error } = await sb.from('community_comments').insert({post_id: postId, author_id: myId, author_name: myName, content});
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+  fetchCommunityFeed();
+}
+
+async function deleteCommunityPost(postId){
+  if(!confirm('Supprimer cette publication ?')) return;
+  try{ await sb.from('community_posts').delete().eq('id', postId); }
+  catch(e){ log('Erreur : ' + e.message); return; }
+  fetchCommunityFeed();
+}
+
 function refreshForScreen(id){
   if(!myId) return;
   if(id === 'home') fetchServices();
@@ -625,6 +836,7 @@ function refreshForScreen(id){
   else if(id === 'requests'){ fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges(); }
   else if(id === 'profile') renderProfile();
   else if(id === 'communities') fetchCommunities();
+  else if(id === 'community-feed') fetchCommunityFeed();
 }
 
 function showScreen(id){
@@ -698,7 +910,7 @@ function finishNameSetup(){
 async function logout(){
   unsubscribeRealtime();
   try{ await sb.auth.signOut(); }catch(e){ /* on nettoie quand même localement */ }
-  myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null; myAvatarUrl = null;
+  myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null; myAvatarUrl = null; myBlockedIds = new Set();
   currentServices = [];
   showScreen('login');
 }
@@ -769,7 +981,7 @@ function renderHome(){
   const searchInput = document.getElementById('home-search');
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-  let others = currentServices.filter(s => s.authorId !== myId);
+  let others = currentServices.filter(s => s.authorId !== myId && !myBlockedIds.has(s.authorId));
   if(activeCategory) others = others.filter(s => (s.category || 'autre') === activeCategory);
   if(query) others = others.filter(s => (s.title + ' ' + (s.desc || '')).toLowerCase().includes(query));
 
@@ -919,6 +1131,7 @@ async function fetchCompletedExchanges(){
 
 function openChat(exchangeId, otherName, otherId){
   currentChatExchangeId = exchangeId;
+  currentChatOtherId = otherId; currentChatOtherName = otherName;
   document.getElementById('chat-title').textContent = 'Discussion avec ' + otherName;
   localStorage.setItem('tt_chat_seen_' + exchangeId, new Date().toISOString());
   showScreen('chat');
@@ -1387,6 +1600,7 @@ async function handleSession(session){
       document.getElementById('balance-value').textContent = myBalanceCache + 'cr';
       showScreen('home');
       if(!localStorage.getItem('tt_tutorial_seen')) showTutorial();
+      await fetchBlockedIds();
       await fetchServices();
       renderProfile();
       checkNotifications();
@@ -1757,6 +1971,60 @@ async function bulkDeleteSelected(){
   fetchExchanges();
 }
 
+async function blockUser(userId, userName){
+  if(!confirm("Bloquer " + userName + " ? Cette personne ne pourra plus t'envoyer de demande ni de message, et ses annonces ne t'apparaîtront plus.")) return;
+  try{
+    const { error } = await sb.from('blocked_users').insert({blocker_id: myId, blocked_id: userId});
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+  myBlockedIds.add(userId);
+  log(userName + ' a été bloqué(e).');
+  fetchServices();
+  showScreen('home');
+}
+
+function blockUserFromDetail(){
+  if(!currentDetail) return;
+  if(currentDetail.authorId === myId){ log('Tu ne peux pas te bloquer toi-même.'); return; }
+  blockUser(currentDetail.authorId, currentDetail.authorName);
+}
+
+let currentChatOtherId = null, currentChatOtherName = null;
+function blockUserFromChat(){
+  if(!currentChatOtherId) return;
+  blockUser(currentChatOtherId, currentChatOtherName || 'cette personne');
+}
+
+async function showBlockedUsers(){
+  showScreen('blocked-users');
+  const list = document.getElementById('blocked-users-list');
+  try{
+    const { data } = await sb.from('blocked_users').select('blocked_id, created_at').eq('blocker_id', myId).order('created_at', {ascending:false});
+    if(!data || !data.length){
+      list.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Tu n'as bloqué personne.</p>";
+      return;
+    }
+    const ids = data.map(b => b.blocked_id);
+    const { data: profiles } = await sb.from('profiles').select('id, name').in('id', ids);
+    const nameById = {};
+    (profiles || []).forEach(p => { nameById[p.id] = p.name; });
+    list.innerHTML = data.map(b => `
+      <div class="item-card" style="cursor:default;">
+        <i class="ti ti-user-off"></i>
+        <div style="flex:1;"><p class="item-title">${esc(nameById[b.blocked_id] || 'Membre supprimé')}</p></div>
+        <button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px;" onclick="unblockUser('${b.blocked_id}')">Débloquer</button>
+      </div>
+    `).join('');
+  }catch(e){ log('Erreur : ' + e.message); }
+}
+
+async function unblockUser(userId){
+  try{ await sb.from('blocked_users').delete().eq('blocker_id', myId).eq('blocked_id', userId); }
+  catch(e){ log('Erreur : ' + e.message); return; }
+  myBlockedIds.delete(userId);
+  showBlockedUsers();
+}
+
 async function boot(){
   if(!sb) return;
   sb.auth.onAuthStateChange((event, session) => {
@@ -1803,7 +2071,7 @@ async function renderMap(){
   setTimeout(() => mapInstance.invalidateSize(), 100);
 
   mapMarkersLayer.clearLayers();
-  currentServices.filter(s => s.authorId !== myId).forEach(s => {
+  currentServices.filter(s => s.authorId !== myId && !myBlockedIds.has(s.authorId)).forEach(s => {
     if(s.lat == null || s.lng == null) return;
     const marker = L.marker([s.lat, s.lng]).addTo(mapMarkersLayer);
     marker.bindPopup('<b>' + esc(s.title) + '</b><br>' + esc(s.authorName) + ' · ' + s.hours + 'cr');
