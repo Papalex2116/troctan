@@ -1832,9 +1832,9 @@ const TAB_ORDER = ['home', 'map', 'requests', 'propose', 'profile'];
 
   main.addEventListener('touchstart', (e) => {
     const t = e.target;
-    if(t.closest('#category-filters') || t.closest('#leaflet-map') || t.closest('.dropdown-section')) { tracking = false; return; }
+    if(t.closest('#category-filters') || t.closest('#leaflet-map')) { tracking = false; log('Swipe bloqué : zone spéciale'); return; }
     const activeScreen = document.querySelector('.screen.active');
-    if(!activeScreen || !TAB_ORDER.includes(activeScreen.id)) { tracking = false; return; }
+    if(!activeScreen || !TAB_ORDER.includes(activeScreen.id)) { tracking = false; log('Swipe bloqué : écran = ' + (activeScreen ? activeScreen.id : 'aucun')); return; }
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     tracking = true;
@@ -1845,6 +1845,7 @@ const TAB_ORDER = ['home', 'map', 'requests', 'propose', 'profile'];
     tracking = false;
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
+    log('Swipe dx=' + Math.round(dx) + ' dy=' + Math.round(dy));
     if(Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
 
     const activeScreen = document.querySelector('.screen.active');
