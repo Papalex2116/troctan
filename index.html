@@ -1027,7 +1027,7 @@ async function fetchExchanges(){
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
       if(r.status === 'cancelled'){
         return `
-        <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+        <div class="item-card" onclick="openChat('${r.id}', ${jsArg(r.requester_name)}, '${r.requester_id}')" style="flex-direction:column; align-items:stretch;">
           <div style="display:flex; gap:10px; align-items:flex-start;">
             <i class="ti ti-exchange"></i>
             <div style="flex:1;">
@@ -1035,13 +1035,12 @@ async function fetchExchanges(){
               <p class="item-sub">${date} · ${esc(r.requester_name)} · Annulée par le demandeur</p>
             </div>
           </div>
-          ${!reviewedIds.has(r.id) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.requester_id}', ${jsArg(r.requester_name)})">Laisser un avis</button>` : ''}
-          <input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">
+          ${!reviewedIds.has(r.id) ? `<button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); leaveReview('${r.id}', '${r.requester_id}', ${jsArg(r.requester_name)})">Laisser un avis</button>` : ''}
+          <input type="checkbox" class="del-check" onclick="event.stopPropagation()" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">
         </div>`;
       }
       return `
-      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
-        <div style="display:flex; gap:10px; align-items:flex-start;">
+      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">        <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
             <p class="item-title">${esc(r.service_title)}</p>
@@ -1061,7 +1060,7 @@ async function fetchExchanges(){
     sentList.innerHTML = renderGroupedByStatus(sent, ['pending','accepted','refused','cancelled'], (r) => {
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
       return `
-      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+      <div class="item-card" ${r.status !== 'pending' ? `onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')"` : 'style="cursor:default;"'} style="flex-direction:column; align-items:stretch;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
@@ -1069,12 +1068,12 @@ async function fetchExchanges(){
             <p class="item-sub">${date} · Chez ${esc(r.provider_name)}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
           </div>
         </div>
-        ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', ${jsArg(r.provider_name)})">Laisser un avis</button>` : ''}
+        ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); leaveReview('${r.id}', '${r.provider_id}', ${jsArg(r.provider_name)})">Laisser un avis</button>` : ''}
         ${r.status === 'pending' ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
           <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')">Discuter${unreadPending.has(r.id) ? ' 🔴' : ''}</button>
           <button class="btn secondary" style="margin-top:0; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>
         </div>` : ''}
-        ${r.status !== 'pending' ? `<input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">` : ''}
+        ${r.status !== 'pending' ? `<input type="checkbox" class="del-check" onclick="event.stopPropagation()" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">` : ''}
       </div>
     `;}, 'Aucune demande envoyée.', 'dd-sent-g');
 
