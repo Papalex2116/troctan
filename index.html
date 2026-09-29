@@ -369,6 +369,10 @@
         <summary class="section-label">Échanges en cours</summary>
         <div class="list" id="requests-active" style="margin-top:10px;"></div>
       </details>
+      <details class="dropdown-section" id="dd-completed" style="margin-top:1.2rem;">
+        <summary class="section-label">Échanges terminés</summary>
+        <div class="list" id="requests-completed" style="margin-top:10px;"></div>
+      </details>
       <details class="dropdown-section" id="dd-received" open style="margin-top:1.2rem;">
         <summary class="section-label">Demandes reçues</summary>
         <div class="list" id="requests-received" style="margin-top:10px;"></div>
@@ -383,6 +387,7 @@
     <section class="screen" id="chat">
       <div class="backbar" onclick="showScreen('requests')"><i class="ti ti-arrow-left"></i> Retour</div>
       <p class="section-label" id="chat-title">Discussion</p>
+      <div id="chat-review" style="display:none; background:var(--success-bg); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; color:var(--success-text); line-height:1.6;"></div>
       <div id="chat-contact" style="display:none; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; color:var(--text-secondary); line-height:1.6;"></div>
       <div id="chat-messages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
       <div style="display:flex; gap:8px;">
@@ -617,7 +622,7 @@ function refreshForScreen(id){
   if(!myId) return;
   if(id === 'home') fetchServices();
   else if(id === 'map') fetchServices().then(renderMap);
-  else if(id === 'requests'){ fetchExchanges(); fetchActiveExchanges(); }
+  else if(id === 'requests'){ fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges(); }
   else if(id === 'profile') renderProfile();
   else if(id === 'communities') fetchCommunities();
 }
@@ -865,9 +870,50 @@ async function fetchActiveExchanges(){
             <p class="item-sub">Avec ${esc(otherName)}${hasUnread ? ' · nouveau message' : ''}</p>
           </div>
         </div>
-        <button class="btn secondary" style="margin-top:8px;" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')">Discuter${hasUnread ? ' (1)' : ''}</button>
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')">Discuter${hasUnread ? ' (1)' : ''}</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="closeExchange('${r.id}')">Clôturer l'échange</button>
+        </div>
       </div>`;
     }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange en cours.</p>";
+  }catch(e){ log('Erreur : ' + e.message); }
+}
+
+async function closeExchange(exchangeId){
+  if(!confirm("Marquer cet échange comme terminé ? Il passera dans « Échanges terminés ».")) return;
+  try{
+    const { error } = await sb.from('exchanges').update({status: 'completed'}).eq('id', exchangeId);
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur réseau : ' + e.message); return; }
+  log('Échange clôturé ✓');
+  fetchActiveExchanges();
+  fetchCompletedExchanges();
+  checkNotifications();
+}
+
+async function fetchCompletedExchanges(){
+  const list = document.getElementById('requests-completed');
+  if(!list || !myId) return;
+  try{
+    const { data } = await sb.from('exchanges').select('*')
+      .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
+      .eq('status', 'completed')
+      .order('created_at', {ascending:false});
+
+    list.innerHTML = (data && data.length) ? data.map(r => {
+      const iAmRequester = r.requester_id === myId;
+      const otherName = iAmRequester ? r.provider_name : r.requester_name;
+      const otherId = iAmRequester ? r.provider_id : r.requester_id;
+      const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
+      return `
+      <div class="item-card" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')">
+        <i class="ti ti-circle-check" style="color:var(--success-text);"></i>
+        <div>
+          <p class="item-title">${esc(r.service_title)}</p>
+          <p class="item-sub">${date} · Avec ${esc(otherName)}</p>
+        </div>
+      </div>`;
+    }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
   }catch(e){ log('Erreur : ' + e.message); }
 }
 
@@ -878,7 +924,24 @@ function openChat(exchangeId, otherName, otherId){
   showScreen('chat');
   fetchChatMessages();
   loadPartnerContact(otherId);
+  loadExchangeReview(exchangeId);
   checkNotifications();
+}
+
+async function loadExchangeReview(exchangeId){
+  const box = document.getElementById('chat-review');
+  box.style.display = 'none';
+  try{
+    const { data } = await sb.from('reviews').select('*').eq('exchange_id', exchangeId);
+    if(!data || !data.length) return;
+    box.innerHTML = data.map(r => {
+      const mine = r.reviewer_id === myId;
+      const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+      const label = mine ? 'Ton avis' : 'Avis reçu';
+      return '<div style="margin-bottom:4px;"><b>' + label + '</b> · ' + stars + (r.comment ? '<br>' + esc(r.comment) : '') + '</div>';
+    }).join('');
+    box.style.display = 'block';
+  }catch(e){ /* silencieux */ }
 }
 
 async function loadPartnerContact(otherId){
@@ -949,6 +1012,16 @@ async function fetchExchanges(){
       reviewedIds = new Set((myReviews || []).map(r => r.exchange_id));
     }
 
+    const pendingIds = [...(received || []).filter(r => r.status === 'pending').map(r => r.id), ...(sent || []).filter(r => r.status === 'pending').map(r => r.id)];
+    let unreadPending = new Set();
+    if(pendingIds.length){
+      const { data: pmsgs } = await sb.from('messages').select('exchange_id, created_at').in('exchange_id', pendingIds).neq('sender_id', myId);
+      (pmsgs || []).forEach(m => {
+        const lastSeen = localStorage.getItem('tt_chat_seen_' + m.exchange_id) || '1970-01-01';
+        if(m.created_at > lastSeen) unreadPending.add(m.exchange_id);
+      });
+    }
+
     const recList = document.getElementById('requests-received');
     recList.innerHTML = renderGroupedByStatus(received, ['pending','cancelled'], (r) => {
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
@@ -978,7 +1051,7 @@ async function fetchExchanges(){
         <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
           <button class="btn" style="margin-top:0;" onclick="respondExchange('${r.id}', 'accepted')">Accepter</button>
           <button class="btn secondary" style="margin-top:0;" onclick="respondExchange('${r.id}', 'refused')">Refuser</button>
-          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.requester_name)}, '${r.requester_id}')">Discuter</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.requester_name)}, '${r.requester_id}')">Discuter${unreadPending.has(r.id) ? ' 🔴' : ''}</button>
         </div>
       </div>`;
     }, 'Aucune demande en attente.', 'dd-received-g');
@@ -998,7 +1071,7 @@ async function fetchExchanges(){
         </div>
         ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="leaveReview('${r.id}', '${r.provider_id}', ${jsArg(r.provider_name)})">Laisser un avis</button>` : ''}
         ${r.status === 'pending' ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')">Discuter</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')">Discuter${unreadPending.has(r.id) ? ' 🔴' : ''}</button>
           <button class="btn secondary" style="margin-top:0; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>
         </div>` : ''}
         ${r.status !== 'pending' ? `<input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">` : ''}
@@ -1256,7 +1329,7 @@ async function checkNotifications(){
 
   let unreadMsgCount = 0;
   try{
-    const { data: active } = await sb.from('exchanges').select('id').or(`requester_id.eq.${myId},provider_id.eq.${myId}`).eq('status', 'accepted');
+    const { data: active } = await sb.from('exchanges').select('id').or(`requester_id.eq.${myId},provider_id.eq.${myId}`).in('status', ['pending','accepted','completed']);
     const ids = (active || []).map(a => a.id);
     if(ids.length){
       const { data: msgs } = await sb.from('messages').select('exchange_id, created_at').in('exchange_id', ids).neq('sender_id', myId);
@@ -1338,7 +1411,7 @@ function subscribeRealtime(){
     .on('postgres_changes', {event:'*', schema:'public', table:'exchanges'}, () => {
       checkNotifications();
       const requestsScreen = document.getElementById('requests');
-      if(requestsScreen && requestsScreen.classList.contains('active')){ fetchExchanges(); fetchActiveExchanges(); }
+      if(requestsScreen && requestsScreen.classList.contains('active')){ fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges(); }
     })
     .on('postgres_changes', {event:'INSERT', schema:'public', table:'messages'}, (payload) => {
       if(payload.new.exchange_id === currentChatExchangeId){
@@ -1629,18 +1702,19 @@ async function fetchHistory(){
     list.innerHTML = renderGroupedByStatus(data, ['accepted','refused','cancelled'], (r) => {
       const iAmRequester = r.requester_id === myId;
       const otherName = iAmRequester ? r.provider_name : r.requester_name;
+      const otherId = iAmRequester ? r.provider_id : r.requester_id;
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
       const line = r.status === 'accepted'
         ? (iAmRequester ? `-${r.hours}cr · ${esc(otherName)}` : `+${r.hours}cr · ${esc(otherName)}`)
         : `${esc(otherName)}`;
       return `
-      <div class="item-card" style="cursor:default;">
+      <div class="item-card" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')">
         <i class="ti ti-history" style="color:var(--text-muted);"></i>
         <div style="flex:1;">
           <p class="item-title">${esc(r.service_title)}</p>
           <p class="item-sub">${date} · ${line}</p>
         </div>
-        <input type="checkbox" class="del-check" onchange="toggleSelect('${r.id}', this)" style="width:18px; height:18px;" title="Sélectionner pour supprimer">
+        <input type="checkbox" class="del-check" onclick="event.stopPropagation()" onchange="toggleSelect('${r.id}', this)" style="width:18px; height:18px;" title="Sélectionner pour supprimer">
       </div>`;
     }, "Aucun échange terminé pour l'instant.", 'dd-history-g');
   }catch(e){ /* silencieux */ }
