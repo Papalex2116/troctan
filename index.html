@@ -202,7 +202,11 @@
       <div id="category-filters" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:4px;"></div>
       <p class="section-label">Près de chez toi</p>
       <div class="list" id="home-list"></div>
-      <button class="btn" onclick="resetProposeForm(); showScreen('propose')">+ Proposer un service</button>
+
+      <p class="section-label" style="margin-top:1.2rem;">Carte</p>
+      <div id="leaflet-map" style="height:40vh; min-height:260px; border-radius:12px; overflow:hidden; border:1px solid var(--border); margin-bottom:14px;"></div>
+
+      <button class="btn secondary" onclick="showScreen('communities')">Mes communautés</button>
       <button class="btn secondary" onclick="shareApp()">Inviter des voisins</button>
     </section>
 
@@ -381,12 +385,6 @@
       <div style="font-size:13.5px; line-height:1.6; color:var(--text-secondary); white-space:pre-line;" id="legal-text"></div>
     </section>
 
-    <!-- CARTE -->
-    <section class="screen" id="map">
-      <p class="section-label">Services autour de toi</p>
-      <div id="leaflet-map" style="height:65vh; border-radius:12px; overflow:hidden; border:1px solid var(--border);"></div>
-    </section>
-
     <!-- DEMANDES -->
     <section class="screen" id="requests">
       <details class="dropdown-section" id="dd-active" open>
@@ -427,7 +425,6 @@
     <button class="tab-btn" data-tab="requests" onclick="showScreen('requests');"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
     <button class="tab-btn" data-tab="propose" onclick="showScreen('propose')"><i class="ti ti-plus"></i>Proposer</button>
     <button class="tab-btn" data-tab="profile" onclick="showScreen('profile')"><i class="ti ti-user"></i>Profil</button>
-    <button class="tab-btn" data-tab="map" onclick="showScreen('map');"><i class="ti ti-map"></i>Carte</button>
   </nav>
 </div>
 
@@ -831,8 +828,7 @@ async function deleteCommunityPost(postId){
 
 function refreshForScreen(id){
   if(!myId) return;
-  if(id === 'home') fetchServices();
-  else if(id === 'map') fetchServices().then(renderMap);
+  if(id === 'home') fetchServices().then(renderMap);
   else if(id === 'requests'){ fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges(); }
   else if(id === 'profile') renderProfile();
   else if(id === 'communities') fetchCommunities();
@@ -1521,6 +1517,7 @@ function goHome(){
   fetchServices().then(() => {
     localStorage.setItem('tt_last_seen_service', new Date().toISOString());
     setBadge('badge-home', 0);
+    renderMap();
   });
 }
 
@@ -2091,7 +2088,7 @@ if('serviceWorker' in navigator){
 }
 
 setupDropdownPersistence();
-const TAB_ORDER = ['home', 'requests', 'propose', 'profile', 'map'];
+const TAB_ORDER = ['home', 'requests', 'propose', 'profile'];
 
 (function setupSwipe(){
   const main = document.querySelector('main');
