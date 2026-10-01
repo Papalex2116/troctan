@@ -126,7 +126,7 @@
   @keyframes softPulse{ 0%,100%{box-shadow:0 0 0 0 rgba(55,138,221,0.15);} 50%{box-shadow:0 0 0 6px rgba(55,138,221,0);} }
   .balance-card{ animation:softPulse 3s ease-in-out infinite; }
   .logo-badge{
-    width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#378add,#0c447c);
+    width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#5cb85c,#1e6b3a);
     display:flex;align-items:center;justify-content:center;font-size:16px;margin-right:8px;
   }
   header{gap:8px;}
@@ -136,10 +136,10 @@
 <div class="phone">
   <header>
     <div style="display:flex; align-items:center;">
-      <div class="logo-badge">⏳</div>
+      <div class="logo-badge">🤝</div>
       <div>
-        <p style="font-size:12.5px;color:var(--text-secondary);margin:0;">Bonjour <span id="hdr-name">...</span></p>
-        <p class="title" style="margin:2px 0 0;">Troctan</p>
+        <p class="title" style="margin:0;">Troctan</p>
+        <p style="font-size:12.5px;color:var(--text-secondary);margin:2px 0 0;">Bonjour <span id="hdr-name">...</span></p>
       </div>
     </div>
     <div class="avatar" id="hdr-avatar">··</div>
@@ -422,7 +422,7 @@
     <button class="tab-btn" data-tab="requests" onclick="showScreen('requests');"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
     <button class="tab-btn" data-tab="propose" onclick="showScreen('propose')"><i class="ti ti-plus"></i>Proposer</button>
     <button class="tab-btn" data-tab="profile" onclick="showScreen('profile')"><i class="ti ti-user"></i>Profil</button>
-    <button class="tab-btn" data-tab="communities" onclick="showScreen('communities');"><i class="ti ti-users"></i>Groupes</button>
+    <button class="tab-btn" data-tab="communities" onclick="showScreen('communities');"><i class="ti ti-users"></i>Groupes<span class="tab-badge" id="badge-communities"></span></button>
   </nav>
 </div>
 
@@ -549,6 +549,8 @@ async function fetchBlockedIds(){
 
 async function fetchCommunities(){
   if(!myId) return;
+  localStorage.setItem('tt_last_seen_community_post', new Date().toISOString());
+  setBadge('badge-communities', 0);
   try{
     const { data: myMemberships } = await sb.from('community_members').select('community_id').eq('user_id', myId);
     myCommunityIds = new Set((myMemberships || []).map(m => m.community_id));
@@ -1528,6 +1530,20 @@ function setBadge(id, count){
 
 async function checkNotifications(){
   if(!sb || !myId) return;
+
+  try{
+    const { data: mine } = await sb.from('community_members').select('community_id').eq('user_id', myId);
+    const communityIds = (mine || []).map(m => m.community_id);
+    if(communityIds.length){
+      const { data: posts } = await sb.from('community_posts').select('id, created_at').in('community_id', communityIds).order('created_at', {ascending:false}).limit(50);
+      const lastSeen = localStorage.getItem('tt_last_seen_community_post') || '1970-01-01';
+      const newCount = (posts || []).filter(p => p.created_at > lastSeen).length;
+      setBadge('badge-communities', newCount);
+    } else {
+      setBadge('badge-communities', 0);
+    }
+  }catch(e){ /* silencieux */ }
+
   let pendingCount = 0;
   try{
     const { count } = await sb.from('exchanges').select('*', {count:'exact', head:true}).eq('provider_id', myId).eq('status', 'pending');
@@ -1639,55 +1655,54 @@ const CONTACT_EMAIL = '';
 
 const LEGAL_TEXT = `Politique de confidentialité
 
-Dernière mise à jour : septembre 2026
+Dernière mise à jour : octobre 2026
 
 Troctan est un projet d'entraide locale basé sur l'échange de crédits-temps entre particuliers, édité à titre privé depuis la Suisse.${CONTACT_EMAIL ? '\n\nContact : ' + CONTACT_EMAIL : ''}
 
 1. Données que nous traitons
 - Compte : ton adresse email (uniquement pour te connecter, jamais visible des autres membres), ton prénom et, si tu le souhaites, une photo de profil (visible des autres membres).
-- Position : une position approximative, volontairement floutée (environ 100 m), jamais ton adresse exacte. Elle sert à afficher tes annonces sur la carte et à calculer des distances.
-- Contenu : tes annonces (titre, description, catégorie, photo facultative), tes demandes d'échange, les messages échangés avec ton partenaire, les avis donnés et reçus, les communautés que tu rejoins.
-- Coordonnées facultatives : numéro de téléphone et adresse postale. Elles sont stockées séparément du reste de ton profil et ne sont JAMAIS visibles publiquement. Seul un membre avec qui tu as un échange accepté peut les voir, et uniquement les champs que tu as toi-même rendus visibles. Tu peux modifier ces choix, ou effacer ces données, à tout moment depuis « Modifier mon profil ».
-- Données techniques : un identifiant de session est conservé dans ton navigateur pour te garder connecté. Nous n'utilisons ni publicité, ni outil de mesure d'audience, ni suivi par des tiers.
+- Position : une position approximative, volontairement floutée (environ 100 m), jamais ton adresse exacte.
+- Contenu : tes annonces (titre, description, catégorie, photo facultative), tes demandes d'échange, les messages échangés avec ton partenaire, les avis donnés et reçus, les communautés que tu rejoins et ce que tu y publies (photos, légendes, commentaires, likes).
+- Coordonnées facultatives : numéro de téléphone et adresse postale, stockées séparément et jamais visibles publiquement — seul un partenaire d'échange accepté peut voir les champs que tu as toi-même rendus visibles.
+- Modération : si tu bloques un membre ou signales une annonce, cette information est enregistrée pour appliquer la restriction et permettre un suivi.
+- Données techniques : un identifiant de session est conservé dans ton navigateur. Nous n'utilisons ni publicité, ni outil de mesure d'audience, ni suivi par des tiers.
 
 2. Pourquoi
-Uniquement pour faire fonctionner l'application : te connecter, afficher les annonces autour de toi, permettre les échanges, suivre ton solde de crédits et instaurer la confiance entre membres. Tes données ne sont ni vendues, ni louées, ni utilisées à des fins publicitaires.
+Uniquement pour faire fonctionner l'application : te connecter, afficher les annonces et les publications des communautés, permettre les échanges et la modération entre membres, suivre ton solde de crédits. Tes données ne sont ni vendues, ni louées, ni utilisées à des fins publicitaires.
 
 3. Qui peut voir quoi
-- Visibles de tous les membres : ton prénom, ta photo de profil, ta note moyenne, tes annonces (avec leur photo et leur position approximative).
+- Visibles de tous les membres : ton prénom, ta photo de profil, ta note moyenne, tes annonces.
+- Visibles des membres d'une communauté que tu as rejointe : tes publications, légendes et commentaires dans cette communauté.
 - Visibles uniquement des deux personnes concernées : une demande d'échange et la discussion associée.
 - Visibles uniquement d'un partenaire d'échange accepté, si tu l'as choisi : ton téléphone et/ou ton adresse postale.
-- Jamais visibles des autres membres : ton adresse email.
+- Jamais visibles des autres membres : ton adresse email, et la liste des personnes que tu as bloquées.
 
 4. Prestataires techniques
-Pour fonctionner, Troctan s'appuie sur : Supabase (base de données, connexion, stockage des photos), GitHub Pages (hébergement du site), Resend (envoi des emails de connexion), Infomaniak (nom de domaine) et OpenStreetMap (fond de carte : ton navigateur charge les cartes depuis leurs serveurs, ce qui leur transmet ton adresse IP et la zone affichée). Certains de ces prestataires peuvent traiter des données hors de Suisse, notamment dans l'Union européenne ou aux États-Unis.
+Supabase (base de données, connexion, stockage des photos), GitHub Pages (hébergement), Resend (emails de connexion), Infomaniak (nom de domaine), OpenStreetMap (fond de carte : ton navigateur charge les cartes depuis leurs serveurs, ce qui leur transmet ton adresse IP). Certains traitements peuvent avoir lieu hors de Suisse, notamment dans l'UE ou aux États-Unis.
 
 5. Durée de conservation et suppression
-Tes données sont conservées tant que ton compte existe. Le bouton « Supprimer mon compte » efface ton profil, tes annonces, tes photos, tes coordonnées privées et tes appartenances aux communautés. Les échanges et messages que tu as eus avec d'autres membres peuvent subsister dans leur propre historique, car ils les concernent aussi.
+Tes données sont conservées tant que ton compte existe. « Supprimer mon compte » efface ton profil, tes annonces, tes photos, tes coordonnées privées, tes publications de communauté et tes appartenances. Les échanges, messages et avis liés à d'autres membres peuvent subsister dans leur propre historique.
 
-6. Tes droits (loi fédérale sur la protection des données, nLPD)
-- Accès : « Télécharger mes données » (profil) te fournit une copie de tes données au format JSON.
-- Rectification : « Modifier mon profil » te permet de corriger tes informations.
-- Suppression : « Supprimer mon compte ».
-- Pour toute autre demande, contacte-nous à l'adresse indiquée ci-dessus.
+6. Tes droits (nLPD)
+Accès (« Télécharger mes données »), rectification (« Modifier mon profil »), suppression (« Supprimer mon compte »). Pour toute autre demande, contacte-nous à l'adresse indiquée ci-dessus.
 
 7. Sécurité
-La connexion se fait par un lien envoyé sur ton email, et les échanges avec le serveur sont chiffrés (HTTPS). Chaque membre ne peut lire et modifier que les données qui le concernent. Aucun système n'est infaillible : si tu constates un problème, signale-le-nous.
+Connexion par lien envoyé par email, échanges chiffrés (HTTPS). Chaque membre ne peut lire et modifier que les données qui le concernent, et un membre bloqué ne peut plus t'envoyer de demande ni de message.
 
 —
 
 Conditions d'utilisation
 
 En utilisant Troctan, tu acceptes de :
-- Rester respectueux envers les autres membres.
+- Rester respectueux envers les autres membres, dans tes annonces comme dans les communautés.
 - Ne publier que des services réels, que tu es en mesure de rendre.
 - Ne publier que des photos dont tu es l'auteur ou que tu as le droit d'utiliser, et ne pas publier de photo d'une personne sans son accord.
-- Ne pas publier de contenu illégal, discriminatoire, violent ou trompeur.
+- Ne pas publier de contenu illégal, discriminatoire, violent ou trompeur, y compris dans les communautés (publications et commentaires).
 - Ne pas utiliser l'application à des fins commerciales : les crédits n'ont pas de valeur monétaire et ne peuvent pas être échangés contre de l'argent.
 
-Troctan met des particuliers en relation mais n'est pas partie aux échanges effectués. Chaque membre reste responsable des services qu'il propose et de leur réalisation. Rencontre tes partenaires avec le même bon sens que pour n'importe quel échange entre particuliers.
+Troctan met des particuliers en relation mais n'est pas partie aux échanges effectués. Chaque membre reste responsable des services qu'il propose, de leur réalisation, et du contenu qu'il publie dans les communautés. Rencontre tes partenaires avec le même bon sens que pour n'importe quel échange entre particuliers.
 
-Troctan est un projet en phase de test : des erreurs ou des interruptions peuvent survenir. Un compte peut être suspendu en cas de comportement abusif, notamment après signalement par d'autres membres.`;
+Le blocage et le signalement sont des outils mis à ta disposition pour te protéger ; en abuser pour nuire à quelqu'un sans raison légitime constitue lui-même un comportement abusif. Troctan est un projet en phase de test : des erreurs ou des interruptions peuvent survenir. Un compte peut être suspendu en cas de comportement abusif, notamment après signalement par d'autres membres.`;
 
 document.getElementById('legal-text').textContent = LEGAL_TEXT;
 
@@ -1703,10 +1718,11 @@ async function deleteMyService(id){
 }
 
 const TUTORIAL_STEPS = [
-  {emoji:'⏳', title:'Bienvenue sur Troctan', text:"Ici, on s'entraide entre voisins sans argent : on échange du temps. Ce que tu donnes aux autres, tu peux le recevoir en retour."},
+  {emoji:'🤝', title:'Bienvenue sur Troctan', text:"Ici, on s'entraide entre voisins sans argent : on échange du temps. Ce que tu donnes aux autres, tu peux le recevoir en retour."},
   {emoji:'🔄', title:'1 crédit = 1 heure', text:"Chaque heure de service que tu rends te rapporte des crédits, chaque heure reçue en coûte. Ton solde reste entre -10 et +20 crédits pour que les échanges restent équilibrés."},
-  {emoji:'🤝', title:'Comment ça marche', text:"Trouve une annonce près de chez toi (ou publie la tienne), envoie une demande, et une fois qu'elle est acceptée, discutez pour fixer l'heure et le lieu."},
-  {emoji:'⭐', title:'La confiance avant tout', text:"Après chaque échange, laisse un avis. Tu peux signaler une annonce douteuse, et tes coordonnées privées ne sont partagées que si tu le décides."}
+  {emoji:'💬', title:'Comment ça marche', text:"Trouve une annonce près de chez toi (ou publie la tienne, photo à l'appui), envoie une demande. Tu peux discuter avec la personne avant même qu'elle accepte, pour vous mettre d'accord. Une fois le service rendu, clôture l'échange."},
+  {emoji:'⭐', title:'La confiance avant tout', text:"Après chaque échange, laisse un avis. Signale une annonce douteuse, ou bloque une personne si besoin — ses annonces disparaîtront et elle ne pourra plus te contacter. Tes coordonnées privées ne sont partagées que si tu le décides."},
+  {emoji:'📸', title:'Les communautés', text:"Rejoins ou crée une communauté (quartier, association...) depuis l'onglet Groupes : vous pouvez y partager des photos, des nouvelles et vos annonces, un peu comme un petit réseau social entre vous."}
 ];
 let tutStep = 0;
 
