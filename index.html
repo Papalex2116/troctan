@@ -421,8 +421,8 @@
     <button class="tab-btn active" data-tab="home" onclick="goHome()"><i class="ti ti-home"></i>Accueil<span class="tab-badge" id="badge-home"></span></button>
     <button class="tab-btn" data-tab="requests" onclick="showScreen('requests');"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
     <button class="tab-btn" data-tab="propose" onclick="showScreen('propose')"><i class="ti ti-plus"></i>Proposer</button>
-    <button class="tab-btn" data-tab="profile" onclick="showScreen('profile')"><i class="ti ti-user"></i>Profil</button>
     <button class="tab-btn" data-tab="communities" onclick="showScreen('communities');"><i class="ti ti-users"></i>Groupes<span class="tab-badge" id="badge-communities"></span></button>
+    <button class="tab-btn" data-tab="profile" onclick="showScreen('profile')"><i class="ti ti-user"></i>Profil</button>
   </nav>
 </div>
 
@@ -2102,7 +2102,7 @@ if('serviceWorker' in navigator){
 }
 
 setupDropdownPersistence();
-const TAB_ORDER = ['home', 'requests', 'propose', 'profile', 'communities'];
+const TAB_ORDER = ['home', 'requests', 'propose', 'communities', 'profile'];
 
 (function setupSwipe(){
   const main = document.querySelector('main');
