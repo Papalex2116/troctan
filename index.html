@@ -429,11 +429,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
+let toastTimer = null;
 function log(msg){
   const panel = document.getElementById('debug-panel');
   if(panel) panel.textContent = msg;
   const toast = document.getElementById('toast');
-  if(toast){ toast.textContent = msg; toast.style.display = 'block'; }
+  if(toast){
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 5000);
+  }
   console.log(msg);
 }
 
@@ -450,6 +456,9 @@ window.onerror = function(message){
   log('Erreur JS : ' + message);
   return true;
 };
+window.addEventListener('unhandledrejection', function(e){
+  log('Erreur : ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+});
 
 log('Script chargé, vérification de Supabase...');
 
@@ -631,6 +640,10 @@ function renderScreenOnly(id){
 
   const nav = document.querySelector('nav.tabbar');
   if(nav) nav.style.display = AUTH_SCREENS.includes(id) ? 'none' : 'flex';
+
+  const toast = document.getElementById('toast');
+  if(toast) toast.style.display = 'none';
+  if(toastTimer) clearTimeout(toastTimer);
 
   refreshForScreen(id);
 }
@@ -2010,13 +2023,15 @@ async function showBlockedUsers(){
   showScreen('blocked-users');
   const list = document.getElementById('blocked-users-list');
   try{
-    const { data } = await sb.from('blocked_users').select('blocked_id, created_at').eq('blocker_id', myId).order('created_at', {ascending:false});
+    const { data, error } = await sb.from('blocked_users').select('blocked_id, created_at').eq('blocker_id', myId).order('created_at', {ascending:false});
+    if(error){ log('Erreur (liste bloqués) : ' + error.message); list.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Erreur de chargement.</p>"; return; }
     if(!data || !data.length){
       list.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Tu n'as bloqué personne.</p>";
       return;
     }
     const ids = data.map(b => b.blocked_id);
-    const { data: profiles } = await sb.from('profiles').select('id, name').in('id', ids);
+    const { data: profiles, error: pErr } = await sb.from('profiles').select('id, name').in('id', ids);
+    if(pErr) log('Erreur (profils bloqués) : ' + pErr.message);
     const nameById = {};
     (profiles || []).forEach(p => { nameById[p.id] = p.name; });
     list.innerHTML = data.map(b => `
