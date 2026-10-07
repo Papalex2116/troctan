@@ -1028,7 +1028,7 @@ function openDetail(id){
 
 async function loadAuthorInfo(s){
   try{
-    const { data } = await sb.from('profiles').select('name, avatar_url, rating_avg, rating_count').eq('id', s.authorId).maybeSingle();
+    const { data } = await sb.from('public_profiles').select('name, avatar_url, rating_avg, rating_count').eq('id', s.authorId).maybeSingle();
     if(!data || !currentDetail || currentDetail.id !== s.id) return;
     renderAvatar(document.getElementById('detail-avatar'), data.name || s.authorName, data.avatar_url);
     if(s.authorId !== myId){
@@ -1339,35 +1339,16 @@ async function leaveReview(exchangeId, providerId, providerName){
 
 async function respondExchange(exchangeId, decision){
   try{
-    const { data: ex, error: fetchErr } = await sb.from('exchanges').select('*').eq('id', exchangeId).maybeSingle();
-    if(fetchErr || !ex){ log('Demande introuvable.'); return; }
-
     if(decision === 'accepted'){
-      if(myBalanceCache + ex.hours > 20){
-        log("Tu ne peux pas accepter : ton solde dépasserait la limite de +20 crédits.");
-        return;
-      }
-      const { data: requesterProfile } = await sb.from('profiles').select('*').eq('id', ex.requester_id).maybeSingle();
-      const requesterCurrentBalance = requesterProfile ? (requesterProfile.balance || 0) : 0;
-      if(requesterCurrentBalance - ex.hours < -10){
-        log("Impossible d'accepter : le solde du demandeur passerait sous -10 crédits.");
-        return;
-      }
-    }
-
-    const { error } = await sb.from('exchanges').update({status: decision}).eq('id', exchangeId);
-    if(error){ log('Erreur Supabase : ' + error.message); return; }
-
-    if(decision === 'accepted'){
-      const newMyBalance = myBalanceCache + ex.hours;
-      await saveProfile(newMyBalance);
+      const { error } = await sb.rpc('accept_exchange', {p_exchange_id: exchangeId});
+      if(error){ log('Erreur : ' + error.message); return; }
+      const { data: profile } = await sb.from('profiles').select('balance').eq('id', myId).maybeSingle();
+      myBalanceCache = profile ? (profile.balance || 0) : myBalanceCache;
       document.getElementById('balance-value').textContent = myBalanceCache + 'cr';
-
-      const { data: requesterProfile } = await sb.from('profiles').select('*').eq('id', ex.requester_id).maybeSingle();
-      const requesterBalance = (requesterProfile ? (requesterProfile.balance || 0) : 0) - ex.hours;
-      await sb.from('profiles').upsert({id: ex.requester_id, name: ex.requester_name, balance: requesterBalance});
       log('Échange accepté ! Ton solde passe à ' + myBalanceCache + 'cr.');
     } else {
+      const { error } = await sb.from('exchanges').update({status: decision}).eq('id', exchangeId);
+      if(error){ log('Erreur Supabase : ' + error.message); return; }
       log('Demande refusée.');
     }
     fetchExchanges();
@@ -1671,43 +1652,60 @@ function unsubscribeRealtime(){
   if(realtimeChannel){ sb.removeChannel(realtimeChannel); realtimeChannel = null; }
 }
 
-const CONTACT_EMAIL = '';
+const CONTACT_EMAIL = 'alexandre.f2116@yahoo.com';
 
-const LEGAL_TEXT = `Politique de confidentialité
+const LEGAL_TEXT = `Mentions légales
+
+Troctan est un service édité à titre privé, non commercial, par une personne physique domiciliée en Suisse.
+Contact : ${CONTACT_EMAIL}
+Hébergement du site : GitHub Pages (GitHub Inc., Etats-Unis). Nom de domaine : Infomaniak (Suisse).
+
+—
+
+Politique de confidentialité
 
 Dernière mise à jour : octobre 2026
-
-Troctan est un projet d'entraide locale basé sur l'échange de crédits-temps entre particuliers, édité à titre privé depuis la Suisse.${CONTACT_EMAIL ? '\n\nContact : ' + CONTACT_EMAIL : ''}
 
 1. Données que nous traitons
 - Compte : ton adresse email (uniquement pour te connecter, jamais visible des autres membres), ton prénom et, si tu le souhaites, une photo de profil (visible des autres membres).
 - Position : une position approximative, volontairement floutée (environ 100 m), jamais ton adresse exacte.
-- Contenu : tes annonces (titre, description, catégorie, photo facultative), tes demandes d'échange, les messages échangés avec ton partenaire, les avis donnés et reçus, les communautés que tu rejoins et ce que tu y publies (photos, légendes, commentaires, likes).
-- Coordonnées facultatives : numéro de téléphone et adresse postale, stockées séparément et jamais visibles publiquement — seul un partenaire d'échange accepté peut voir les champs que tu as toi-même rendus visibles.
-- Modération : si tu bloques un membre ou signales une annonce, cette information est enregistrée pour appliquer la restriction et permettre un suivi.
-- Données techniques : un identifiant de session est conservé dans ton navigateur. Nous n'utilisons ni publicité, ni outil de mesure d'audience, ni suivi par des tiers.
+- Contenu : tes annonces (titre, description, catégorie, photo facultative), tes demandes d'échange, les messages échangés, les avis donnés et reçus, les communautés que tu rejoins et ce que tu y publies.
+- Coordonnées facultatives : téléphone et adresse postale, stockées séparément et jamais visibles publiquement — seul un partenaire d'échange accepté peut voir les champs que tu as toi-même rendus visibles.
+- Modération : si tu bloques un membre ou signales une annonce, cette information est enregistrée pour appliquer la restriction.
+- Ton solde de crédits et ta position ne sont lisibles que par toi-même ; les autres membres ne voient que ton prénom, ta photo et ta note.
 
-2. Pourquoi
-Uniquement pour faire fonctionner l'application : te connecter, afficher les annonces et les publications des communautés, permettre les échanges et la modération entre membres, suivre ton solde de crédits. Tes données ne sont ni vendues, ni louées, ni utilisées à des fins publicitaires.
+2. Base légale du traitement
+Tes données sont traitées parce que c'est nécessaire pour exécuter le service que tu utilises volontairement (créer un compte, publier une annonce, échanger avec d'autres membres). Sans ce traitement minimal, l'application ne peut tout simplement pas fonctionner. Aucune donnée n'est traitée à des fins qui ne te bénéficient pas directement (pas de publicité, pas de revente).
 
-3. Qui peut voir quoi
+3. Pourquoi
+Te connecter, afficher les annonces et les publications des communautés, permettre les échanges et la modération, suivre ton solde de crédits.
+
+4. Cookies et stockage local
+Troctan n'utilise aucun cookie, ni traceur publicitaire, ni outil de mesure d'audience tiers. L'application utilise uniquement le stockage local de ton navigateur (équivalent technique d'un cookie, mais non partagé avec des tiers) pour deux choses : garder ta session de connexion active, et retenir quelques préférences d'affichage sur cet appareil (sections dépliées, dernière consultation). Rien de sensible n'y est stocké : ni mot de passe, ni email, ni coordonnées, ni contenu de conversation — ces informations restent uniquement sur le serveur et sont redemandées à chaque fois.
+
+5. Qui peut voir quoi
 - Visibles de tous les membres : ton prénom, ta photo de profil, ta note moyenne, tes annonces.
-- Visibles des membres d'une communauté que tu as rejointe : tes publications, légendes et commentaires dans cette communauté.
-- Visibles uniquement des deux personnes concernées : une demande d'échange et la discussion associée.
+- Visibles des membres d'une communauté que tu as rejointe : tes publications dans cette communauté.
+- Visibles uniquement des deux personnes concernées : une demande d'échange et sa discussion.
 - Visibles uniquement d'un partenaire d'échange accepté, si tu l'as choisi : ton téléphone et/ou ton adresse postale.
-- Jamais visibles des autres membres : ton adresse email, et la liste des personnes que tu as bloquées.
+- Jamais visibles des autres membres : ton email, ton solde, ta position, la liste des personnes que tu as bloquées.
 
-4. Prestataires techniques
-Supabase (base de données, connexion, stockage des photos), GitHub Pages (hébergement), Resend (emails de connexion), Infomaniak (nom de domaine), OpenStreetMap (fond de carte : ton navigateur charge les cartes depuis leurs serveurs, ce qui leur transmet ton adresse IP). Certains traitements peuvent avoir lieu hors de Suisse, notamment dans l'UE ou aux États-Unis.
+6. Prestataires techniques et pays de traitement
+- Supabase (base de données, connexion, stockage des photos) : société Supabase Inc./Pte Ltd, Etats-Unis. La région d'hébergement des données dépend de la configuration du projet (à vérifier dans les paramètres du projet) ; en tant que société américaine, Supabase peut être soumise au droit américain (CLOUD Act) même pour des données hébergées en Europe.
+- GitHub Pages (hébergement du site) : GitHub Inc. (Microsoft), Etats-Unis.
+- Resend (envoi des emails de connexion) : société basée aux Etats-Unis, infrastructure d'envoi configurée en Union européenne (Irlande).
+- Infomaniak (nom de domaine) : société suisse, Genève.
+- OpenStreetMap (fond de carte) : OpenStreetMap Foundation, Royaume-Uni ; l'affichage de la carte transmet ton adresse IP à leurs serveurs.
+Certains de ces traitements ont donc lieu en Suisse, dans l'Union européenne et aux Etats-Unis.
 
-5. Durée de conservation et suppression
-Tes données sont conservées tant que ton compte existe. « Supprimer mon compte » efface ton profil, tes annonces, tes photos, tes coordonnées privées, tes publications de communauté et tes appartenances. Les échanges, messages et avis liés à d'autres membres peuvent subsister dans leur propre historique.
+7. Mesures de sécurité techniques
+L'accès aux données est limité par des règles de sécurité au niveau de chaque ligne de la base de données (Row Level Security) : chaque membre ne peut lire ou modifier que ce qui le concerne. Aucune donnée sensible (mot de passe, email, coordonnées, conversation) n'est conservée sur ton appareil au-delà de ta session de connexion.
 
-6. Tes droits (nLPD)
-Accès (« Télécharger mes données »), rectification (« Modifier mon profil »), suppression (« Supprimer mon compte »). Pour toute autre demande, contacte-nous à l'adresse indiquée ci-dessus.
+8. Durée de conservation et suppression
+Tes données sont conservées tant que ton compte existe. « Supprimer mon compte » efface ton profil, tes annonces, tes photos, tes coordonnées privées et tes appartenances aux communautés. Les échanges, messages et avis liés à d'autres membres peuvent subsister dans leur propre historique.
 
-7. Sécurité
-Connexion par lien envoyé par email, échanges chiffrés (HTTPS). Chaque membre ne peut lire et modifier que les données qui le concernent, et un membre bloqué ne peut plus t'envoyer de demande ni de message.
+9. Tes droits (nLPD)
+Accès (« Télécharger mes données »), rectification (« Modifier mon profil »), suppression (« Supprimer mon compte »). Pour toute autre demande : ${CONTACT_EMAIL}.
 
 —
 
@@ -1717,12 +1715,16 @@ En utilisant Troctan, tu acceptes de :
 - Rester respectueux envers les autres membres, dans tes annonces comme dans les communautés.
 - Ne publier que des services réels, que tu es en mesure de rendre.
 - Ne publier que des photos dont tu es l'auteur ou que tu as le droit d'utiliser, et ne pas publier de photo d'une personne sans son accord.
-- Ne pas publier de contenu illégal, discriminatoire, violent ou trompeur, y compris dans les communautés (publications et commentaires).
+- Ne pas publier de contenu illégal, discriminatoire, violent ou trompeur.
 - Ne pas utiliser l'application à des fins commerciales : les crédits n'ont pas de valeur monétaire et ne peuvent pas être échangés contre de l'argent.
 
-Troctan met des particuliers en relation mais n'est pas partie aux échanges effectués. Chaque membre reste responsable des services qu'il propose, de leur réalisation, et du contenu qu'il publie dans les communautés. Rencontre tes partenaires avec le même bon sens que pour n'importe quel échange entre particuliers.
+Risques liés aux rencontres entre membres
+Troctan met des particuliers en relation mais n'organise, ne supervise et ne contrôle aucun échange ni aucune rencontre physique entre membres. Chaque rencontre se fait sous ta seule responsabilité. Prends les mêmes précautions que pour toute rencontre avec un inconnu : privilégie un premier échange dans un lieu public ou en présence d'un tiers, informe un proche de l'heure et du lieu du rendez-vous, et fie-toi à ton jugement. Troctan ne vérifie pas l'identité des membres au-delà de leur adresse email.
 
-Le blocage et le signalement sont des outils mis à ta disposition pour te protéger ; en abuser pour nuire à quelqu'un sans raison légitime constitue lui-même un comportement abusif. Troctan est un projet en phase de test : des erreurs ou des interruptions peuvent survenir. Un compte peut être suspendu en cas de comportement abusif, notamment après signalement par d'autres membres.`;
+Limitation de responsabilité
+Troctan est fourni « en l'état », en phase de test, sans garantie de disponibilité, d'exactitude ou d'absence d'erreur. Dans la mesure permise par la loi, l'éditeur de Troctan décline toute responsabilité pour les dommages directs ou indirects résultant : de l'usage de l'application, d'un échange ou d'une rencontre entre membres, du contenu publié par un membre, ou d'une interruption, perte de données ou faille de sécurité, sauf faute intentionnelle ou négligence grave de sa part. Chaque membre reste seul responsable des services qu'il propose, de leur réalisation et du contenu qu'il publie.
+
+Le blocage et le signalement sont des outils mis à ta disposition pour te protéger ; en abuser pour nuire à quelqu'un sans raison légitime constitue lui-même un comportement abusif. Un compte peut être suspendu en cas de comportement abusif, notamment après signalement par d'autres membres.`;
 
 document.getElementById('legal-text').textContent = LEGAL_TEXT;
 
@@ -2037,7 +2039,7 @@ async function showBlockedUsers(){
       return;
     }
     const ids = data.map(b => b.blocked_id);
-    const { data: profiles, error: pErr } = await sb.from('profiles').select('id, name').in('id', ids);
+    const { data: profiles, error: pErr } = await sb.from('public_profiles').select('id, name').in('id', ids);
     if(pErr) log('Erreur (profils bloqués) : ' + pErr.message);
     const nameById = {};
     (profiles || []).forEach(p => { nameById[p.id] = p.name; });
