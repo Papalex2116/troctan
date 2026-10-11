@@ -53,7 +53,7 @@
   }
   main{flex:1; padding:0 1.1rem 90px; overflow-y:auto;}
   .screen{display:none;}
-  #login, #check-email, #setup-name{overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:100vh; max-height:100dvh; padding-bottom:40px !important;}
+  #login, #check-email, #setup-name, #reset-password{overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:100vh; max-height:100dvh; padding-bottom:40px !important;}
   .dd-badge{display:none; background:#e0453c; color:#fff; font-size:11px; font-weight:700; border-radius:10px; padding:1px 7px; margin-left:6px; vertical-align:middle;}
   .auth-details{margin-top:12px; border-top:1px solid var(--border); padding-top:10px;}
   .auth-details > summary{cursor:pointer; font-size:13.5px; font-weight:600; color:var(--accent-text); list-style:none; padding:4px 0;}
@@ -185,9 +185,27 @@
       </label>
       <button class="btn secondary" id="signup-btn">Créer mon compte</button>
     </details>
+    <details class="auth-details" id="forgot-box">
+      <summary>Mot de passe oublié ?</summary>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.4;margin:6px 0;">Entre ton identifiant (ci-dessus) et l'adresse email donnée à l'inscription : tu recevras un lien pour choisir un nouveau mot de passe.</p>
+      <label>Adresse email de ton compte</label>
+      <input type="email" id="forgot-email" placeholder="toi@exemple.com" autocomplete="email">
+      <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
+    </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 8</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 9</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
+  </section>
+
+  <!-- NOUVEAU MOT DE PASSE (lien recu par email) -->
+  <section class="screen" id="reset-password" style="padding:0 1.1rem;">
+    <p class="section-label" style="font-size:18px;margin-top:14px;">Nouveau mot de passe</p>
+    <p style="font-size:13px;color:var(--text-secondary);line-height:1.4;margin:0 0 10px;">Choisis un nouveau mot de passe (8 caractères minimum).</p>
+    <label>Nouveau mot de passe</label>
+    <input type="password" id="reset-pass" autocomplete="new-password">
+    <button class="btn" id="reset-btn">Enregistrer</button>
+    <p id="reset-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
+    <button class="btn secondary" onclick="showScreen('login')">Retour à la connexion</button>
   </section>
 
   <!-- VERIFIE TA BOITE MAIL -->
@@ -700,7 +718,7 @@ function initials(name){
   return name.trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join('');
 }
 
-const AUTH_SCREENS = ['login', 'check-email', 'setup-name', 'tutorial'];
+const AUTH_SCREENS = ['login', 'check-email', 'setup-name', 'tutorial', 'reset-password'];
 
 function renderScreenOnly(id){
   if(!myId && !AUTH_SCREENS.includes(id) && id !== 'legal') id = 'login';
@@ -971,6 +989,37 @@ function translateAuthError(m){
   return m;
 }
 let pendingSignupEmail = null;
+let resetCtx = null;
+async function requestPasswordReset(){
+  const id = (document.getElementById('login-id').value || '').trim();
+  const email = (document.getElementById('forgot-email').value || '').trim();
+  if(!id || !email.includes('@')){ loginError("Entre ton identifiant en haut et l'email de ton compte."); return; }
+  loginError('');
+  try{
+    await sb.rpc('request_password_reset', {ident: toLoginEmail(id).replace('@membres.troctan.ch',''), contact: email});
+  }catch(e){ /* on ne révèle rien */ }
+  log("Si ces informations correspondent à un compte, un lien vient d'être envoyé par email (valable 30 minutes).");
+}
+async function submitPasswordReset(){
+  const pw = document.getElementById('reset-pass').value;
+  const err = document.getElementById('reset-error');
+  if(pw.length < 8){ err.textContent = 'Mot de passe trop court (8 caractères minimum).'; err.style.display = 'block'; return; }
+  if(!resetCtx){ err.textContent = 'Lien invalide. Redemande un lien.'; err.style.display = 'block'; return; }
+  const { data, error } = await sb.rpc('reset_password_with_token', {ident: resetCtx.id, token: resetCtx.token, new_password: pw});
+  if(error || data !== true){ err.textContent = 'Lien expiré ou déjà utilisé. Redemande un lien.'; err.style.display = 'block'; return; }
+  resetCtx = null;
+  document.getElementById('reset-pass').value = '';
+  showScreen('login');
+  log('Mot de passe modifié ✓ Connecte-toi avec ton identifiant.');
+}
+function checkResetLink(){
+  const m = /^#reset=([a-f0-9]{20,})&id=(.+)$/.exec(location.hash || '');
+  if(!m) return false;
+  resetCtx = {token: m[1], id: decodeURIComponent(m[2])};
+  try{ history.replaceState(null, '', location.pathname); }catch(e){}
+  return true;
+}
+
 function setStayPreference(){
   const c = document.getElementById('login-stay');
   try{ localStorage.setItem('tt_stay', (c && !c.checked) ? '0' : '1'); }catch(e){}
@@ -2460,8 +2509,10 @@ async function boot(){
   sb.auth.onAuthStateChange((event, session) => {
     handleSession(session);
   });
+  const wantsReset = checkResetLink();
   const { data: { session } } = await sb.auth.getSession();
   await handleSession(session);
+  if(wantsReset) showScreen('reset-password');
 }
 
 function updateLocation(){
@@ -2515,6 +2566,8 @@ async function renderMap(){
 
 document.getElementById('login-btn').addEventListener('click', passwordLogin);
 document.getElementById('signup-btn').addEventListener('click', passwordSignup);
+document.getElementById('forgot-btn').addEventListener('click', requestPasswordReset);
+document.getElementById('reset-btn').addEventListener('click', submitPasswordReset);
 document.getElementById('otp-btn').addEventListener('click', verifyEmailCode);
 document.getElementById('otp-code').addEventListener('keydown', (e) => { if(e.key === 'Enter') verifyEmailCode(); });
 document.getElementById('login-pass').addEventListener('keydown', (e) => { if(e.key === 'Enter') passwordLogin(); });
