@@ -170,6 +170,8 @@
     <button class="btn" id="login-btn">Se connecter</button>
     <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
       <p style="font-size:13px;font-weight:600;margin:0 0 6px;">Nouveau sur Troctan ?</p>
+      <label>Ton adresse email (obligatoire, jamais visible des autres)</label>
+      <input type="email" id="signup-email" placeholder="toi@exemple.com" autocomplete="email">
       <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
         <input type="checkbox" id="signup-cgu" style="width:auto; margin:2px 0 0;">
         <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showScreen('legal');" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a></span>
@@ -185,7 +187,7 @@
       <button class="btn secondary" id="email-link-btn">Recevoir un lien de connexion</button>
       <p style="font-size:12px;color:var(--text-muted);line-height:1.5;">Tu recevras un lien qui te connecte. Ensuite, va dans Profil, « Définir / changer mon mot de passe » : tu pourras alors te connecter avec ton email et ce mot de passe.</p>
     </div>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 4</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 5</p>
     <div id="debug-panel" style="margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -953,6 +955,7 @@ function translateAuthError(m){
   if(t.includes('password')) return 'Mot de passe trop court ou refusé (8 caractères minimum).';
   return m;
 }
+let pendingSignupEmail = null;
 function setStayPreference(){
   const c = document.getElementById('login-stay');
   try{ localStorage.setItem('tt_stay', (c && !c.checked) ? '0' : '1'); }catch(e){}
@@ -984,6 +987,11 @@ async function passwordSignup(){
   }
   if(!/^[a-z0-9._-]{3,30}$/.test(id)){ loginError("Identifiant invalide : 3 à 30 caractères, lettres minuscules, chiffres, point, tiret."); return; }
   if(pass.length < 8){ loginError('Mot de passe : 8 caractères minimum.'); return; }
+  const contactEmail = (document.getElementById('signup-email').value || '').trim().toLowerCase();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(contactEmail)){
+    loginError("Entre une adresse email valide : elle est obligatoire pour créer un compte.");
+    return;
+  }
   if(!document.getElementById('signup-cgu').checked){
     loginError("Pour créer un compte, lis et accepte la politique de confidentialité et les conditions d'utilisation (case à cocher).");
     return;
@@ -993,6 +1001,7 @@ async function passwordSignup(){
   try{
     const { data, error } = await sb.auth.signUp({ email: toLoginEmail(id), password: pass });
     if(error){ loginError(translateAuthError(error.message)); return; }
+    pendingSignupEmail = contactEmail;
     if(data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
       loginError('Cet identifiant est déjà pris, choisis-en un autre.');
       return;
@@ -1084,6 +1093,10 @@ function finishNameSetup(){
   myName = name;
   saveProfile(0);
   sb.from('profiles').update({cgu_accepted_at: new Date().toISOString()}).eq('id', myId).then(()=>{});
+  if(pendingSignupEmail){
+    sb.from('profile_private').upsert({user_id: myId, email: pendingSignupEmail}).then(r => { if(r.error) log('Email non enregistré : ' + r.error.message); });
+    pendingSignupEmail = null;
+  }
   applyIdentity();
   showScreen('home');
   if(!localStorage.getItem('tt_tutorial_seen')) showTutorial();
@@ -1993,7 +2006,7 @@ Politique de confidentialité
 Dernière mise à jour : octobre 2026
 
 1. Données que nous traitons
-- Compte : ton identifiant (ou ton adresse email pour les anciens comptes) et ton mot de passe (conservé chiffré par Supabase, jamais lisible par nous), jamais visibles des autres membres ; ton prénom et, si tu le souhaites, une photo de profil (visible des autres membres).
+- Compte : ton identifiant (ou ton adresse email pour les anciens comptes) et ton mot de passe (conservé chiffré par Supabase, jamais lisible par nous), jamais visibles des autres membres ; ton adresse email de contact (stockée séparément, jamais visible des autres membres), ton prénom et, si tu le souhaites, une photo de profil (visible des autres membres).
 - Position : une position approximative, volontairement floutée (environ 100 m), jamais ton adresse exacte.
 - Contenu : tes annonces (titre, description, catégorie, photo facultative), tes demandes d'échange, les messages échangés, les avis donnés et reçus, les communautés que tu rejoins et ce que tu y publies.
 - Coordonnées facultatives : téléphone et adresse postale, stockées séparément et jamais visibles publiquement — seul un partenaire d'échange accepté peut voir les champs que tu as toi-même rendus visibles.
