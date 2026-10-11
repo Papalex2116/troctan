@@ -54,6 +54,7 @@
   main{flex:1; padding:0 1.1rem 90px; overflow-y:auto;}
   .screen{display:none;}
   #login, #check-email, #setup-name{overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:100vh; max-height:100dvh; padding-bottom:40px !important;}
+  .dd-badge{display:none; background:#e0453c; color:#fff; font-size:11px; font-weight:700; border-radius:10px; padding:1px 7px; margin-left:6px; vertical-align:middle;}
   .auth-details{margin-top:12px; border-top:1px solid var(--border); padding-top:10px;}
   .auth-details > summary{cursor:pointer; font-size:13.5px; font-weight:600; color:var(--accent-text); list-style:none; padding:4px 0;}
   .auth-details > summary::-webkit-details-marker{display:none;}
@@ -139,7 +140,7 @@
 </head>
 <body>
 <div class="phone">
-  <header>
+  <header id="app-header" style="display:none;">
     <div style="display:flex; align-items:center;">
       <div class="logo-badge">🤝</div>
       <div>
@@ -185,14 +186,7 @@
       <button class="btn secondary" id="signup-btn">Créer mon compte</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <details class="auth-details" id="email-login-box">
-      <summary>J'ai déjà un compte avec une adresse email</summary>
-      <label>Ton email</label>
-      <input type="email" id="login-email" placeholder="toi@exemple.com">
-      <button class="btn secondary" id="email-link-btn">Recevoir un lien de connexion</button>
-      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;">Tu recevras un lien et un code. Ensuite, va dans Profil, « Définir / changer mon mot de passe ».</p>
-    </details>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 6</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 7</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -445,19 +439,19 @@
     <!-- DEMANDES -->
     <section class="screen" id="requests">
       <details class="dropdown-section" id="dd-active" open>
-        <summary class="section-label">Échanges en cours</summary>
+        <summary class="section-label">Échanges en cours <span class="dd-badge" id="ddb-active"></span></summary>
         <div class="list" id="requests-active" style="margin-top:10px;"></div>
       </details>
       <details class="dropdown-section" id="dd-completed" style="margin-top:1.2rem;">
-        <summary class="section-label">Échanges terminés</summary>
+        <summary class="section-label">Échanges terminés <span class="dd-badge" id="ddb-completed"></span></summary>
         <div class="list" id="requests-completed" style="margin-top:10px;"></div>
       </details>
       <details class="dropdown-section" id="dd-received" open style="margin-top:1.2rem;">
-        <summary class="section-label">Demandes reçues</summary>
+        <summary class="section-label">Demandes reçues <span class="dd-badge" id="ddb-received"></span></summary>
         <div class="list" id="requests-received" style="margin-top:10px;"></div>
       </details>
       <details class="dropdown-section" id="dd-sent" style="margin-top:1.2rem;">
-        <summary class="section-label">Demandes envoyées</summary>
+        <summary class="section-label">Demandes envoyées <span class="dd-badge" id="ddb-sent"></span></summary>
         <div class="list" id="requests-sent" style="margin-top:10px;"></div>
       </details>
     </section>
@@ -700,6 +694,8 @@ function renderScreenOnly(id){
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
 
+  const hdr = document.getElementById('app-header');
+  if(hdr) hdr.style.display = (AUTH_SCREENS.includes(id) || !myId) ? 'none' : 'flex';
   const nav = document.querySelector('nav.tabbar');
   if(nav) nav.style.display = (AUTH_SCREENS.includes(id) || !myId) ? 'none' : 'flex';
 
@@ -974,10 +970,7 @@ async function passwordLogin(){
   try{
     const { error } = await sb.auth.signInWithPassword({ email: toLoginEmail(id), password: pass });
     if(error){
-      if(id.includes('@') && (error.message || '').toLowerCase().includes('invalid login')){
-        loginError("Ce compte email n'a pas encore de mot de passe. Utilise le bloc « J'ai déjà un compte avec une adresse email » ci-dessous pour recevoir un lien, puis définis ton mot de passe dans Profil.");
-        showEmailLogin();
-      } else loginError(translateAuthError(error.message));
+      loginError(translateAuthError(error.message));
       return;
     }
   }catch(e){ loginError('Erreur réseau : ' + e.message); }
@@ -986,8 +979,7 @@ async function passwordSignup(){
   const id = document.getElementById('login-id').value.trim().toLowerCase();
   const pass = document.getElementById('login-pass').value;
   if(id.includes('@')){
-    loginError("Pour créer un compte, choisis un identifiant simple (sans @). Si tu as déjà un compte avec ton email, utilise le bloc « J'ai déjà un compte avec une adresse email » ci-dessous.");
-    showEmailLogin();
+    loginError("Pour créer un compte, choisis un identifiant simple (sans @).");
     return;
   }
   if(!/^[a-z0-9._-]{3,30}$/.test(id)){ loginError("Identifiant invalide : 3 à 30 caractères, lettres minuscules, chiffres, point, tiret."); return; }
@@ -1003,6 +995,10 @@ async function passwordSignup(){
   }
   loginError('');
   setStayPreference();
+  try{
+    const bn = await sb.rpc('is_banned', {e: contactEmail});
+    if(bn && bn.data === true){ loginError("Cette adresse ne peut pas être utilisée sur Troctan."); return; }
+  }catch(e){ /* on continue */ }
   try{
     const { data, error } = await sb.auth.signUp({ email: toLoginEmail(id), password: pass });
     if(error){ loginError(translateAuthError(error.message)); return; }
@@ -1031,7 +1027,13 @@ async function createMyIdentifier(){
   if(!confirm("Ton adresse email ne servira plus à te connecter : tu te connecteras avec l'identifiant « " + id + " » et ton mot de passe. Il n'y a pas de récupération par email, note-les bien. Continuer ?")) return;
   try{
     const { data, error } = await sb.auth.updateUser({ email: toLoginEmail(id), password: pass });
-    if(error){ log('Erreur : ' + translateAuthError(error.message)); return; }
+    if(error){
+      const t = (error.message || '').toLowerCase();
+      log((t.includes('already') || t.includes('exist') || t.includes('registered'))
+        ? "Cet identifiant est déjà pris (peut-être par un compte de test). Choisis-en un autre, ou demande à l'administrateur de supprimer l'ancien compte."
+        : 'Erreur : ' + translateAuthError(error.message));
+      return;
+    }
     const { data: u } = await sb.auth.getUser();
     if(u && u.user && u.user.email === toLoginEmail(id)){
       myEmail = u.user.email;
@@ -1076,7 +1078,7 @@ async function sendMagicLink(){
   try{
     const { error } = await sb.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin }
+      options: { emailRedirectTo: window.location.origin, shouldCreateUser: false }
     });
     if(error){ log('Erreur : ' + error.message); return; }
     document.getElementById('sent-email-display').textContent = email;
@@ -1129,6 +1131,7 @@ async function logout(){
   try{ await sb.auth.signOut(); }catch(e){ /* on nettoie quand même localement */ }
   myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null; myAvatarUrl = null; myBlockedIds = new Set(); myIsAdmin = false;
   currentServices = [];
+  try{ document.getElementById('hdr-name').textContent = '...'; }catch(e){}
   showScreen('login');
 }
 
@@ -1287,6 +1290,7 @@ async function fetchActiveExchanges(){
       });
     }
 
+    setSectionBadge('active', unreadByExchange.size);
     const reviewedActive = await loadReviewedSet(ids);
     const list = document.getElementById('requests-active');
     list.innerHTML = (data && data.length) ? data.map(r => {
@@ -1298,8 +1302,8 @@ async function fetchActiveExchanges(){
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
-            <p class="item-title">${esc(r.service_title)}${hasUnread ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:4px;"></span>' : ''}</p>
-            <p class="item-sub">Avec ${esc(otherName)}${hasUnread ? ' · nouveau message' : ''}</p>
+            <p class="item-title">${esc(r.service_title)}${hasUnread ? ' <span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;">💬 nouveau message</span>' : ''}</p>
+            <p class="item-sub">Avec ${esc(otherName)}</p>
           </div>
         </div>
         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
@@ -1335,6 +1339,16 @@ async function fetchCompletedExchanges(){
       .order('created_at', {ascending:false});
 
     const reviewedDone = await loadReviewedSet((data || []).map(r => r.id));
+    const doneIds = (data || []).map(r => r.id);
+    const unreadDone = new Set();
+    if(doneIds.length){
+      const { data: dm } = await sb.from('messages').select('exchange_id, created_at').in('exchange_id', doneIds).neq('sender_id', myId);
+      (dm || []).forEach(m => {
+        const ls = localStorage.getItem('tt_chat_seen_' + m.exchange_id) || '1970-01-01';
+        if(Date.parse(m.created_at) > Date.parse(ls)) unreadDone.add(m.exchange_id);
+      });
+    }
+    setSectionBadge('completed', unreadDone.size);
     list.innerHTML = (data && data.length) ? data.map(r => {
       const iAmRequester = r.requester_id === myId;
       const otherName = iAmRequester ? r.provider_name : r.requester_name;
@@ -1345,7 +1359,7 @@ async function fetchCompletedExchanges(){
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-circle-check" style="color:var(--success-text);"></i>
           <div>
-            <p class="item-title">${esc(r.service_title)}</p>
+            <p class="item-title">${esc(r.service_title)}${unreadDone.has(r.id) ? ' <span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;">💬 nouveau message</span>' : ''}</p>
             <p class="item-sub">${date} · Avec ${esc(otherName)}</p>
           </div>
         </div>
@@ -1458,6 +1472,8 @@ async function fetchExchanges(){
       });
     }
 
+    const recNew = (received || []).filter(r => r.status === 'pending' && (!localStorage.getItem('tt_req_seen_' + r.id) || unreadPending.has(r.id))).length;
+    const sentNew = (sent || []).filter(r => (r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) || (r.status === 'pending' && unreadPending.has(r.id))).length;
     const recList = document.getElementById('requests-received');
     recList.innerHTML = renderGroupedByStatus(received, ['pending','cancelled'], (r) => {
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
@@ -1514,12 +1530,14 @@ async function fetchExchanges(){
       </div>
     `;}, 'Aucune demande envoyée.', 'dd-sent-g');
 
-    (sent || []).forEach(r => localStorage.setItem('tt_status_seen_' + r.id, r.status));
+    setSectionBadge('received', recNew);
+    setSectionBadge('sent', sentNew);
     const newReqIds = (received || []).filter(r => r.status === 'pending').map(r => r.id);
     setTimeout(() => {
       const scr = document.getElementById('requests');
       if(scr && scr.classList.contains('active')){
         newReqIds.forEach(id => localStorage.setItem('tt_req_seen_' + id, '1'));
+        (sent || []).forEach(r => localStorage.setItem('tt_status_seen_' + r.id, r.status));
         checkNotifications();
       }
     }, 4000);
@@ -1565,7 +1583,10 @@ async function loadAdminPanel(){
       <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
         <p class="item-title">${esc(u.name)}</p>
         <p class="item-sub">${esc((u.email || '').replace('@membres.troctan.ch',''))} · ${u.balance}cr · ${u.rating_count > 0 ? Number(u.rating_avg).toFixed(1) + '★ (' + u.rating_count + ')' : 'pas d\'avis'}</p>
-        ${u.id !== myId ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="adminDeleteUser('${u.id}', ${jsArg(u.name)})">Supprimer ce compte</button>` : '<p class="item-sub">(toi)</p>'}
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          <button class="btn secondary" style="margin-top:0;" onclick="adminSetPassword('${u.id}', ${jsArg(u.name)})">Nouveau mot de passe</button>
+          ${u.id !== myId ? `<button class="btn secondary" style="margin-top:0; color:#c23b3b;" onclick="adminDeleteUser('${u.id}', ${jsArg(u.name)})">Supprimer ce compte</button>` : '<p class="item-sub">(toi)</p>'}
+        </div>
       </div>`).join('');
   }catch(e){ ub.textContent = 'Erreur : ' + e.message; }
 }
@@ -1593,6 +1614,14 @@ async function adminDismissReport(id){
   if(!data || !data.length){ log("Signalement non classé : il manque une autorisation dans Supabase (lance le SQL « mise à jour 4 »)."); return; }
   log('Signalement classé ✓');
   loadAdminPanel();
+}
+async function adminSetPassword(id, name){
+  const pw = prompt('Nouveau mot de passe pour ' + name + ' (8 caractères minimum) :');
+  if(!pw) return;
+  if(pw.length < 8){ log('Mot de passe trop court (8 caractères minimum).'); return; }
+  const { error } = await sb.rpc('admin_set_password', {target: id, new_password: pw});
+  if(error){ log('Erreur : ' + error.message); return; }
+  log('Mot de passe modifié pour ' + name + ' ✓ Transmets-le lui de vive voix.');
 }
 async function adminDeleteUser(id, name){
   if(!confirm('Supprimer définitivement le compte de ' + name + ' et ses contenus ?')) return;
@@ -1842,6 +1871,16 @@ function goHome(){
   });
 }
 
+function setSectionBadge(key, count){
+  const el = document.getElementById('ddb-' + key);
+  if(!el) return;
+  if(count > 0){
+    el.textContent = count; el.style.display = 'inline-block';
+    const dd = document.getElementById('dd-' + key);
+    if(dd) dd.open = true;
+  } else { el.style.display = 'none'; }
+}
+
 function setBadge(id, count){
   const el = document.getElementById(id);
   if(!el) return;
@@ -2046,7 +2085,7 @@ Certains de ces traitements ont donc lieu en Suisse, dans l'Union européenne et
 L'accès aux données est limité par des règles de sécurité au niveau de chaque ligne de la base de données (Row Level Security) : chaque membre ne peut lire ou modifier que ce qui le concerne. Aucune donnée sensible (mot de passe, email, coordonnées, conversation) n'est conservée sur ton appareil au-delà de ta session de connexion.
 
 8. Durée de conservation et suppression
-Tes données sont conservées tant que ton compte existe. « Supprimer mon compte » efface ton profil, tes annonces, tes photos, tes coordonnées privées et tes appartenances aux communautés. Les échanges, messages et avis liés à d'autres membres peuvent subsister dans leur propre historique.
+Tes données sont conservées tant que ton compte existe. « Supprimer mon compte » efface ton profil, tes annonces, tes photos, tes coordonnées privées et tes appartenances aux communautés. Ton compte de connexion est lui aussi supprimé : tu ne pourras plus te connecter avec. Les échanges, messages et avis liés à d'autres membres peuvent subsister dans leur propre historique.
 
 9. Tes droits (nLPD)
 Accès (« Télécharger mes données »), rectification (« Modifier mon profil »), suppression (« Supprimer mon compte »). Pour toute autre demande : ${CONTACT_EMAIL}.
@@ -2243,10 +2282,8 @@ async function deleteAccount(){
         if(files && files.length) await sb.storage.from(bucket).remove(files.map(f => myId + '/' + f.name));
       }catch(e){ /* on continue */ }
     }
-    await sb.from('services').delete().eq('author_id', myId);
-    await sb.from('community_members').delete().eq('user_id', myId);
-    await sb.from('profile_private').delete().eq('user_id', myId);
-    await sb.from('profiles').delete().eq('id', myId);
+    const { error: delErr } = await sb.rpc('delete_my_account');
+    if(delErr){ log('Erreur lors de la suppression : ' + delErr.message); return; }
     unsubscribeRealtime();
     await sb.auth.signOut();
   }catch(e){ log('Erreur lors de la suppression : ' + e.message); return; }
@@ -2475,7 +2512,6 @@ async function renderMap(){
 
 document.getElementById('login-btn').addEventListener('click', passwordLogin);
 document.getElementById('signup-btn').addEventListener('click', passwordSignup);
-document.getElementById('email-link-btn').addEventListener('click', sendMagicLink);
 document.getElementById('otp-btn').addEventListener('click', verifyEmailCode);
 document.getElementById('otp-code').addEventListener('keydown', (e) => { if(e.key === 'Enter') verifyEmailCode(); });
 document.getElementById('login-pass').addEventListener('keydown', (e) => { if(e.key === 'Enter') passwordLogin(); });
