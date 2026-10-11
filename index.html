@@ -52,6 +52,10 @@
   }
   main{flex:1; padding:0 1.1rem 90px; overflow-y:auto;}
   .screen{display:none;}
+  #login, #check-email, #setup-name{overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:100vh; max-height:100dvh; padding-bottom:40px !important;}
+  .auth-details{margin-top:12px; border-top:1px solid var(--border); padding-top:10px;}
+  .auth-details > summary{cursor:pointer; font-size:13.5px; font-weight:600; color:var(--accent-text); list-style:none; padding:4px 0;}
+  .auth-details > summary::-webkit-details-marker{display:none;}
   .screen.active{display:block;}
   .balance-card{
     background:var(--card); border:1px solid var(--border); border-radius:14px;
@@ -157,8 +161,8 @@
 
   <!-- CONNEXION -->
   <section class="screen active" id="login" style="padding:0 1.1rem;">
-    <p class="section-label" style="font-size:18px;margin-top:20px;">Bienvenue sur Troctan</p>
-    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:18px;">Connecte-toi avec ton identifiant et ton mot de passe.</p>
+    <p class="section-label" style="font-size:18px;margin-top:14px;">Bienvenue sur Troctan</p>
+    <p style="font-size:13px;color:var(--text-secondary);line-height:1.4;margin:0 0 10px;">Connecte-toi avec ton identifiant et ton mot de passe.</p>
     <label>Identifiant</label>
     <input type="text" id="login-id" placeholder="ex. marc.dupont" autocapitalize="none" autocomplete="username">
     <label>Mot de passe</label>
@@ -168,8 +172,9 @@
       <span style="font-size:13px; color:var(--text-secondary); font-weight:normal;">Rester connecté sur cet appareil</span>
     </label>
     <button class="btn" id="login-btn">Se connecter</button>
-    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
-      <p style="font-size:13px;font-weight:600;margin:0 0 6px;">Nouveau sur Troctan ?</p>
+    <details class="auth-details" id="signup-box">
+      <summary>Nouveau sur Troctan ? Créer un compte</summary>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.4;margin:6px 0;">Choisis ci-dessus un identifiant (3 à 30 caractères : minuscules, chiffres, point, tiret) et un mot de passe de 8 caractères minimum. Pas de récupération par email : note-les bien.</p>
       <label>Ton adresse email (obligatoire, jamais visible des autres)</label>
       <input type="email" id="signup-email" placeholder="toi@exemple.com" autocomplete="email">
       <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
@@ -177,18 +182,17 @@
         <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showScreen('legal');" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a></span>
       </label>
       <button class="btn secondary" id="signup-btn">Créer mon compte</button>
-    </div>
-    <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin-top:4px;"></p>
-    <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:12px;">Identifiant : lettres minuscules, chiffres, point, tiret (3 à 30 caractères). Il n'y a pas de récupération par email : note bien ton mot de passe.</p>
-    <div id="email-login-box" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
-      <p style="font-size:13px;font-weight:600;margin:0 0 6px;">J'ai déjà un compte avec une adresse email</p>
+    </details>
+    <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
+    <details class="auth-details" id="email-login-box">
+      <summary>J'ai déjà un compte avec une adresse email</summary>
       <label>Ton email</label>
       <input type="email" id="login-email" placeholder="toi@exemple.com">
       <button class="btn secondary" id="email-link-btn">Recevoir un lien de connexion</button>
-      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;">Tu recevras un lien qui te connecte. Ensuite, va dans Profil, « Définir / changer mon mot de passe » : tu pourras alors te connecter avec ton email et ce mot de passe.</p>
-    </div>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 5</p>
-    <div id="debug-panel" style="margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;">Tu recevras un lien et un code. Ensuite, va dans Profil, « Définir / changer mon mot de passe ».</p>
+    </details>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 6</p>
+    <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
   <!-- VERIFIE TA BOITE MAIL -->
@@ -936,7 +940,7 @@ function showEmailLogin(){
   const em = document.getElementById('login-email');
   if(id.includes('@') && em && !em.value) em.value = id;
   const b = document.getElementById('email-login-box');
-  if(b){ b.style.display = 'block'; b.scrollIntoView({behavior:'smooth', block:'center'}); }
+  if(b){ b.open = true; b.scrollIntoView({behavior:'smooth', block:'center'}); }
 }
 function loginError(msg){
   const e = document.getElementById('login-error');
