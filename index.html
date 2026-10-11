@@ -167,12 +167,12 @@
     <button class="btn secondary" id="signup-btn">Créer mon compte</button>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin-top:4px;"></p>
     <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:12px;">Identifiant : lettres minuscules, chiffres, point, tiret (3 à 30 caractères). Il n'y a pas de récupération par email : note bien ton mot de passe.</p>
-    <p style="font-size:12.5px;margin-top:10px;"><a href="#" onclick="event.preventDefault(); showEmailLogin();" style="color:var(--accent-text);">J'ai un ancien compte avec une adresse email</a></p>
-    <div id="email-login-box" style="display:none;margin-top:8px;">
+    <div id="email-login-box" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+      <p style="font-size:13px;font-weight:600;margin:0 0 6px;">J'ai déjà un compte avec une adresse email</p>
       <label>Ton email</label>
       <input type="email" id="login-email" placeholder="toi@exemple.com">
       <button class="btn secondary" id="email-link-btn">Recevoir un lien de connexion</button>
-      <p style="font-size:12px;color:var(--text-muted);">Tu peux aussi entrer ton email dans « Identifiant » avec un mot de passe défini depuis ton profil.</p>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.5;">Tu recevras un lien qui te connecte. Ensuite, va dans Profil, « Définir / changer mon mot de passe » : tu pourras alors te connecter avec ton email et ce mot de passe.</p>
     </div>
     <div id="debug-panel" style="margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
@@ -299,6 +299,7 @@
       <p id="location-status" style="font-size:12.5px;color:var(--text-secondary);margin-top:14px;">Position : non configurée</p>
       <button class="btn secondary" onclick="updateLocation()">Mettre à jour ma position</button>
       <button class="btn secondary" onclick="changeMyPassword()">Définir / changer mon mot de passe</button>
+      <button class="btn secondary" id="idform-btn" style="display:none;" onclick="createMyIdentifier()">Créer mon identifiant (ancien compte)</button>
       <button class="btn secondary" id="admin-btn" style="display:none;" onclick="showScreen('admin')">🛠 Administration</button>
       <button class="btn secondary" onclick="showBlockedUsers()">Personnes bloquées</button>
       <button class="btn secondary" onclick="shareApp()">Partager Troctan</button>
@@ -908,8 +909,11 @@ window.addEventListener('popstate', (e) => {
 });
 
 function showEmailLogin(){
+  const id = document.getElementById('login-id').value.trim();
+  const em = document.getElementById('login-email');
+  if(id.includes('@') && em && !em.value) em.value = id;
   const b = document.getElementById('email-login-box');
-  if(b) b.style.display = 'block';
+  if(b){ b.style.display = 'block'; b.scrollIntoView({behavior:'smooth', block:'center'}); }
 }
 function loginError(msg){
   const e = document.getElementById('login-error');
@@ -935,12 +939,23 @@ async function passwordLogin(){
   loginError('');
   try{
     const { error } = await sb.auth.signInWithPassword({ email: toLoginEmail(id), password: pass });
-    if(error){ loginError(translateAuthError(error.message)); return; }
+    if(error){
+      if(id.includes('@') && (error.message || '').toLowerCase().includes('invalid login')){
+        loginError("Ce compte email n'a pas encore de mot de passe. Utilise le bloc « J'ai déjà un compte avec une adresse email » ci-dessous pour recevoir un lien, puis définis ton mot de passe dans Profil.");
+        showEmailLogin();
+      } else loginError(translateAuthError(error.message));
+      return;
+    }
   }catch(e){ loginError('Erreur réseau : ' + e.message); }
 }
 async function passwordSignup(){
   const id = document.getElementById('login-id').value.trim().toLowerCase();
   const pass = document.getElementById('login-pass').value;
+  if(id.includes('@')){
+    loginError("Pour créer un compte, choisis un identifiant simple (sans @). Si tu as déjà un compte avec ton email, utilise le bloc « J'ai déjà un compte avec une adresse email » ci-dessous.");
+    showEmailLogin();
+    return;
+  }
   if(!/^[a-z0-9._-]{3,30}$/.test(id)){ loginError("Identifiant invalide : 3 à 30 caractères, lettres minuscules, chiffres, point, tiret."); return; }
   if(pass.length < 8){ loginError('Mot de passe : 8 caractères minimum.'); return; }
   loginError('');
@@ -953,6 +968,32 @@ async function passwordSignup(){
     }
   }catch(e){ loginError('Erreur réseau : ' + e.message); }
 }
+function updateIdentifierButton(){
+  const b = document.getElementById('idform-btn');
+  if(b) b.style.display = (myEmail && !myEmail.toLowerCase().endsWith('@membres.troctan.ch')) ? 'block' : 'none';
+}
+async function createMyIdentifier(){
+  const id = (prompt("Choisis ton identifiant (3 à 30 caractères : lettres minuscules, chiffres, point, tiret) :") || '').trim().toLowerCase();
+  if(!id) return;
+  if(!/^[a-z0-9._-]{3,30}$/.test(id)){ log('Identifiant invalide : lettres minuscules, chiffres, point, tiret (3 à 30).'); return; }
+  const pass = prompt('Choisis un mot de passe (8 caractères minimum) :');
+  if(!pass) return;
+  if(pass.length < 8){ log('Mot de passe trop court (8 caractères minimum).'); return; }
+  if(!confirm("Ton adresse email ne servira plus à te connecter : tu te connecteras avec l'identifiant « " + id + " » et ton mot de passe. Il n'y a pas de récupération par email, note-les bien. Continuer ?")) return;
+  try{
+    const { data, error } = await sb.auth.updateUser({ email: toLoginEmail(id), password: pass });
+    if(error){ log('Erreur : ' + translateAuthError(error.message)); return; }
+    const { data: u } = await sb.auth.getUser();
+    if(u && u.user && u.user.email === toLoginEmail(id)){
+      myEmail = u.user.email;
+      updateIdentifierButton();
+      log('Identifiant créé ✓ Connecte-toi désormais avec « ' + id + ' » et ton mot de passe.');
+    } else {
+      log("Identifiant enregistré mais pas encore actif : Supabase demande une confirmation. Désactive « Confirm email » dans Supabase (Authentication, Sign In / Providers, Email) puis recommence.");
+    }
+  }catch(e){ log('Erreur réseau : ' + e.message); }
+}
+
 async function changeMyPassword(){
   const p1 = prompt('Nouveau mot de passe (8 caractères minimum) :');
   if(!p1) return;
@@ -1833,6 +1874,7 @@ async function handleSession(session){
       showScreen('home');
       if(!localStorage.getItem('tt_tutorial_seen')) showTutorial();
       loadAdminStatus();
+      updateIdentifierButton();
       await fetchBlockedIds();
       await fetchServices();
       renderProfile();
