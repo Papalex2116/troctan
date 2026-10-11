@@ -163,8 +163,19 @@
     <input type="text" id="login-id" placeholder="ex. marc.dupont" autocapitalize="none" autocomplete="username">
     <label>Mot de passe</label>
     <input type="password" id="login-pass" placeholder="Au moins 8 caractères" autocomplete="current-password">
+    <label style="display:flex; align-items:center; gap:8px; margin:6px 0 10px; cursor:pointer;">
+      <input type="checkbox" id="login-stay" checked style="width:auto; margin:0;">
+      <span style="font-size:13px; color:var(--text-secondary); font-weight:normal;">Rester connecté sur cet appareil</span>
+    </label>
     <button class="btn" id="login-btn">Se connecter</button>
-    <button class="btn secondary" id="signup-btn">Créer mon compte</button>
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+      <p style="font-size:13px;font-weight:600;margin:0 0 6px;">Nouveau sur Troctan ?</p>
+      <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="signup-cgu" style="width:auto; margin:2px 0 0;">
+        <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showScreen('legal');" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a></span>
+      </label>
+      <button class="btn secondary" id="signup-btn">Créer mon compte</button>
+    </div>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin-top:4px;"></p>
     <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:12px;">Identifiant : lettres minuscules, chiffres, point, tiret (3 à 30 caractères). Il n'y a pas de récupération par email : note bien ton mot de passe.</p>
     <div id="email-login-box" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
@@ -174,6 +185,7 @@
       <button class="btn secondary" id="email-link-btn">Recevoir un lien de connexion</button>
       <p style="font-size:12px;color:var(--text-muted);line-height:1.5;">Tu recevras un lien qui te connecte. Ensuite, va dans Profil, « Définir / changer mon mot de passe » : tu pourras alors te connecter avec ton email et ce mot de passe.</p>
     </div>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 4</p>
     <div id="debug-panel" style="margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -181,6 +193,10 @@
   <section class="screen" id="check-email" style="padding:0 1.1rem; text-align:center;">
     <p class="section-label" style="font-size:18px;margin-top:20px;">Vérifie ta boîte mail</p>
     <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;">On t'a envoyé un lien de connexion à <b id="sent-email-display"></b>. Clique dessus pour revenir ici, connecté.</p>
+    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-top:16px;">Sur téléphone, le lien ne marche pas toujours : tape plutôt le <b>code à 6 chiffres</b> écrit dans le même email.</p>
+    <input type="text" id="otp-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code reçu par email" style="text-align:center; letter-spacing:4px; font-size:18px;">
+    <button class="btn" id="otp-btn">Valider le code</button>
+    <p id="otp-error" style="font-size:12.5px;color:#c23b3b;display:none;"></p>
     <button class="btn secondary" onclick="showScreen('login')">Utiliser un autre email</button>
   </section>
 
@@ -303,6 +319,7 @@
       <button class="btn secondary" id="admin-btn" style="display:none;" onclick="showScreen('admin')">🛠 Administration</button>
       <button class="btn secondary" onclick="showBlockedUsers()">Personnes bloquées</button>
       <button class="btn secondary" onclick="shareApp()">Partager Troctan</button>
+      <button class="btn secondary" onclick="inviteByEmail()">Inviter par email</button>
       <button class="btn secondary" onclick="showTutorial()">Revoir le tutoriel</button>
       <button class="btn secondary" onclick="exportMyData()">Télécharger mes données</button>
       <button class="btn secondary" onclick="showScreen('legal')">Confidentialité &amp; conditions</button>
@@ -359,7 +376,10 @@
     <!-- COMMUNAUTES -->
     <section class="screen" id="communities">
       <p class="section-label" style="font-size:18px;">Communautés</p>
-      <button class="btn secondary" onclick="shareApp()" style="margin-bottom:14px;">Inviter des voisins</button>
+      <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+        <button class="btn secondary" onclick="shareApp()" style="margin-top:0;">Inviter des voisins</button>
+        <button class="btn secondary" onclick="inviteByEmail()" style="margin-top:0;">Par email</button>
+      </div>
       <p class="section-label">Mes communautés</p>
       <div class="list" id="my-communities"></div>
       <p class="section-label" style="margin-top:1.2rem;">Rejoindre une communauté</p>
@@ -411,7 +431,7 @@
 
     <!-- CONFIDENTIALITE -->
     <section class="screen" id="legal">
-      <div class="backbar" onclick="showScreen('profile')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <div class="backbar" onclick="showScreen(myId ? 'profile' : 'login')"><i class="ti ti-arrow-left"></i> Retour</div>
       <div style="font-size:13.5px; line-height:1.6; color:var(--text-secondary); white-space:pre-line;" id="legal-text"></div>
     </section>
 
@@ -450,7 +470,7 @@
     </section>
   </main>
 
-  <nav class="tabbar">
+  <nav class="tabbar" style="display:none;">
     <button class="tab-btn active" data-tab="home" onclick="goHome()"><i class="ti ti-home"></i>Accueil<span class="tab-badge" id="badge-home"></span></button>
     <button class="tab-btn" data-tab="requests" onclick="showScreen('requests');"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
     <button class="tab-btn" data-tab="propose" onclick="showScreen('propose')"><i class="ti ti-plus"></i>Proposer</button>
@@ -668,12 +688,13 @@ function initials(name){
 const AUTH_SCREENS = ['login', 'check-email', 'setup-name', 'tutorial'];
 
 function renderScreenOnly(id){
+  if(!myId && !AUTH_SCREENS.includes(id) && id !== 'legal') id = 'login';
   document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
 
   const nav = document.querySelector('nav.tabbar');
-  if(nav) nav.style.display = AUTH_SCREENS.includes(id) ? 'none' : 'flex';
+  if(nav) nav.style.display = (AUTH_SCREENS.includes(id) || !myId) ? 'none' : 'flex';
 
   const toast = document.getElementById('toast');
   if(toast) toast.style.display = 'none';
@@ -932,11 +953,16 @@ function translateAuthError(m){
   if(t.includes('password')) return 'Mot de passe trop court ou refusé (8 caractères minimum).';
   return m;
 }
+function setStayPreference(){
+  const c = document.getElementById('login-stay');
+  try{ localStorage.setItem('tt_stay', (c && !c.checked) ? '0' : '1'); }catch(e){}
+}
 async function passwordLogin(){
   const id = document.getElementById('login-id').value.trim();
   const pass = document.getElementById('login-pass').value;
   if(!id || !pass){ loginError('Entre ton identifiant et ton mot de passe.'); return; }
   loginError('');
+  setStayPreference();
   try{
     const { error } = await sb.auth.signInWithPassword({ email: toLoginEmail(id), password: pass });
     if(error){
@@ -958,10 +984,19 @@ async function passwordSignup(){
   }
   if(!/^[a-z0-9._-]{3,30}$/.test(id)){ loginError("Identifiant invalide : 3 à 30 caractères, lettres minuscules, chiffres, point, tiret."); return; }
   if(pass.length < 8){ loginError('Mot de passe : 8 caractères minimum.'); return; }
+  if(!document.getElementById('signup-cgu').checked){
+    loginError("Pour créer un compte, lis et accepte la politique de confidentialité et les conditions d'utilisation (case à cocher).");
+    return;
+  }
   loginError('');
+  setStayPreference();
   try{
     const { data, error } = await sb.auth.signUp({ email: toLoginEmail(id), password: pass });
     if(error){ loginError(translateAuthError(error.message)); return; }
+    if(data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
+      loginError('Cet identifiant est déjà pris, choisis-en un autre.');
+      return;
+    }
     if(!data.session){
       const r = await sb.auth.signInWithPassword({ email: toLoginEmail(id), password: pass });
       if(r.error){ loginError(translateAuthError(r.error.message)); return; }
@@ -1001,6 +1036,18 @@ async function changeMyPassword(){
   const { error } = await sb.auth.updateUser({ password: p1 });
   if(error){ log('Erreur : ' + translateAuthError(error.message)); return; }
   log('Mot de passe enregistré ✓');
+}
+
+async function verifyEmailCode(){
+  const email = (document.getElementById('sent-email-display').textContent || '').trim();
+  const token = (document.getElementById('otp-code').value || '').replace(/\s/g, '');
+  const err = document.getElementById('otp-error');
+  if(!email || !/^[0-9]{6,10}$/.test(token)){ err.textContent = 'Entre le code à chiffres reçu par email.'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  try{
+    const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
+    if(error){ err.textContent = 'Code incorrect ou expiré. Redemande un lien et réessaie.'; err.style.display = 'block'; }
+  }catch(e){ err.textContent = 'Erreur réseau : ' + e.message; err.style.display = 'block'; }
 }
 
 async function sendMagicLink(){
@@ -1507,22 +1554,26 @@ async function loadAdminPanel(){
 
 async function adminRemoveService(id){
   if(!confirm('Retirer cette annonce ?')) return;
-  const { error } = await sb.from('services').delete().eq('id', id);
+  const { data, error } = await sb.from('services').delete().eq('id', id).select();
   if(error){ log('Erreur : ' + error.message); return; }
+  if(!data || !data.length){ log("Annonce non retirée : il manque une autorisation dans Supabase (lance le SQL « mise à jour 4 »)."); return; }
   log('Annonce retirée.');
   loadAdminPanel(); fetchServices();
 }
 async function adminDeleteService(){
   if(!currentDetail) return;
   if(!confirm('Retirer cette annonce ?')) return;
-  const { error } = await sb.from('services').delete().eq('id', currentDetail.id);
+  const { data, error } = await sb.from('services').delete().eq('id', currentDetail.id).select();
   if(error){ log('Erreur : ' + error.message); return; }
+  if(!data || !data.length){ log("Annonce non retirée : il manque une autorisation dans Supabase (lance le SQL « mise à jour 4 »)."); return; }
   log('Annonce retirée.');
   showScreen('home');
 }
 async function adminDismissReport(id){
-  const { error } = await sb.from('reports').delete().eq('id', id);
+  const { data, error } = await sb.from('reports').delete().eq('id', id).select();
   if(error){ log('Erreur : ' + error.message); return; }
+  if(!data || !data.length){ log("Signalement non classé : il manque une autorisation dans Supabase (lance le SQL « mise à jour 4 »)."); return; }
+  log('Signalement classé ✓');
   loadAdminPanel();
 }
 async function adminDeleteUser(id, name){
@@ -2051,6 +2102,11 @@ function finishTutorial(){
   showScreen('home');
 }
 
+function inviteByEmail(){
+  const subject = 'Rejoins-moi sur Troctan';
+  const body = "Bonjour,\n\nJe t'invite à rejoindre Troctan : l'échange de services entre voisins, sans argent (1 crédit = 1 heure).\n\nInscris-toi ici : https://troctan.ch\n\nÀ bientôt !";
+  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
 async function shareApp(){
   const url = 'https://troctan.ch';
   const text = "Troctan : échange de services entre voisins, sans argent — 1 crédit = 1 heure.";
@@ -2337,6 +2393,12 @@ async function unblockUser(userId){
 
 async function boot(){
   if(!sb) return;
+  try{
+    if(localStorage.getItem('tt_stay') === '0' && !sessionStorage.getItem('tt_alive')){
+      await sb.auth.signOut();
+    }
+    sessionStorage.setItem('tt_alive', '1');
+  }catch(e){ /* silencieux */ }
   sb.auth.onAuthStateChange((event, session) => {
     handleSession(session);
   });
@@ -2396,6 +2458,8 @@ async function renderMap(){
 document.getElementById('login-btn').addEventListener('click', passwordLogin);
 document.getElementById('signup-btn').addEventListener('click', passwordSignup);
 document.getElementById('email-link-btn').addEventListener('click', sendMagicLink);
+document.getElementById('otp-btn').addEventListener('click', verifyEmailCode);
+document.getElementById('otp-code').addEventListener('keydown', (e) => { if(e.key === 'Enter') verifyEmailCode(); });
 document.getElementById('login-pass').addEventListener('keydown', (e) => { if(e.key === 'Enter') passwordLogin(); });
 document.getElementById('onboard-btn').addEventListener('click', finishNameSetup);
 log("Page prête, en attente d'action.");
