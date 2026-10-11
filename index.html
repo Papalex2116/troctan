@@ -158,11 +158,22 @@
   <!-- CONNEXION -->
   <section class="screen active" id="login" style="padding:0 1.1rem;">
     <p class="section-label" style="font-size:18px;margin-top:20px;">Bienvenue sur Troctan</p>
-    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:18px;">Connecte-toi avec ton email — pas de mot de passe, tu recevras un lien de connexion.</p>
-    <label>Ton email</label>
-    <input type="email" id="login-email" placeholder="toi@exemple.com">
-    <button class="btn" id="login-btn">Recevoir un lien de connexion</button>
-    <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin-top:-4px;">Entre un email valide pour continuer.</p>
+    <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:18px;">Connecte-toi avec ton identifiant et ton mot de passe.</p>
+    <label>Identifiant</label>
+    <input type="text" id="login-id" placeholder="ex. marc.dupont" autocapitalize="none" autocomplete="username">
+    <label>Mot de passe</label>
+    <input type="password" id="login-pass" placeholder="Au moins 8 caractères" autocomplete="current-password">
+    <button class="btn" id="login-btn">Se connecter</button>
+    <button class="btn secondary" id="signup-btn">Créer mon compte</button>
+    <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin-top:4px;"></p>
+    <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:12px;">Identifiant : lettres minuscules, chiffres, point, tiret (3 à 30 caractères). Il n'y a pas de récupération par email : note bien ton mot de passe.</p>
+    <p style="font-size:12.5px;margin-top:10px;"><a href="#" onclick="event.preventDefault(); showEmailLogin();" style="color:var(--accent-text);">J'ai un ancien compte avec une adresse email</a></p>
+    <div id="email-login-box" style="display:none;margin-top:8px;">
+      <label>Ton email</label>
+      <input type="email" id="login-email" placeholder="toi@exemple.com">
+      <button class="btn secondary" id="email-link-btn">Recevoir un lien de connexion</button>
+      <p style="font-size:12px;color:var(--text-muted);">Tu peux aussi entrer ton email dans « Identifiant » avec un mot de passe défini depuis ton profil.</p>
+    </div>
     <div id="debug-panel" style="margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -233,6 +244,7 @@
       <button class="btn" onclick="requestExchange()">Demander cet échange</button>
       <button class="btn secondary" style="color:#c23b3b;" onclick="reportService()">Signaler ce service</button>
       <button class="btn secondary" style="color:#c23b3b;" onclick="blockUserFromDetail()">Bloquer cette personne</button>
+      <button class="btn secondary" id="admin-del-service" style="display:none;color:#c23b3b;" onclick="adminDeleteService()">🛠 Retirer cette annonce (admin)</button>
     </section>
 
     <!-- PROPOSER -->
@@ -286,6 +298,8 @@
       </details>
       <p id="location-status" style="font-size:12.5px;color:var(--text-secondary);margin-top:14px;">Position : non configurée</p>
       <button class="btn secondary" onclick="updateLocation()">Mettre à jour ma position</button>
+      <button class="btn secondary" onclick="changeMyPassword()">Définir / changer mon mot de passe</button>
+      <button class="btn secondary" id="admin-btn" style="display:none;" onclick="showScreen('admin')">🛠 Administration</button>
       <button class="btn secondary" onclick="showBlockedUsers()">Personnes bloquées</button>
       <button class="btn secondary" onclick="shareApp()">Partager Troctan</button>
       <button class="btn secondary" onclick="showTutorial()">Revoir le tutoriel</button>
@@ -352,6 +366,17 @@
       <p class="section-label" style="margin-top:1.2rem;">Créer une communauté</p>
       <input type="text" id="new-community-name" placeholder="Ex. Quartier des Tilleuls">
       <button class="btn secondary" onclick="createCommunity()">Créer</button>
+    </section>
+
+    <!-- ADMINISTRATION -->
+    <section class="screen" id="admin">
+      <div class="backbar" onclick="showScreen('profile')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <p class="section-label">Administration</p>
+      <p style="font-size:12.5px;color:var(--text-secondary);">Tu peux aussi retirer une publication, un commentaire ou une annonce directement depuis leur écran (bouton rouge).</p>
+      <p class="section-label" style="margin-top:14px;">Signalements</p>
+      <div class="list" id="admin-reports"></div>
+      <p class="section-label" style="margin-top:14px;">Utilisateurs</p>
+      <div class="list" id="admin-users"></div>
     </section>
 
     <!-- PERSONNES BLOQUEES -->
@@ -628,6 +653,7 @@ async function leaveCommunity(id){
 
 let myBalanceCache = 0;
 let myRatingAvg = 0, myRatingCount = 0;
+let myIsAdmin = false;
 let myAvatarUrl = null;
 let pendingAvatarBlob = null;
 let myLat = null, myLng = null;
@@ -784,7 +810,7 @@ async function fetchCommunityFeed(){
             <p style="font-size:13px; font-weight:600; margin:0;">${esc(p.author_name)}</p>
             <p style="font-size:11px; color:var(--text-muted); margin:0;">${date}</p>
           </div>
-          ${p.author_id === myId ? `<button onclick="deleteCommunityPost('${p.id}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;" title="Supprimer">✕</button>` : ''}
+          ${(p.author_id === myId || myIsAdmin) ? `<button onclick="deleteCommunityPost('${p.id}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;" title="Supprimer">✕</button>` : ''}
         </div>
         <img src="${esc(p.photo_url)}" style="width:100%; max-height:420px; object-fit:cover; display:block;">
         <div style="padding:10px 12px;">
@@ -797,7 +823,7 @@ async function fetchCommunityFeed(){
           <div id="comments-${p.id}">
             ${postComments.length > 2 ? `<p style="font-size:12px; color:var(--text-muted); margin:0 0 4px; cursor:pointer;" onclick="showAllComments('${p.id}')">Voir les ${postComments.length} commentaires</p>` : ''}
             <div id="comments-list-${p.id}">
-              ${previewComments.map(cm => `<p style="font-size:13px; margin:2px 0;"><b>${esc(cm.author_name)}</b> ${esc(cm.content)}</p>`).join('')}
+              ${previewComments.map(cm => commentHtml(cm)).join('')}
             </div>
           </div>
           <div style="display:flex; gap:8px; margin-top:8px;">
@@ -812,10 +838,21 @@ async function fetchCommunityFeed(){
   }catch(e){ log('Erreur : ' + e.message); }
 }
 
+function commentHtml(cm){
+  const canDel = (cm.author_id === myId || myIsAdmin);
+  return `<p style="font-size:13px; margin:2px 0;"><b>${esc(cm.author_name)}</b> ${esc(cm.content)}${canDel ? ` <a href="#" onclick="event.preventDefault(); deleteCommunityComment('${cm.id}');" style="color:var(--text-muted); font-size:12px; margin-left:6px;" title="Supprimer">✕</a>` : ''}</p>`;
+}
+async function deleteCommunityComment(id){
+  if(!confirm('Supprimer ce commentaire ?')) return;
+  const { error } = await sb.from('community_comments').delete().eq('id', id);
+  if(error){ log('Erreur : ' + error.message); return; }
+  fetchCommunityFeed();
+}
+
 function showAllComments(postId){
   const all = (window._commentsByPost && window._commentsByPost[postId]) || [];
   document.getElementById('comments-list-' + postId).innerHTML =
-    all.map(cm => `<p style="font-size:13px; margin:2px 0;"><b>${esc(cm.author_name)}</b> ${esc(cm.content)}</p>`).join('');
+    all.map(cm => commentHtml(cm)).join('');
   const box = document.getElementById('comments-' + postId);
   box.querySelector('p').style.display = 'none';
 }
@@ -841,8 +878,10 @@ async function addCommunityComment(postId){
 
 async function deleteCommunityPost(postId){
   if(!confirm('Supprimer cette publication ?')) return;
-  try{ await sb.from('community_posts').delete().eq('id', postId); }
-  catch(e){ log('Erreur : ' + e.message); return; }
+  try{
+    const { error } = await sb.from('community_posts').delete().eq('id', postId);
+    if(error){ log('Erreur : ' + error.message); return; }
+  }catch(e){ log('Erreur : ' + e.message); return; }
   fetchCommunityFeed();
 }
 
@@ -853,6 +892,7 @@ function refreshForScreen(id){
   else if(id === 'profile') renderProfile();
   else if(id === 'communities') fetchCommunities();
   else if(id === 'community-feed') fetchCommunityFeed();
+  else if(id === 'admin') loadAdminPanel();
 }
 
 function showScreen(id){
@@ -867,14 +907,69 @@ window.addEventListener('popstate', (e) => {
   if(document.getElementById(id)) renderScreenOnly(id);
 });
 
+function showEmailLogin(){
+  const b = document.getElementById('email-login-box');
+  if(b) b.style.display = 'block';
+}
+function loginError(msg){
+  const e = document.getElementById('login-error');
+  e.textContent = msg; e.style.display = msg ? 'block' : 'none';
+}
+function toLoginEmail(id){
+  id = (id || '').trim();
+  if(id.includes('@')) return id;
+  return id.toLowerCase() + '@membres.troctan.ch';
+}
+function translateAuthError(m){
+  const t = (m || '').toLowerCase();
+  if(t.includes('invalid login')) return 'Identifiant ou mot de passe incorrect.';
+  if(t.includes('already registered')) return 'Cet identifiant existe déjà, choisis-en un autre.';
+  if(t.includes('email not confirmed')) return "Compte non confirmé : la confirmation par email est encore activée dans Supabase.";
+  if(t.includes('password')) return 'Mot de passe trop court ou refusé (8 caractères minimum).';
+  return m;
+}
+async function passwordLogin(){
+  const id = document.getElementById('login-id').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if(!id || !pass){ loginError('Entre ton identifiant et ton mot de passe.'); return; }
+  loginError('');
+  try{
+    const { error } = await sb.auth.signInWithPassword({ email: toLoginEmail(id), password: pass });
+    if(error){ loginError(translateAuthError(error.message)); return; }
+  }catch(e){ loginError('Erreur réseau : ' + e.message); }
+}
+async function passwordSignup(){
+  const id = document.getElementById('login-id').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  if(!/^[a-z0-9._-]{3,30}$/.test(id)){ loginError("Identifiant invalide : 3 à 30 caractères, lettres minuscules, chiffres, point, tiret."); return; }
+  if(pass.length < 8){ loginError('Mot de passe : 8 caractères minimum.'); return; }
+  loginError('');
+  try{
+    const { data, error } = await sb.auth.signUp({ email: toLoginEmail(id), password: pass });
+    if(error){ loginError(translateAuthError(error.message)); return; }
+    if(!data.session){
+      const r = await sb.auth.signInWithPassword({ email: toLoginEmail(id), password: pass });
+      if(r.error){ loginError(translateAuthError(r.error.message)); return; }
+    }
+  }catch(e){ loginError('Erreur réseau : ' + e.message); }
+}
+async function changeMyPassword(){
+  const p1 = prompt('Nouveau mot de passe (8 caractères minimum) :');
+  if(!p1) return;
+  if(p1.length < 8){ log('Mot de passe trop court (8 caractères minimum).'); return; }
+  const { error } = await sb.auth.updateUser({ password: p1 });
+  if(error){ log('Erreur : ' + translateAuthError(error.message)); return; }
+  log('Mot de passe enregistré ✓');
+}
+
 async function sendMagicLink(){
   const emailInput = document.getElementById('login-email');
   const email = emailInput.value.trim();
   if(!email || !email.includes('@')){
-    document.getElementById('login-error').style.display = 'block';
+    loginError('Entre un email valide.');
     return;
   }
-  document.getElementById('login-error').style.display = 'none';
+  loginError('');
   log('Envoi du lien de connexion...');
   try{
     const { error } = await sb.auth.signInWithOtp({
@@ -926,7 +1021,7 @@ function finishNameSetup(){
 async function logout(){
   unsubscribeRealtime();
   try{ await sb.auth.signOut(); }catch(e){ /* on nettoie quand même localement */ }
-  myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null; myAvatarUrl = null; myBlockedIds = new Set();
+  myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null; myAvatarUrl = null; myBlockedIds = new Set(); myIsAdmin = false;
   currentServices = [];
   showScreen('login');
 }
@@ -1022,6 +1117,8 @@ function openDetail(id){
   document.getElementById('detail-desc').textContent = s.desc;
   document.getElementById('detail-duration').textContent = s.hours + 'cr';
   document.getElementById('detail-balance').textContent = (myBalanceCache - s.hours) + 'cr';
+  const ads = document.getElementById('admin-del-service');
+  if(ads) ads.style.display = (myIsAdmin && s.authorId !== myId) ? 'block' : 'none';
   showScreen('detail');
   loadAuthorInfo(s);
 }
@@ -1084,6 +1181,7 @@ async function fetchActiveExchanges(){
       });
     }
 
+    const reviewedActive = await loadReviewedSet(ids);
     const list = document.getElementById('requests-active');
     list.innerHTML = (data && data.length) ? data.map(r => {
       const otherName = r.requester_id === myId ? r.provider_name : r.requester_name;
@@ -1100,14 +1198,15 @@ async function fetchActiveExchanges(){
         </div>
         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
           <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')">Discuter${hasUnread ? ' (1)' : ''}</button>
-          <button class="btn secondary" style="margin-top:0;" onclick="closeExchange('${r.id}')">Clôturer l'échange</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="closeExchange('${r.id}', '${otherId}', ${jsArg(otherName)})">Clôturer l'échange</button>
         </div>
+        ${reviewBtn(r.id, otherId, otherName, reviewedActive)}
       </div>`;
     }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange en cours.</p>";
   }catch(e){ log('Erreur : ' + e.message); }
 }
 
-async function closeExchange(exchangeId){
+async function closeExchange(exchangeId, otherId, otherName){
   if(!confirm("Marquer cet échange comme terminé ? Il passera dans « Échanges terminés ».")) return;
   try{
     const { error } = await sb.from('exchanges').update({status: 'completed'}).eq('id', exchangeId);
@@ -1117,6 +1216,7 @@ async function closeExchange(exchangeId){
   fetchActiveExchanges();
   fetchCompletedExchanges();
   checkNotifications();
+  if(otherId && confirm('Échange clôturé. Veux-tu donner un avis sur ' + otherName + ' maintenant ?')) leaveReview(exchangeId, otherId, otherName);
 }
 
 async function fetchCompletedExchanges(){
@@ -1128,18 +1228,22 @@ async function fetchCompletedExchanges(){
       .eq('status', 'completed')
       .order('created_at', {ascending:false});
 
+    const reviewedDone = await loadReviewedSet((data || []).map(r => r.id));
     list.innerHTML = (data && data.length) ? data.map(r => {
       const iAmRequester = r.requester_id === myId;
       const otherName = iAmRequester ? r.provider_name : r.requester_name;
       const otherId = iAmRequester ? r.provider_id : r.requester_id;
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
       return `
-      <div class="item-card" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')">
-        <i class="ti ti-circle-check" style="color:var(--success-text);"></i>
-        <div>
-          <p class="item-title">${esc(r.service_title)}</p>
-          <p class="item-sub">${date} · Avec ${esc(otherName)}</p>
+      <div class="item-card" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')" style="flex-direction:column; align-items:stretch;">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <i class="ti ti-circle-check" style="color:var(--success-text);"></i>
+          <div>
+            <p class="item-title">${esc(r.service_title)}</p>
+            <p class="item-sub">${date} · Avec ${esc(otherName)}</p>
+          </div>
         </div>
+        ${reviewBtn(r.id, otherId, otherName, reviewedDone)}
       </div>`;
     }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
   }catch(e){ log('Erreur : ' + e.message); }
@@ -1236,14 +1340,7 @@ async function fetchExchanges(){
     const { data: sent, error: err2 } = await sb.from('exchanges').select('*').eq('requester_id', myId).order('created_at', {ascending:false}).limit(20);
     if(err1 || err2){ log('Erreur en chargeant les demandes : ' + ((err1||err2).message)); return; }
 
-    const reviewableReceivedIds = (received || []).filter(r => r.status === 'cancelled').map(r => r.id);
-    const reviewableSentIds = (sent || []).filter(r => r.status === 'accepted' || r.status === 'refused').map(r => r.id);
-    const allReviewableIds = [...reviewableReceivedIds, ...reviewableSentIds];
-    let reviewedIds = new Set();
-    if(allReviewableIds.length){
-      const { data: myReviews } = await sb.from('reviews').select('exchange_id').eq('reviewer_id', myId).in('exchange_id', allReviewableIds);
-      reviewedIds = new Set((myReviews || []).map(r => r.exchange_id));
-    }
+    const reviewedIds = await loadReviewedSet([...(received || []), ...(sent || [])].map(r => r.id));
 
     const pendingIds = [...(received || []).filter(r => r.status === 'pending').map(r => r.id), ...(sent || []).filter(r => r.status === 'pending').map(r => r.id)];
     let unreadPending = new Set();
@@ -1268,7 +1365,7 @@ async function fetchExchanges(){
               <p class="item-sub">${date} · ${esc(r.requester_name)} · Annulée par le demandeur</p>
             </div>
           </div>
-          ${!reviewedIds.has(r.id) ? `<button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); leaveReview('${r.id}', '${r.requester_id}', ${jsArg(r.requester_name)})">Laisser un avis</button>` : ''}
+          ${reviewBtn(r.id, r.requester_id, r.requester_name, reviewedIds)}
           <input type="checkbox" class="del-check" onclick="event.stopPropagation()" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">
         </div>`;
       }
@@ -1285,6 +1382,7 @@ async function fetchExchanges(){
           <button class="btn secondary" style="margin-top:0;" onclick="respondExchange('${r.id}', 'refused')">Refuser</button>
           <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.requester_name)}, '${r.requester_id}')">Discuter${unreadPending.has(r.id) ? ' 🔴' : ''}</button>
         </div>
+        ${reviewBtn(r.id, r.requester_id, r.requester_name, reviewedIds)}
       </div>`;
     }, 'Aucune demande en attente.', 'dd-received-g');
 
@@ -1301,7 +1399,7 @@ async function fetchExchanges(){
             <p class="item-sub">${date} · Chez ${esc(r.provider_name)}${(r.status === 'pending' && unreadPending.has(r.id)) ? ' · <b style="color:#e0453c;">💬 nouveau message</b>' : ''}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
           </div>
         </div>
-        ${((r.status === 'accepted' || r.status === 'refused') && !reviewedIds.has(r.id)) ? `<button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); leaveReview('${r.id}', '${r.provider_id}', ${jsArg(r.provider_name)})">Laisser un avis</button>` : ''}
+        ${reviewBtn(r.id, r.provider_id, r.provider_name, reviewedIds)}
         ${r.status === 'pending' ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
           <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')">Discuter${unreadPending.has(r.id) ? ' 🔴' : ''}</button>
           <button class="btn secondary" style="margin-top:0; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>
@@ -1321,6 +1419,103 @@ async function fetchExchanges(){
     }, 4000);
     checkNotifications();
   }catch(e){ log('Erreur en chargeant les demandes : ' + e.message); }
+}
+
+async function loadAdminStatus(){
+  try{
+    const { data } = await sb.from('admins').select('user_id').eq('user_id', myId).maybeSingle();
+    myIsAdmin = !!data;
+  }catch(e){ myIsAdmin = false; }
+  const b = document.getElementById('admin-btn');
+  if(b) b.style.display = myIsAdmin ? 'block' : 'none';
+}
+
+async function loadAdminPanel(){
+  if(!myIsAdmin) return;
+  const rb = document.getElementById('admin-reports');
+  const ub = document.getElementById('admin-users');
+  try{
+    const { data: reps } = await sb.from('reports').select('*').order('created_at', {ascending:false}).limit(50);
+    const sids = [...new Set((reps || []).map(r => r.reported_service_id).filter(Boolean))];
+    let titles = {};
+    if(sids.length){
+      const { data: sv } = await sb.from('services').select('id, title').in('id', sids);
+      (sv || []).forEach(x => { titles[x.id] = x.title; });
+    }
+    rb.innerHTML = (reps && reps.length) ? reps.map(r => `
+      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+        <p class="item-title">${r.reported_service_id ? esc(titles[r.reported_service_id] || 'Annonce déjà supprimée') : 'Signalement utilisateur'}</p>
+        <p class="item-sub">${new Date(r.created_at).toLocaleDateString('fr-CH')} · ${esc(r.reason)}</p>
+        <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          ${(r.reported_service_id && titles[r.reported_service_id]) ? `<button class="btn secondary" style="margin-top:0; color:#c23b3b;" onclick="adminRemoveService('${r.reported_service_id}')">Retirer l'annonce</button>` : ''}
+          <button class="btn secondary" style="margin-top:0;" onclick="adminDismissReport('${r.id}')">Classer</button>
+        </div>
+      </div>`).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun signalement.</p>";
+  }catch(e){ rb.textContent = 'Erreur : ' + e.message; }
+  try{
+    const { data: users, error } = await sb.rpc('admin_list_users');
+    if(error){ ub.textContent = 'Erreur : ' + error.message; return; }
+    ub.innerHTML = (users || []).map(u => `
+      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+        <p class="item-title">${esc(u.name)}</p>
+        <p class="item-sub">${esc((u.email || '').replace('@membres.troctan.ch',''))} · ${u.balance}cr · ${u.rating_count > 0 ? Number(u.rating_avg).toFixed(1) + '★ (' + u.rating_count + ')' : 'pas d\'avis'}</p>
+        ${u.id !== myId ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="adminDeleteUser('${u.id}', ${jsArg(u.name)})">Supprimer ce compte</button>` : '<p class="item-sub">(toi)</p>'}
+      </div>`).join('');
+  }catch(e){ ub.textContent = 'Erreur : ' + e.message; }
+}
+
+async function adminRemoveService(id){
+  if(!confirm('Retirer cette annonce ?')) return;
+  const { error } = await sb.from('services').delete().eq('id', id);
+  if(error){ log('Erreur : ' + error.message); return; }
+  log('Annonce retirée.');
+  loadAdminPanel(); fetchServices();
+}
+async function adminDeleteService(){
+  if(!currentDetail) return;
+  if(!confirm('Retirer cette annonce ?')) return;
+  const { error } = await sb.from('services').delete().eq('id', currentDetail.id);
+  if(error){ log('Erreur : ' + error.message); return; }
+  log('Annonce retirée.');
+  showScreen('home');
+}
+async function adminDismissReport(id){
+  const { error } = await sb.from('reports').delete().eq('id', id);
+  if(error){ log('Erreur : ' + error.message); return; }
+  loadAdminPanel();
+}
+async function adminDeleteUser(id, name){
+  if(!confirm('Supprimer définitivement le compte de ' + name + ' et ses contenus ?')) return;
+  const { error } = await sb.rpc('admin_delete_user', {target: id});
+  if(error){ log('Erreur : ' + error.message); return; }
+  log('Compte supprimé.');
+  loadAdminPanel();
+}
+
+async function refreshMyStats(){
+  if(!sb || !myId) return;
+  try{
+    const { data: profile } = await sb.from('profiles').select('balance, rating_avg, rating_count').eq('id', myId).maybeSingle();
+    if(!profile) return;
+    myBalanceCache = profile.balance || 0;
+    myRatingAvg = Number(profile.rating_avg) || 0;
+    myRatingCount = profile.rating_count || 0;
+    const bv = document.getElementById('balance-value'); if(bv) bv.textContent = myBalanceCache + 'cr';
+    const pb = document.getElementById('profile-balance'); if(pb) pb.textContent = myBalanceCache + 'cr';
+    const pr = document.getElementById('profile-rating'); if(pr) pr.textContent = myRatingCount > 0 ? myRatingAvg.toFixed(1) + '★' : '–';
+  }catch(e){ /* silencieux */ }
+}
+
+async function loadReviewedSet(ids){
+  if(!ids.length) return new Set();
+  try{
+    const { data } = await sb.from('reviews').select('exchange_id').eq('reviewer_id', myId).in('exchange_id', ids);
+    return new Set((data || []).map(r => r.exchange_id));
+  }catch(e){ return new Set(); }
+}
+function reviewBtn(exchangeId, otherId, otherName, reviewedSet){
+  if(reviewedSet.has(exchangeId)) return '<p class="item-sub" style="margin-top:8px;">✓ Avis donné</p>';
+  return `<button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); leaveReview('${exchangeId}', '${otherId}', ${jsArg(otherName)})">Donner un avis</button>`;
 }
 
 async function cancelExchange(exchangeId){
@@ -1343,10 +1538,13 @@ async function leaveReview(exchangeId, providerId, providerName){
       exchange_id: exchangeId, reviewer_id: myId, reviewed_id: providerId,
       rating, comment
     });
-    if(error){ log('Erreur : ' + error.message); return; }
+    if(error){
+      log(error.code === '23505' ? 'Tu as déjà donné un avis pour cet échange.' : 'Erreur : ' + error.message);
+      return;
+    }
   }catch(e){ log('Erreur réseau : ' + e.message); return; }
   log('Merci pour ton avis !');
-  fetchExchanges();
+  fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges();
 }
 
 async function respondExchange(exchangeId, decision){
@@ -1551,7 +1749,9 @@ async function checkNotifications(){
       const { data: posts } = await sb.from('community_posts').select('id, created_at').in('community_id', communityIds).order('created_at', {ascending:false}).limit(50);
       const lastSeen = localStorage.getItem('tt_last_seen_community_post') || '1970-01-01';
       const newCount = (posts || []).filter(p => p.created_at > lastSeen).length;
-      setBadge('badge-communities', newCount);
+      const onComm = (function(){ const c = document.querySelector('.screen.active'); return c && (c.id === 'communities' || c.id === 'community-feed'); })();
+      if(onComm){ localStorage.setItem('tt_last_seen_community_post', new Date().toISOString()); setBadge('badge-communities', 0); }
+      else setBadge('badge-communities', newCount);
     } else {
       setBadge('badge-communities', 0);
     }
@@ -1588,17 +1788,21 @@ async function checkNotifications(){
     });
   }catch(e){ /* silencieux */ }
 
-  setBadge('badge-requests', pendingCount + unreadMsgCount + statusChangeCount);
+  const curScr = document.querySelector('.screen.active');
+  const curId = curScr ? curScr.id : '';
+  setBadge('badge-requests', curId === 'requests' ? 0 : pendingCount + unreadMsgCount + statusChangeCount);
 
   try{
     const { data } = await sb.from('services').select('id, created_at').order('created_at', {ascending:false}).limit(50);
     const lastSeen = localStorage.getItem('tt_last_seen_service') || '1970-01-01';
     const newCount = (data || []).filter(s => s.created_at > lastSeen).length;
-    setBadge('badge-home', newCount);
+    if(curId === 'home'){ localStorage.setItem('tt_last_seen_service', new Date().toISOString()); setBadge('badge-home', 0); }
+    else setBadge('badge-home', newCount);
   }catch(e){ /* silencieux */ }
 }
 
-setInterval(checkNotifications, 20000);
+setInterval(() => { if(!document.hidden){ checkNotifications(); refreshMyStats(); } }, 10000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden){ checkNotifications(); refreshMyStats(); } });
 setInterval(() => {
   const c = document.getElementById('chat');
   if(c && c.classList.contains('active') && currentChatExchangeId && !document.hidden) fetchChatMessages();
@@ -1628,6 +1832,7 @@ async function handleSession(session){
       document.getElementById('balance-value').textContent = myBalanceCache + 'cr';
       showScreen('home');
       if(!localStorage.getItem('tt_tutorial_seen')) showTutorial();
+      loadAdminStatus();
       await fetchBlockedIds();
       await fetchServices();
       renderProfile();
@@ -1654,6 +1859,12 @@ function subscribeRealtime(){
       const requestsScreen = document.getElementById('requests');
       if(requestsScreen && requestsScreen.classList.contains('active')){ fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges(); }
     })
+    .on('postgres_changes', {event:'*', schema:'public', table:'reviews'}, () => {
+      refreshMyStats();
+      const rs = document.getElementById('requests');
+      if(rs && rs.classList.contains('active')){ fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges(); }
+    })
+    .on('postgres_changes', {event:'*', schema:'public', table:'profiles'}, () => { refreshMyStats(); })
     .on('postgres_changes', {event:'INSERT', schema:'public', table:'messages'}, (payload) => {
       if(payload.new.exchange_id === currentChatExchangeId){
         const chatScreen = document.getElementById('chat');
@@ -1689,7 +1900,7 @@ Politique de confidentialité
 Dernière mise à jour : octobre 2026
 
 1. Données que nous traitons
-- Compte : ton adresse email (uniquement pour te connecter, jamais visible des autres membres), ton prénom et, si tu le souhaites, une photo de profil (visible des autres membres).
+- Compte : ton identifiant (ou ton adresse email pour les anciens comptes) et ton mot de passe (conservé chiffré par Supabase, jamais lisible par nous), jamais visibles des autres membres ; ton prénom et, si tu le souhaites, une photo de profil (visible des autres membres).
 - Position : une position approximative, volontairement floutée (environ 100 m), jamais ton adresse exacte.
 - Contenu : tes annonces (titre, description, catégorie, photo facultative), tes demandes d'échange, les messages échangés, les avis donnés et reçus, les communautés que tu rejoins et ce que tu y publies.
 - Coordonnées facultatives : téléphone et adresse postale, stockées séparément et jamais visibles publiquement — seul un partenaire d'échange accepté peut voir les champs que tu as toi-même rendus visibles.
@@ -2140,7 +2351,10 @@ async function renderMap(){
   }
 }
 
-document.getElementById('login-btn').addEventListener('click', sendMagicLink);
+document.getElementById('login-btn').addEventListener('click', passwordLogin);
+document.getElementById('signup-btn').addEventListener('click', passwordSignup);
+document.getElementById('email-link-btn').addEventListener('click', sendMagicLink);
+document.getElementById('login-pass').addEventListener('keydown', (e) => { if(e.key === 'Enter') passwordLogin(); });
 document.getElementById('onboard-btn').addEventListener('click', finishNameSetup);
 log("Page prête, en attente d'action.");
 if('serviceWorker' in navigator){
