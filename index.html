@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 16</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 17</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -1567,8 +1567,7 @@ async function fetchCompletedExchanges(st){
         ${reviewBtn(r.id, otherId, otherName, reviewedDone, true)}
         <div style="display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;">
           ${refused ? '' : `<button class="btn secondary" style="margin:0;" onclick="event.stopPropagation(); ${isArch ? 'unarchiveExchange' : 'archiveExchange'}('${r.id}')">${isArch ? 'Remettre dans « terminés »' : 'Archiver'}</button>`}
-          ${isArch ? `<button class="btn secondary" style="margin:0; color:#c23b3b;" onclick="event.stopPropagation(); archDelete(['${r.id}'])">Supprimer</button>
-          <input type="checkbox" class="arch-check" ${archSel.has(r.id) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="archToggle('${r.id}', this.checked)" style="margin-left:auto; width:18px; height:18px;" title="Sélectionner">` : ''}
+          ${isArch ? `<button class="btn secondary" style="margin:0; color:#c23b3b;" onclick="event.stopPropagation(); archDelete(['${r.id}'])">Supprimer</button>` : ''}
         </div>
       </div>`;
     };
@@ -1588,7 +1587,7 @@ async function fetchCompletedExchanges(st){
       const ms = document.getElementById('arch-mode'); if(ms) ms.value = mode;
       const all = document.getElementById('arch-all'); if(all) all.checked = _archItems.length > 0 && archSel.size === _archItems.length;
       const db = document.getElementById('arch-del-btn');
-      if(db){ db.style.display = archSel.size ? 'inline-block' : 'none'; db.textContent = 'Supprimer (' + archSel.size + ')'; }
+      if(db){ db.style.display = archSel.size ? 'inline-block' : 'none'; db.textContent = 'Tout supprimer (' + archSel.size + ')'; }
       if(!_archItems.length){ archBox.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange archivé.</p>"; return; }
       const other = r => (r.requester_id === myId ? r.provider_name : r.requester_name) || 'Inconnu';
       const keyOf = r => mode === 'prov' ? other(r)
