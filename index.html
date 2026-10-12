@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 17</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 18</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -334,7 +334,7 @@
       <button class="btn secondary" onclick="updateLocation()">Mettre à jour ma position</button>
       <button class="btn secondary" onclick="changeMyPassword()">Définir / changer mon mot de passe</button>
       <button class="btn secondary" id="idform-btn" style="display:none;" onclick="createMyIdentifier()">Créer mon identifiant (ancien compte)</button>
-      <button class="btn secondary" id="admin-btn" style="display:none;" onclick="showScreen('admin')">🛠 Administration</button>
+      <button class="btn secondary" id="admin-btn" style="display:none;" onclick="showScreen('admin')">🛠 Administration <span id="admin-badge" style="display:none; background:#e0453c; color:#fff; font-size:11px; font-weight:700; border-radius:10px; padding:2px 8px; margin-left:6px;"></span></button>
       <button class="btn secondary" onclick="showBlockedUsers()">Personnes bloquées</button>
       <button class="btn secondary" onclick="shareApp()">Partager Troctan</button>
       <button class="btn secondary" onclick="inviteByEmail()">Inviter par email</button>
@@ -502,7 +502,7 @@
     <button class="tab-btn" data-tab="requests" onclick="showScreen('requests');"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
     <button class="tab-btn" data-tab="propose" onclick="showScreen('propose')"><i class="ti ti-plus"></i>Proposer</button>
     <button class="tab-btn" data-tab="communities" onclick="showScreen('communities');"><i class="ti ti-users"></i>Groupes<span class="tab-badge" id="badge-communities"></span></button>
-    <button class="tab-btn" data-tab="profile" onclick="showScreen('profile')"><i class="ti ti-user"></i>Profil</button>
+    <button class="tab-btn" data-tab="profile" onclick="showScreen('profile')"><i class="ti ti-user"></i>Profil<span class="tab-badge" id="badge-profile"></span></button>
   </nav>
 </div>
 
@@ -1771,6 +1771,20 @@ async function loadAdminStatus(){
   }catch(e){ myIsAdmin = false; }
   const b = document.getElementById('admin-btn');
   if(b) b.style.display = myIsAdmin ? 'block' : 'none';
+  refreshAdminBadge();
+}
+
+async function refreshAdminBadge(){
+  let n = 0;
+  if(myIsAdmin && myId){
+    try{
+      const { count } = await sb.from('reports').select('id', {count: 'exact', head: true});
+      n = count || 0;
+    }catch(e){}
+  }
+  const ab = document.getElementById('admin-badge');
+  if(ab){ ab.textContent = n; ab.style.display = n > 0 ? 'inline-block' : 'none'; }
+  setBadge('badge-profile', n);
 }
 
 async function loadAdminPanel(){
@@ -1830,6 +1844,7 @@ async function adminDismissReport(id){
   if(!data || !data.length){ log("Signalement non classé : il manque une autorisation dans Supabase (lance le SQL « mise à jour 4 »)."); return; }
   log('Signalement classé ✓');
   loadAdminPanel();
+  refreshAdminBadge();
 }
 async function adminDeleteUser(id, name){
   if(!confirm('Supprimer définitivement le compte de ' + name + ' et ses contenus ?')) return;
@@ -2102,6 +2117,7 @@ function setBadge(id, count){
 
 async function checkNotifications(){
   if(!sb || !myId) return;
+  refreshAdminBadge();
 
   try{
     const { data: mine } = await sb.from('community_members').select('community_id').eq('user_id', myId);
