@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 10</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 11</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -398,10 +398,7 @@
     <!-- COMMUNAUTES -->
     <section class="screen" id="communities">
       <p class="section-label" style="font-size:18px;">Communautés</p>
-      <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-        <button class="btn secondary" onclick="shareApp()" style="margin-top:0;">Inviter des voisins</button>
-        <button class="btn secondary" onclick="inviteByEmail()" style="margin-top:0;">Par email</button>
-      </div>
+
       <p class="section-label">Mes communautés</p>
       <div class="list" id="my-communities"></div>
       <p class="section-label" style="margin-top:1.2rem;">Rejoindre une communauté</p>
@@ -459,7 +456,15 @@
 
     <!-- DEMANDES -->
     <section class="screen" id="requests">
-      <details class="dropdown-section" id="dd-active" open>
+      <details class="dropdown-section" id="dd-received" open>
+        <summary class="section-label">Demandes reçues <span class="dd-badge" id="ddb-received"></span></summary>
+        <div class="list" id="requests-received" style="margin-top:10px;"></div>
+      </details>
+      <details class="dropdown-section" id="dd-sent" style="margin-top:1.2rem;">
+        <summary class="section-label">Demandes envoyées <span class="dd-badge" id="ddb-sent"></span></summary>
+        <div class="list" id="requests-sent" style="margin-top:10px;"></div>
+      </details>
+      <details class="dropdown-section" id="dd-active" open style="margin-top:1.2rem;">
         <summary class="section-label">Échanges en cours <span class="dd-badge" id="ddb-active"></span></summary>
         <div class="list" id="requests-active" style="margin-top:10px;"></div>
       </details>
@@ -467,13 +472,9 @@
         <summary class="section-label">Échanges terminés <span class="dd-badge" id="ddb-completed"></span></summary>
         <div class="list" id="requests-completed" style="margin-top:10px;"></div>
       </details>
-      <details class="dropdown-section" id="dd-received" open style="margin-top:1.2rem;">
-        <summary class="section-label">Demandes reçues <span class="dd-badge" id="ddb-received"></span></summary>
-        <div class="list" id="requests-received" style="margin-top:10px;"></div>
-      </details>
-      <details class="dropdown-section" id="dd-sent" style="margin-top:1.2rem;">
-        <summary class="section-label">Demandes envoyées <span class="dd-badge" id="ddb-sent"></span></summary>
-        <div class="list" id="requests-sent" style="margin-top:10px;"></div>
+      <details class="dropdown-section" id="dd-archive" style="margin-top:1.2rem;">
+        <summary class="section-label">Archives <span class="dd-badge" id="ddb-archive"></span></summary>
+        <div class="list" id="requests-archive" style="margin-top:10px;"></div>
       </details>
     </section>
 
@@ -948,7 +949,7 @@ async function deleteCommunityPost(postId){
 function refreshForScreen(id){
   if(!myId) return;
   if(id === 'home') fetchServices().then(renderMap);
-  else if(id === 'requests'){ fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges(); }
+  else if(id === 'requests'){ refreshRequestLists(); }
   else if(id === 'profile') renderProfile();
   else if(id === 'communities') fetchCommunities();
   else if(id === 'community-feed') fetchCommunityFeed();
@@ -1339,7 +1340,120 @@ async function requestExchange(){
 
 let currentChatExchangeId = null;
 
-async function fetchActiveExchanges(){
+let notifTimer = null;
+let _refreshing = false;
+let _refreshAgain = false;
+
+async function loadNotifState(){
+  const st = {unreadMsgs:new Set(), newReceived:new Set(), statusChanged:new Set(), unreadReviews:new Set(), withMsgs:new Set(), all:new Set(), rows:[], msgs:[], revs:[]};
+  if(!sb || !myId) return st;
+  try{
+    const { data: ex } = await sb.from('exchanges').select('id, status, provider_id, requester_id').or(`requester_id.eq.${myId},provider_id.eq.${myId}`);
+    st.rows = ex || [];
+    const ids = st.rows.map(r => r.id);
+    if(!ids.length) return st;
+    const [mres, rres] = await Promise.all([
+      sb.from('messages').select('exchange_id, created_at, sender_id').in('exchange_id', ids),
+      sb.from('reviews').select('exchange_id, created_at').eq('reviewed_id', myId)
+    ]);
+    st.msgs = mres.data || []; st.revs = rres.data || [];
+    if(!localStorage.getItem('tt_baseline_v3')){
+      markSeenFromState(st, false);
+      localStorage.setItem('tt_baseline_v3', '1');
+    }
+    st.rows.forEach(r => {
+      if(r.status === 'pending'){
+        if(r.provider_id === myId && !localStorage.getItem('tt_req_seen_' + r.id)) st.newReceived.add(r.id);
+      } else if(localStorage.getItem('tt_status_seen_' + r.id) !== r.status){
+        st.statusChanged.add(r.id);
+      }
+    });
+    st.msgs.forEach(m => {
+      st.withMsgs.add(m.exchange_id);
+      if(m.sender_id !== myId){
+        const ls = localStorage.getItem('tt_chat_seen_' + m.exchange_id) || '1970-01-01';
+        if(Date.parse(m.created_at) > Date.parse(ls)) st.unreadMsgs.add(m.exchange_id);
+      }
+    });
+    st.revs.forEach(v => {
+      const ls = localStorage.getItem('tt_rev_seen_' + v.exchange_id) || '1970-01-01';
+      if(Date.parse(v.created_at) > Date.parse(ls)) st.unreadReviews.add(v.exchange_id);
+    });
+    [st.unreadMsgs, st.newReceived, st.statusChanged, st.unreadReviews].forEach(x => x.forEach(id => st.all.add(id)));
+  }catch(e){ /* silencieux */ }
+  return st;
+}
+
+function markSeenFromState(st, withChat){
+  st.rows.forEach(r => {
+    if(r.status === 'pending'){ if(r.provider_id === myId) localStorage.setItem('tt_req_seen_' + r.id, '1'); }
+    else localStorage.setItem('tt_status_seen_' + r.id, r.status);
+  });
+  st.revs.forEach(v => {
+    const k = 'tt_rev_seen_' + v.exchange_id;
+    const prev = localStorage.getItem(k) || '1970-01-01';
+    if(Date.parse(v.created_at) > Date.parse(prev)) localStorage.setItem(k, v.created_at);
+  });
+  if(withChat !== false){
+    st.msgs.forEach(m => {
+      if(m.sender_id === myId) return;
+      const k = 'tt_chat_seen_' + m.exchange_id;
+      const prev = localStorage.getItem(k) || '1970-01-01';
+      if(Date.parse(m.created_at) > Date.parse(prev)) localStorage.setItem(k, m.created_at);
+    });
+  }
+}
+
+function markStatusSeen(id, status){
+  try{ localStorage.setItem('tt_status_seen_' + id, status); }catch(e){}
+}
+
+function scheduleSeen(st){
+  if(notifTimer){ clearTimeout(notifTimer); notifTimer = null; }
+  if(!st.all.size) return;
+  notifTimer = setTimeout(async () => {
+    notifTimer = null;
+    const scr = document.getElementById('requests');
+    if(!scr || !scr.classList.contains('active')) return;
+    markSeenFromState(st, true);
+    await refreshRequestLists();
+    checkNotifications();
+  }, 3500);
+}
+
+async function refreshRequestLists(){
+  if(!myId) return;
+  if(_refreshing){ _refreshAgain = true; return; }
+  _refreshing = true;
+  try{
+    const st = await loadNotifState();
+    await Promise.all([fetchExchanges(st), fetchActiveExchanges(st), fetchCompletedExchanges(st)]);
+    const scr = document.getElementById('requests');
+    if(scr && scr.classList.contains('active')) scheduleSeen(st);
+    checkNotifications();
+  }catch(e){ log('Erreur : ' + e.message); }
+  finally{
+    _refreshing = false;
+    if(_refreshAgain){ _refreshAgain = false; setTimeout(refreshRequestLists, 50); }
+  }
+}
+
+function notifTags(st, r){
+  const pill = (txt) => `<span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;white-space:nowrap;">${txt}</span>`;
+  const t = [];
+  if(st.newReceived.has(r.id)) t.push(pill('Nouvelle demande'));
+  if(st.statusChanged.has(r.id)){
+    const lab = {accepted:'Acceptée', refused:'Refusée', cancelled:'Annulée', completed:'Clôturé'}[r.status];
+    if(lab) t.push(pill(lab));
+  }
+  if(st.unreadMsgs.has(r.id)) t.push(pill('💬 Nouveau message'));
+  if(st.unreadReviews.has(r.id)) t.push(pill('⭐ Nouvel avis'));
+  return t.join('');
+}
+function canReview(st, r){ return r.status !== 'pending' || st.withMsgs.has(r.id); }
+
+async function fetchActiveExchanges(st){
+  if(!st) return refreshRequestLists();
   try{
     const { data } = await sb.from('exchanges').select('*')
       .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
@@ -1347,36 +1461,26 @@ async function fetchActiveExchanges(){
       .order('created_at', {ascending:false});
 
     const ids = (data || []).map(r => r.id);
-    let unreadByExchange = new Set();
-    if(ids.length){
-      const { data: msgs } = await sb.from('messages').select('exchange_id, created_at').in('exchange_id', ids).neq('sender_id', myId);
-      (msgs || []).forEach(m => {
-        const lastSeen = localStorage.getItem('tt_chat_seen_' + m.exchange_id) || '1970-01-01';
-        if(Date.parse(m.created_at) > Date.parse(lastSeen)) unreadByExchange.add(m.exchange_id);
-      });
-    }
-
-    setSectionBadge('active', unreadByExchange.size);
+    setSectionBadge('active', (data || []).filter(r => st.all.has(r.id)).length);
     const reviewedActive = await loadReviewedSet(ids);
     const list = document.getElementById('requests-active');
     list.innerHTML = (data && data.length) ? data.map(r => {
       const otherName = r.requester_id === myId ? r.provider_name : r.requester_name;
       const otherId = r.requester_id === myId ? r.provider_id : r.requester_id;
-      const hasUnread = unreadByExchange.has(r.id);
       return `
       <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
-            <p class="item-title">${esc(r.service_title)}${hasUnread ? ' <span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;">💬 nouveau message</span>' : ''}</p>
+            <p class="item-title">${esc(r.service_title)}${notifTags(st, r)}</p>
             <p class="item-sub">Avec ${esc(otherName)}</p>
           </div>
         </div>
         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')">Discuter${hasUnread ? ' (1)' : ''}</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')">Discuter</button>
           <button class="btn secondary" style="margin-top:0;" onclick="closeExchange('${r.id}', '${otherId}', ${jsArg(otherName)})">Clôturer l'échange</button>
         </div>
-        ${reviewBtn(r.id, otherId, otherName, reviewedActive)}
+        ${reviewBtn(r.id, otherId, otherName, reviewedActive, canReview(st, r))}
       </div>`;
     }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange en cours.</p>";
   }catch(e){ log('Erreur : ' + e.message); }
@@ -1387,35 +1491,43 @@ async function closeExchange(exchangeId, otherId, otherName){
   try{
     const { error } = await sb.from('exchanges').update({status: 'completed'}).eq('id', exchangeId);
     if(error){ log('Erreur : ' + error.message); return; }
+    markStatusSeen(exchangeId, 'completed');
   }catch(e){ log('Erreur réseau : ' + e.message); return; }
   log('Échange clôturé ✓');
-  fetchActiveExchanges();
-  fetchCompletedExchanges();
-  checkNotifications();
+  refreshRequestLists();
   if(otherId && confirm('Échange clôturé. Veux-tu donner un avis sur ' + otherName + ' maintenant ?')) leaveReview(exchangeId, otherId, otherName);
 }
 
-async function fetchCompletedExchanges(){
+async function archiveExchange(id){
+  const { error } = await sb.from('exchange_archive').insert({user_id: myId, exchange_id: id});
+  if(error && error.code !== '23505'){ log("Archivage impossible : " + error.message + " (lance le SQL « mise à jour 8 »)"); return; }
+  log('Échange archivé ✓');
+  refreshRequestLists();
+}
+async function unarchiveExchange(id){
+  const { error } = await sb.from('exchange_archive').delete().eq('user_id', myId).eq('exchange_id', id);
+  if(error){ log('Erreur : ' + error.message); return; }
+  log('Échange remis dans « terminés ».');
+  refreshRequestLists();
+}
+
+async function fetchCompletedExchanges(st){
+  if(!st) return refreshRequestLists();
   const list = document.getElementById('requests-completed');
+  const archBox = document.getElementById('requests-archive');
   if(!list || !myId) return;
   try{
     const { data } = await sb.from('exchanges').select('*')
       .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
       .eq('status', 'completed')
       .order('created_at', {ascending:false});
-
+    let archived = new Set();
+    try{
+      const { data: a } = await sb.from('exchange_archive').select('exchange_id').eq('user_id', myId);
+      archived = new Set((a || []).map(x => x.exchange_id));
+    }catch(e){ /* table absente : rien d'archivé */ }
     const reviewedDone = await loadReviewedSet((data || []).map(r => r.id));
-    const doneIds = (data || []).map(r => r.id);
-    const unreadDone = new Set();
-    if(doneIds.length){
-      const { data: dm } = await sb.from('messages').select('exchange_id, created_at').in('exchange_id', doneIds).neq('sender_id', myId);
-      (dm || []).forEach(m => {
-        const ls = localStorage.getItem('tt_chat_seen_' + m.exchange_id) || '1970-01-01';
-        if(Date.parse(m.created_at) > Date.parse(ls)) unreadDone.add(m.exchange_id);
-      });
-    }
-    setSectionBadge('completed', unreadDone.size);
-    list.innerHTML = (data && data.length) ? data.map(r => {
+    const card = (r, isArch) => {
       const iAmRequester = r.requester_id === myId;
       const otherName = iAmRequester ? r.provider_name : r.requester_name;
       const otherId = iAmRequester ? r.provider_id : r.requester_id;
@@ -1424,14 +1536,20 @@ async function fetchCompletedExchanges(){
       <div class="item-card" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')" style="flex-direction:column; align-items:stretch;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-circle-check" style="color:var(--success-text);"></i>
-          <div>
-            <p class="item-title">${esc(r.service_title)}${unreadDone.has(r.id) ? ' <span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;">💬 nouveau message</span>' : ''}</p>
+          <div style="flex:1;">
+            <p class="item-title">${esc(r.service_title)}${notifTags(st, r)}</p>
             <p class="item-sub">${date} · Avec ${esc(otherName)}</p>
           </div>
         </div>
-        ${reviewBtn(r.id, otherId, otherName, reviewedDone)}
+        ${reviewBtn(r.id, otherId, otherName, reviewedDone, true)}
+        <button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); ${isArch ? 'unarchiveExchange' : 'archiveExchange'}('${r.id}')">${isArch ? 'Remettre dans « terminés »' : 'Archiver'}</button>
       </div>`;
-    }).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
+    };
+    const visible = (data || []).filter(r => !archived.has(r.id));
+    const arch = (data || []).filter(r => archived.has(r.id));
+    setSectionBadge('completed', visible.filter(r => st.all.has(r.id)).length);
+    list.innerHTML = visible.length ? visible.map(r => card(r, false)).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
+    if(archBox) archBox.innerHTML = arch.length ? arch.map(r => card(r, true)).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange archivé.</p>";
   }catch(e){ log('Erreur : ' + e.message); }
 }
 
@@ -1519,27 +1637,19 @@ async function sendChatMessage(){
   fetchChatMessages();
 }
 
-async function fetchExchanges(){
+async function fetchExchanges(st){
   if(!myId) return;
+  if(!st) return refreshRequestLists();
   try{
     const { data: received, error: err1 } = await sb.from('exchanges').select('*').eq('provider_id', myId).in('status', ['pending','cancelled']).order('created_at', {ascending:false}).limit(20);
-    const { data: sent, error: err2 } = await sb.from('exchanges').select('*').eq('requester_id', myId).order('created_at', {ascending:false}).limit(20);
+    const { data: sent, error: err2 } = await sb.from('exchanges').select('*').eq('requester_id', myId).in('status', ['pending','accepted','refused','cancelled']).order('created_at', {ascending:false}).limit(20);
     if(err1 || err2){ log('Erreur en chargeant les demandes : ' + ((err1||err2).message)); return; }
 
     const reviewedIds = await loadReviewedSet([...(received || []), ...(sent || [])].map(r => r.id));
 
-    const pendingIds = [...(received || []).filter(r => r.status === 'pending').map(r => r.id), ...(sent || []).filter(r => r.status === 'pending').map(r => r.id)];
-    let unreadPending = new Set();
-    if(pendingIds.length){
-      const { data: pmsgs } = await sb.from('messages').select('exchange_id, created_at').in('exchange_id', pendingIds).neq('sender_id', myId);
-      (pmsgs || []).forEach(m => {
-        const lastSeen = localStorage.getItem('tt_chat_seen_' + m.exchange_id) || '1970-01-01';
-        if(Date.parse(m.created_at) > Date.parse(lastSeen)) unreadPending.add(m.exchange_id);
-      });
-    }
+    setSectionBadge('received', (received || []).filter(r => st.all.has(r.id)).length);
+    setSectionBadge('sent', (sent || []).filter(r => st.all.has(r.id)).length);
 
-    const recNew = (received || []).filter(r => r.status === 'pending' && (!localStorage.getItem('tt_req_seen_' + r.id) || unreadPending.has(r.id))).length;
-    const sentNew = (sent || []).filter(r => (r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) || (r.status === 'pending' && unreadPending.has(r.id))).length;
     const recList = document.getElementById('requests-received');
     recList.innerHTML = renderGroupedByStatus(received, ['pending','cancelled'], (r) => {
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
@@ -1549,33 +1659,33 @@ async function fetchExchanges(){
           <div style="display:flex; gap:10px; align-items:flex-start;">
             <i class="ti ti-exchange"></i>
             <div style="flex:1;">
-              <p class="item-title">${esc(r.service_title)}</p>
+              <p class="item-title">${esc(r.service_title)}${notifTags(st, r)}</p>
               <p class="item-sub">${date} · ${esc(r.requester_name)} · Annulée par le demandeur</p>
             </div>
           </div>
-          ${reviewBtn(r.id, r.requester_id, r.requester_name, reviewedIds)}
+          ${reviewBtn(r.id, r.requester_id, r.requester_name, reviewedIds, true)}
           <input type="checkbox" class="del-check" onclick="event.stopPropagation()" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">
         </div>`;
       }
       return `
-      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">        <div style="display:flex; gap:10px; align-items:flex-start;">
+      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
-            <p class="item-title">${esc(r.service_title)}${!localStorage.getItem('tt_req_seen_' + r.id) ? ' <span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;">Nouvelle demande</span>' : ''}</p>
-            <p class="item-sub">${date} · ${esc(r.requester_name)} demande ${r.hours}cr${unreadPending.has(r.id) ? ' · <b style="color:#e0453c;">💬 nouveau message</b>' : ''}</p>
+            <p class="item-title">${esc(r.service_title)}${notifTags(st, r)}</p>
+            <p class="item-sub">${date} · ${esc(r.requester_name)} demande ${r.hours}cr</p>
           </div>
         </div>
         <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
           <button class="btn" style="margin-top:0;" onclick="respondExchange('${r.id}', 'accepted')">Accepter</button>
           <button class="btn secondary" style="margin-top:0;" onclick="respondExchange('${r.id}', 'refused')">Refuser</button>
-          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.requester_name)}, '${r.requester_id}')">Discuter${unreadPending.has(r.id) ? ' 🔴' : ''}</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.requester_name)}, '${r.requester_id}')">Discuter</button>
         </div>
-        ${reviewBtn(r.id, r.requester_id, r.requester_name, reviewedIds)}
+        ${reviewBtn(r.id, r.requester_id, r.requester_name, reviewedIds, canReview(st, r))}
       </div>`;
     }, 'Aucune demande en attente.', 'dd-received-g');
 
     const sentList = document.getElementById('requests-sent');
-
     sentList.innerHTML = renderGroupedByStatus(sent, ['pending','accepted','refused','cancelled'], (r) => {
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
       return `
@@ -1583,31 +1693,18 @@ async function fetchExchanges(){
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <i class="ti ti-exchange"></i>
           <div style="flex:1;">
-            <p class="item-title">${esc(r.service_title)}</p>
-            <p class="item-sub">${date} · Chez ${esc(r.provider_name)}${(r.status === 'pending' && unreadPending.has(r.id)) ? ' · <b style="color:#e0453c;">💬 nouveau message</b>' : ''}${(r.status !== 'pending' && localStorage.getItem('tt_status_seen_' + r.id) !== r.status) ? ' <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e0453c;margin-left:2px;"></span>' : ''}</p>
+            <p class="item-title">${esc(r.service_title)}${notifTags(st, r)}</p>
+            <p class="item-sub">${date} · Chez ${esc(r.provider_name)}</p>
           </div>
         </div>
-        ${reviewBtn(r.id, r.provider_id, r.provider_name, reviewedIds)}
+        ${reviewBtn(r.id, r.provider_id, r.provider_name, reviewedIds, canReview(st, r))}
         ${r.status === 'pending' ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')">Discuter${unreadPending.has(r.id) ? ' 🔴' : ''}</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')">Discuter</button>
           <button class="btn secondary" style="margin-top:0; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>
         </div>` : ''}
         ${r.status !== 'pending' ? `<input type="checkbox" class="del-check" onclick="event.stopPropagation()" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">` : ''}
       </div>
     `;}, 'Aucune demande envoyée.', 'dd-sent-g');
-
-    setSectionBadge('received', recNew);
-    setSectionBadge('sent', sentNew);
-    const newReqIds = (received || []).filter(r => r.status === 'pending').map(r => r.id);
-    setTimeout(() => {
-      const scr = document.getElementById('requests');
-      if(scr && scr.classList.contains('active')){
-        newReqIds.forEach(id => localStorage.setItem('tt_req_seen_' + id, '1'));
-        (sent || []).forEach(r => localStorage.setItem('tt_status_seen_' + r.id, r.status));
-        checkNotifications();
-      }
-    }, 4000);
-    checkNotifications();
   }catch(e){ log('Erreur en chargeant les demandes : ' + e.message); }
 }
 
@@ -1707,7 +1804,8 @@ async function loadReviewedSet(ids){
     return new Set((data || []).map(r => r.exchange_id));
   }catch(e){ return new Set(); }
 }
-function reviewBtn(exchangeId, otherId, otherName, reviewedSet){
+function reviewBtn(exchangeId, otherId, otherName, reviewedSet, allowed){
+  if(allowed === false) return '';
   if(reviewedSet.has(exchangeId)) return '<p class="item-sub" style="margin-top:8px;">✓ Avis donné</p>';
   return `<button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); leaveReview('${exchangeId}', '${otherId}', ${jsArg(otherName)})">Donner un avis</button>`;
 }
@@ -1717,6 +1815,7 @@ async function cancelExchange(exchangeId){
   try{
     const { error } = await sb.from('exchanges').update({status: 'cancelled'}).eq('id', exchangeId).eq('requester_id', myId);
     if(error){ log('Erreur : ' + error.message); return; }
+    markStatusSeen(exchangeId, 'cancelled');
   }catch(e){ log('Erreur réseau : ' + e.message); return; }
   log('Demande annulée.');
   fetchExchanges();
@@ -1738,7 +1837,7 @@ async function leaveReview(exchangeId, providerId, providerName){
     }
   }catch(e){ log('Erreur réseau : ' + e.message); return; }
   log('Merci pour ton avis !');
-  fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges();
+  refreshRequestLists();
 }
 
 async function respondExchange(exchangeId, decision){
@@ -1746,6 +1845,7 @@ async function respondExchange(exchangeId, decision){
     if(decision === 'accepted'){
       const { error } = await sb.rpc('accept_exchange', {p_exchange_id: exchangeId});
       if(error){ log('Erreur : ' + error.message); return; }
+      markStatusSeen(exchangeId, 'accepted');
       const { data: profile } = await sb.from('profiles').select('balance').eq('id', myId).maybeSingle();
       myBalanceCache = profile ? (profile.balance || 0) : myBalanceCache;
       document.getElementById('balance-value').textContent = myBalanceCache + 'cr';
@@ -1753,6 +1853,7 @@ async function respondExchange(exchangeId, decision){
     } else {
       const { error } = await sb.from('exchanges').update({status: decision}).eq('id', exchangeId);
       if(error){ log('Erreur Supabase : ' + error.message); return; }
+      markStatusSeen(exchangeId, decision);
       log('Demande refusée.');
     }
     fetchExchanges();
@@ -1961,40 +2062,12 @@ async function checkNotifications(){
     }
   }catch(e){ /* silencieux */ }
 
-  let pendingCount = 0;
-  try{
-    const { data: pend } = await sb.from('exchanges').select('id').eq('provider_id', myId).eq('status', 'pending');
-    pendingCount = (pend || []).filter(x => !localStorage.getItem('tt_req_seen_' + x.id)).length;
-  }catch(e){ /* silencieux, ce n'est qu'une pastille */ }
-
-  let unreadMsgCount = 0;
-  try{
-    const { data: active } = await sb.from('exchanges').select('id').or(`requester_id.eq.${myId},provider_id.eq.${myId}`).in('status', ['pending','accepted','completed']);
-    const ids = (active || []).map(a => a.id);
-    if(ids.length){
-      const { data: msgs } = await sb.from('messages').select('exchange_id, created_at').in('exchange_id', ids).neq('sender_id', myId);
-      const seenExchanges = new Set();
-      (msgs || []).forEach(m => {
-        const lastSeen = localStorage.getItem('tt_chat_seen_' + m.exchange_id) || '1970-01-01';
-        if(Date.parse(m.created_at) > Date.parse(lastSeen)) seenExchanges.add(m.exchange_id);
-      });
-      unreadMsgCount = seenExchanges.size;
-    }
-  }catch(e){ /* silencieux */ }
-
-  let statusChangeCount = 0;
-  try{
-    const { data: sentAll } = await sb.from('exchanges').select('id, status').eq('requester_id', myId);
-    (sentAll || []).forEach(r => {
-      if(r.status === 'pending') return;
-      const seenStatus = localStorage.getItem('tt_status_seen_' + r.id);
-      if(seenStatus !== r.status) statusChangeCount++;
-    });
-  }catch(e){ /* silencieux */ }
-
   const curScr = document.querySelector('.screen.active');
   const curId = curScr ? curScr.id : '';
-  setBadge('badge-requests', curId === 'requests' ? 0 : pendingCount + unreadMsgCount + statusChangeCount);
+  try{
+    const st = await loadNotifState();
+    setBadge('badge-requests', curId === 'requests' ? 0 : st.all.size);
+  }catch(e){ /* silencieux */ }
 
   try{
     const { data } = await sb.from('services').select('id, created_at').order('created_at', {ascending:false}).limit(50);
@@ -2005,7 +2078,14 @@ async function checkNotifications(){
   }catch(e){ /* silencieux */ }
 }
 
-setInterval(() => { if(!document.hidden){ checkNotifications(); refreshMyStats(); } }, 10000);
+setInterval(() => {
+  if(document.hidden) return;
+  checkNotifications(); refreshMyStats();
+  const rs = document.getElementById('requests');
+  if(rs && rs.classList.contains('active') && !(selectedForDelete && selectedForDelete.size)) refreshRequestLists();
+  const ps = document.getElementById('profile');
+  if(ps && ps.classList.contains('active')) fetchHistory();
+}, 10000);
 document.addEventListener('visibilitychange', () => { if(!document.hidden){ checkNotifications(); refreshMyStats(); } });
 setInterval(() => {
   const c = document.getElementById('chat');
@@ -2061,13 +2141,15 @@ function subscribeRealtime(){
     })
     .on('postgres_changes', {event:'*', schema:'public', table:'exchanges'}, () => {
       checkNotifications();
+      const ps0 = document.getElementById('profile');
+      if(ps0 && ps0.classList.contains('active')) fetchHistory();
       const requestsScreen = document.getElementById('requests');
-      if(requestsScreen && requestsScreen.classList.contains('active')){ fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges(); }
+      if(requestsScreen && requestsScreen.classList.contains('active')){ refreshRequestLists(); }
     })
     .on('postgres_changes', {event:'*', schema:'public', table:'reviews'}, () => {
       refreshMyStats();
       const rs = document.getElementById('requests');
-      if(rs && rs.classList.contains('active')){ fetchExchanges(); fetchActiveExchanges(); fetchCompletedExchanges(); }
+      if(rs && rs.classList.contains('active')){ refreshRequestLists(); }
     })
     .on('postgres_changes', {event:'*', schema:'public', table:'profiles'}, () => { refreshMyStats(); })
     .on('postgres_changes', {event:'INSERT', schema:'public', table:'messages'}, (payload) => {
@@ -2078,7 +2160,7 @@ function subscribeRealtime(){
       if(payload.new.sender_id !== myId){
         checkNotifications();
         const rs = document.getElementById('requests');
-        if(rs && rs.classList.contains('active')){ fetchExchanges(); fetchActiveExchanges(); }
+        if(rs && rs.classList.contains('active')){ refreshRequestLists(); }
       }
     })
     .subscribe();
@@ -2349,15 +2431,15 @@ async function deleteAccount(){
 
 function renderGroupedByStatus(items, statusOrder, itemRenderFn, emptyText, sectionKey){
   if(!items || !items.length) return `<p style="font-size:13px;color:var(--text-muted);">${emptyText}</p>`;
-  const labels = {pending:'En attente', accepted:'Acceptées', refused:'Refusées', cancelled:'Annulées'};
-  const colors = {pending:'accent', accepted:'success', refused:'danger', cancelled:'muted'};
+  const labels = {pending:'En attente', accepted:'Acceptées', refused:'Refusées', cancelled:'Annulées', completed:'Terminés'};
+  const colors = {pending:'accent', accepted:'success', refused:'danger', cancelled:'muted', completed:'success'};
   const pillStyles = {
     accent: 'background:var(--accent-bg); color:var(--accent-text);',
     success: 'background:var(--success-bg); color:var(--success-text);',
     danger: 'background:#f6dede; color:#a02020;',
     muted: 'background:var(--card); color:var(--text-muted); border:1px solid var(--border);'
   };
-  const defaultOpen = {pending:true, accepted:true, refused:false, cancelled:false};
+  const defaultOpen = {pending:true, accepted:true, refused:false, cancelled:false, completed:true};
   let html = '';
   statusOrder.forEach(status => {
     const group = items.filter(r => r.status === status);
@@ -2380,18 +2462,18 @@ async function fetchHistory(){
   try{
     const { data } = await sb.from('exchanges').select('*')
       .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
-      .in('status', ['accepted','refused','cancelled'])
+      .in('status', ['completed','accepted','refused','cancelled'])
       .order('created_at', {ascending:false})
-      .limit(30);
+      .limit(50);
 
     const list = document.getElementById('profile-history');
     if(!list) return;
-    list.innerHTML = renderGroupedByStatus(data, ['accepted','refused','cancelled'], (r) => {
+    list.innerHTML = renderGroupedByStatus(data, ['completed','accepted','refused','cancelled'], (r) => {
       const iAmRequester = r.requester_id === myId;
       const otherName = iAmRequester ? r.provider_name : r.requester_name;
       const otherId = iAmRequester ? r.provider_id : r.requester_id;
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
-      const line = r.status === 'accepted'
+      const line = (r.status === 'accepted' || r.status === 'completed')
         ? (iAmRequester ? `-${r.hours}cr · ${esc(otherName)}` : `+${r.hours}cr · ${esc(otherName)}`)
         : `${esc(otherName)}`;
       return `
