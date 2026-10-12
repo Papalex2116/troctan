@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 12</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 13</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -1515,7 +1515,7 @@ async function fetchCompletedExchanges(st){
   try{
     const { data } = await sb.from('exchanges').select('*')
       .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
-      .eq('status', 'completed')
+      .in('status', ['completed','refused'])
       .order('created_at', {ascending:false});
     let archived = new Set();
     try{
@@ -1528,21 +1528,24 @@ async function fetchCompletedExchanges(st){
       const otherName = iAmRequester ? r.provider_name : r.requester_name;
       const otherId = iAmRequester ? r.provider_id : r.requester_id;
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
+      const refused = r.status === 'refused';
       return `
       <div class="item-card" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')" style="flex-direction:column; align-items:stretch;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
-          <i class="ti ti-circle-check" style="color:var(--success-text);"></i>
+          <i class="ti ${refused ? 'ti-circle-x' : 'ti-circle-check'}" style="color:${refused ? '#c23b3b' : 'var(--success-text)'};"></i>
           <div style="flex:1;">
             <p class="item-title">${esc(r.service_title)}${notifTags(st, r)}</p>
-            <p class="item-sub">${date} · Avec ${esc(otherName)}</p>
+            <p class="item-sub">${date} · ${refused ? (iAmRequester ? 'Refusée par ' : 'Refusée · demandeur : ') : 'Avec '}${esc(otherName)}</p>
           </div>
         </div>
         ${reviewBtn(r.id, otherId, otherName, reviewedDone, true)}
-        <button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); ${isArch ? 'unarchiveExchange' : 'archiveExchange'}('${r.id}')">${isArch ? 'Remettre dans « terminés »' : 'Archiver'}</button>
+        ${refused ? '' : `<button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); ${isArch ? 'unarchiveExchange' : 'archiveExchange'}('${r.id}')">${isArch ? 'Remettre dans « terminés »' : 'Archiver'}</button>`}
       </div>`;
     };
-    const visible = (data || []).filter(r => !archived.has(r.id));
-    const arch = (data || []).filter(r => archived.has(r.id));
+    // Les demandes refusées vont automatiquement dans les archives
+    const visible = (data || []).filter(r => r.status === 'completed' && !archived.has(r.id));
+    const arch = (data || []).filter(r => r.status === 'refused' || archived.has(r.id));
+    setSectionBadge('archive', arch.filter(r => r.status === 'refused' && st.all.has(r.id)).length);
     setSectionBadge('completed', visible.filter(r => st.all.has(r.id)).length);
     list.innerHTML = visible.length ? visible.map(r => card(r, false)).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
     if(archBox) archBox.innerHTML = arch.length ? arch.map(r => card(r, true)).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange archivé.</p>";
@@ -1638,7 +1641,7 @@ async function fetchExchanges(st){
   if(!st) return refreshRequestLists();
   try{
     const { data: received, error: err1 } = await sb.from('exchanges').select('*').eq('provider_id', myId).in('status', ['pending','cancelled']).order('created_at', {ascending:false}).limit(20);
-    const { data: sent, error: err2 } = await sb.from('exchanges').select('*').eq('requester_id', myId).in('status', ['pending','accepted','refused','cancelled']).order('created_at', {ascending:false}).limit(20);
+    const { data: sent, error: err2 } = await sb.from('exchanges').select('*').eq('requester_id', myId).in('status', ['pending','accepted','cancelled']).order('created_at', {ascending:false}).limit(20);
     if(err1 || err2){ log('Erreur en chargeant les demandes : ' + ((err1||err2).message)); return; }
 
     const reviewedIds = await loadReviewedSet([...(received || []), ...(sent || [])].map(r => r.id));
@@ -1682,7 +1685,7 @@ async function fetchExchanges(st){
     }, 'Aucune demande en attente.', 'dd-received-g');
 
     const sentList = document.getElementById('requests-sent');
-    sentList.innerHTML = renderGroupedByStatus(sent, ['pending','accepted','refused','cancelled'], (r) => {
+    sentList.innerHTML = renderGroupedByStatus(sent, ['pending','accepted','cancelled'], (r) => {
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
       return `
       <div class="item-card" ${r.status !== 'pending' ? `onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')"` : 'style="cursor:default;"'} style="flex-direction:column; align-items:stretch;">
