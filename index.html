@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 14</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 15</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -470,6 +470,14 @@
       </details>
       <details class="dropdown-section" id="dd-archive" style="margin-top:1.2rem;">
         <summary class="section-label">Archives <span class="dd-badge" id="ddb-archive"></span></summary>
+        <div id="arch-toolbar" style="display:none; margin-top:10px; padding:8px 10px; border:1px solid var(--border); border-radius:12px; background:var(--card); align-items:center; gap:8px; flex-wrap:wrap;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:12.5px;"><input type="checkbox" id="arch-all" onchange="archSelectAll(this.checked)" style="width:17px; height:17px;"> Tout</label>
+          <select id="arch-mode" onchange="archSetMode(this.value)" style="font-size:12.5px; padding:5px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
+            <option value="date">Classer par date</option>
+            <option value="prov">Classer par personne</option>
+          </select>
+          <button class="btn secondary" id="arch-del-btn" style="margin:0 0 0 auto; padding:6px 12px; font-size:12.5px; color:#c23b3b; display:none;" onclick="archDeleteSelected()">Supprimer</button>
+        </div>
         <div class="list" id="requests-archive" style="margin-top:10px;"></div>
       </details>
     </section>
@@ -1494,6 +1502,22 @@ async function closeExchange(exchangeId, otherId, otherName){
   if(otherId && confirm('Échange clôturé. Veux-tu donner un avis sur ' + otherName + ' maintenant ?')) leaveReview(exchangeId, otherId, otherName);
 }
 
+let archSel = new Set(), _archItems = [], _archRender = null;
+function archMode(){ try{ return localStorage.getItem('tt_arch_mode') === 'prov' ? 'prov' : 'date'; }catch(e){ return 'date'; } }
+function archSetMode(v){ try{ localStorage.setItem('tt_arch_mode', v); }catch(e){} if(_archRender) _archRender(); }
+function archToggle(id, on){ if(on) archSel.add(id); else archSel.delete(id); if(_archRender) _archRender(); }
+function archSelectAll(on){ archSel = on ? new Set(_archItems.map(r => r.id)) : new Set(); if(_archRender) _archRender(); }
+function archDeleteSelected(){ archDelete([...archSel]); }
+async function archDelete(ids){
+  if(!ids.length) return;
+  if(!confirm(ids.length === 1 ? 'Supprimer définitivement cet échange de tes archives ?' : 'Supprimer définitivement ces ' + ids.length + ' échanges de tes archives ?')) return;
+  const rows = ids.map(id => ({user_id: myId, exchange_id: id, deleted: true}));
+  const { error } = await sb.from('exchange_archive').upsert(rows, {onConflict: 'user_id,exchange_id'});
+  if(error){ log('Suppression impossible : ' + error.message + ' (lance le SQL « mise à jour 9 »)'); return; }
+  ids.forEach(id => { const it = _archItems.find(r => r.id === id); if(it) markStatusSeen(id, it.status); archSel.delete(id); });
+  log(ids.length > 1 ? 'Échanges supprimés ✓' : 'Échange supprimé ✓');
+  refreshRequestLists();
+}
 async function archiveExchange(id){
   const { error } = await sb.from('exchange_archive').insert({user_id: myId, exchange_id: id});
   if(error && error.code !== '23505'){ log("Archivage impossible : " + error.message + " (lance le SQL « mise à jour 8 »)"); return; }
@@ -1513,15 +1537,17 @@ async function fetchCompletedExchanges(st){
   const archBox = document.getElementById('requests-archive');
   if(!list || !myId) return;
   try{
-    const { data } = await sb.from('exchanges').select('*')
+    let { data } = await sb.from('exchanges').select('*')
       .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
       .in('status', ['completed','refused'])
       .order('created_at', {ascending:false});
-    let archived = new Set();
+    let archived = new Set(), removed = new Set();
     try{
-      const { data: a } = await sb.from('exchange_archive').select('exchange_id').eq('user_id', myId);
-      archived = new Set((a || []).map(x => x.exchange_id));
+      let { data: a, error: ae } = await sb.from('exchange_archive').select('exchange_id, deleted').eq('user_id', myId);
+      if(ae){ ({ data: a } = await sb.from('exchange_archive').select('exchange_id').eq('user_id', myId)); }
+      (a || []).forEach(x => { if(x.deleted) removed.add(x.exchange_id); else archived.add(x.exchange_id); });
     }catch(e){ /* table absente : rien d'archivé */ }
+    data = (data || []).filter(r => !removed.has(r.id));
     const reviewedDone = await loadReviewedSet((data || []).map(r => r.id));
     const card = (r, isArch) => {
       const iAmRequester = r.requester_id === myId;
@@ -1539,7 +1565,11 @@ async function fetchCompletedExchanges(st){
           </div>
         </div>
         ${reviewBtn(r.id, otherId, otherName, reviewedDone, true)}
-        ${refused ? '' : `<button class="btn secondary" style="margin-top:8px;" onclick="event.stopPropagation(); ${isArch ? 'unarchiveExchange' : 'archiveExchange'}('${r.id}')">${isArch ? 'Remettre dans « terminés »' : 'Archiver'}</button>`}
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;">
+          ${refused ? '' : `<button class="btn secondary" style="margin:0;" onclick="event.stopPropagation(); ${isArch ? 'unarchiveExchange' : 'archiveExchange'}('${r.id}')">${isArch ? 'Remettre dans « terminés »' : 'Archiver'}</button>`}
+          ${isArch ? `<button class="btn secondary" style="margin:0; color:#c23b3b;" onclick="event.stopPropagation(); archDelete(['${r.id}'])">Supprimer</button>
+          <input type="checkbox" class="arch-check" ${archSel.has(r.id) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="archToggle('${r.id}', this.checked)" style="margin-left:auto; width:18px; height:18px;" title="Sélectionner">` : ''}
+        </div>
       </div>`;
     };
     // Les demandes refusées vont automatiquement dans les archives
@@ -1548,7 +1578,28 @@ async function fetchCompletedExchanges(st){
     setSectionBadge('archive', arch.filter(r => r.status === 'refused' && st.all.has(r.id)).length);
     setSectionBadge('completed', visible.filter(r => st.all.has(r.id)).length);
     list.innerHTML = visible.length ? visible.map(r => card(r, false)).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
-    if(archBox) archBox.innerHTML = arch.length ? arch.map(r => card(r, true)).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange archivé.</p>";
+    _archItems = arch;
+    _archRender = () => {
+      const tb = document.getElementById('arch-toolbar');
+      if(!archBox) return;
+      archSel.forEach(id => { if(!_archItems.some(r => r.id === id)) archSel.delete(id); });
+      if(tb) tb.style.display = _archItems.length ? 'flex' : 'none';
+      const mode = archMode();
+      const ms = document.getElementById('arch-mode'); if(ms) ms.value = mode;
+      const all = document.getElementById('arch-all'); if(all) all.checked = _archItems.length > 0 && archSel.size === _archItems.length;
+      const db = document.getElementById('arch-del-btn');
+      if(db){ db.style.display = archSel.size ? 'inline-block' : 'none'; db.textContent = 'Supprimer (' + archSel.size + ')'; }
+      if(!_archItems.length){ archBox.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange archivé.</p>"; return; }
+      const other = r => (r.requester_id === myId ? r.provider_name : r.requester_name) || 'Inconnu';
+      const keyOf = r => mode === 'prov' ? other(r)
+        : new Date(r.created_at).toLocaleDateString('fr-CH', {month:'long', year:'numeric'});
+      const groups = new Map();
+      _archItems.forEach(r => { const k = keyOf(r); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+      let keys = [...groups.keys()];
+      if(mode === 'prov') keys.sort((a, b) => a.localeCompare(b));
+      archBox.innerHTML = keys.map(k => `<p style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; color:var(--text-muted); margin:10px 0 4px;">${esc(k)} · ${groups.get(k).length}</p>` + groups.get(k).map(r => card(r, true)).join('')).join('');
+    };
+    _archRender();
   }catch(e){ log('Erreur : ' + e.message); }
 }
 
@@ -2097,7 +2148,7 @@ setInterval(() => {
   if(document.hidden) return;
   checkNotifications(); refreshMyStats();
   const rs = document.getElementById('requests');
-  if(rs && rs.classList.contains('active') && !(selectedForDelete && selectedForDelete.size)) refreshRequestLists();
+  if(rs && rs.classList.contains('active') && !(selectedForDelete && selectedForDelete.size) && !archSel.size) refreshRequestLists();
   const ps = document.getElementById('profile');
   if(ps && ps.classList.contains('active')) fetchHistory();
 }, 10000);
