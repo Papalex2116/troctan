@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 21</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 22</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -505,9 +505,9 @@
 
   <nav class="tabbar" style="display:none;">
     <button class="tab-btn active" data-tab="home" onclick="goHome()"><i class="ti ti-home"></i>Accueil<span class="tab-badge" id="badge-home"></span></button>
-    <button class="tab-btn" data-tab="requests" onclick="showScreen('requests');"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
+    <button class="tab-btn" data-tab="requests" onclick="openRequestsTab()"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
     <button class="tab-btn" data-tab="propose" onclick="showScreen('propose')"><i class="ti ti-plus"></i>Proposer</button>
-    <button class="tab-btn" data-tab="communities" onclick="showScreen('communities');"><i class="ti ti-users"></i>Groupes<span class="tab-badge" id="badge-communities"></span></button>
+    <button class="tab-btn" data-tab="communities" onclick="openCommunitiesTab()"><i class="ti ti-users"></i>Groupes<span class="tab-badge" id="badge-communities"></span></button>
     <button class="tab-btn" data-tab="profile" onclick="showScreen('profile')"><i class="ti ti-user"></i>Profil<span class="tab-badge" id="badge-profile"></span></button>
   </nav>
 </div>
@@ -644,8 +644,6 @@ async function fetchBlockedIds(){
 
 async function fetchCommunities(){
   if(!myId) return;
-  localStorage.setItem('tt_last_seen_community_post', new Date().toISOString());
-  setBadge('badge-communities', 0);
   try{
     const { data: myMemberships } = await sb.from('community_members').select('community_id').eq('user_id', myId);
     myCommunityIds = new Set((myMemberships || []).map(m => m.community_id));
@@ -738,6 +736,7 @@ function renderScreenOnly(id){
   if(!myId && !AUTH_SCREENS.includes(id) && id !== 'legal') id = 'login';
   document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if(id !== 'requests') pillHold = null;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
 
   const hdr = document.getElementById('app-header');
@@ -1506,7 +1505,6 @@ async function refreshRequestLists(){
     const st = await loadNotifState();
     await Promise.all([fetchExchanges(st), fetchActiveExchanges(st), fetchCompletedExchanges(st)]);
     const scr = document.getElementById('requests');
-    if(scr && scr.classList.contains('active')) scheduleSeen(st);
     checkNotifications();
   }catch(e){ log('Erreur : ' + e.message); }
   finally{
@@ -1515,7 +1513,29 @@ async function refreshRequestLists(){
   }
 }
 
+let pillHold = null;
+function isNew(st, id){ return st.all.has(id) || !!(pillHold && pillHold.all.has(id)); }
+function openRequestsTab(){
+  (async () => {
+    try{
+      const st = await loadNotifState();
+      // on garde l'affichage des pastilles pendant cette visite, mais on les marque comme lues
+      pillHold = {all:new Set(st.all), newReceived:new Set(st.newReceived), statusChanged:new Set(st.statusChanged), unreadMsgs:new Set(st.unreadMsgs), unreadReviews:new Set(st.unreadReviews)};
+      markSeenFromState(st, true);
+    }catch(e){}
+    setBadge('badge-requests', 0);
+    showScreen('requests');
+  })();
+}
+function openCommunitiesTab(){
+  try{ localStorage.setItem('tt_last_seen_community_post', new Date().toISOString()); }catch(e){}
+  setBadge('badge-communities', 0);
+  showScreen('communities');
+}
 function notifTags(st, r){
+  const H = pillHold || {newReceived:new Set(), statusChanged:new Set(), unreadMsgs:new Set(), unreadReviews:new Set()};
+  const has = (k) => st[k].has(r.id) || H[k].has(r.id);
+  st = {newReceived:{has:()=>has('newReceived')}, statusChanged:{has:()=>has('statusChanged')}, unreadMsgs:{has:()=>has('unreadMsgs')}, unreadReviews:{has:()=>has('unreadReviews')}};
   const pill = (txt) => `<span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;white-space:nowrap;">${txt}</span>`;
   const t = [];
   if(st.newReceived.has(r.id)) t.push(pill('Nouvelle demande'));
@@ -1538,7 +1558,7 @@ async function fetchActiveExchanges(st){
       .order('created_at', {ascending:false});
 
     const ids = (data || []).map(r => r.id);
-    setSectionBadge('active', (data || []).filter(r => st.all.has(r.id)).length);
+    setSectionBadge('active', (data || []).filter(r => isNew(st, r.id)).length);
     const reviewedActive = await loadReviewedSet(ids);
     const list = document.getElementById('requests-active');
     list.innerHTML = (data && data.length) ? data.map(r => {
@@ -1655,8 +1675,8 @@ async function fetchCompletedExchanges(st){
     // Les demandes refusées vont automatiquement dans les archives
     const visible = (data || []).filter(r => r.status === 'completed' && !archived.has(r.id));
     const arch = (data || []).filter(r => r.status === 'refused' || archived.has(r.id));
-    setSectionBadge('archive', arch.filter(r => r.status === 'refused' && st.all.has(r.id)).length);
-    setSectionBadge('completed', visible.filter(r => st.all.has(r.id)).length);
+    setSectionBadge('archive', arch.filter(r => r.status === 'refused' && isNew(st, r.id)).length);
+    setSectionBadge('completed', visible.filter(r => isNew(st, r.id)).length);
     list.innerHTML = visible.length ? visible.map(r => card(r, false)).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
     _archItems = arch;
     _archRender = () => {
@@ -1789,8 +1809,8 @@ async function fetchExchanges(st){
     sent = (sent || []).filter(r => !removedSet.has(r.id));
     const reviewedIds = await loadReviewedSet([...(received || []), ...(sent || [])].map(r => r.id));
 
-    setSectionBadge('received', (received || []).filter(r => st.all.has(r.id)).length);
-    setSectionBadge('sent', (sent || []).filter(r => st.all.has(r.id)).length);
+    setSectionBadge('received', (received || []).filter(r => isNew(st, r.id)).length);
+    setSectionBadge('sent', (sent || []).filter(r => isNew(st, r.id)).length);
 
     const recList = document.getElementById('requests-received');
     recList.innerHTML = renderGroupedByStatus(received, ['pending','cancelled'], (r) => {
@@ -2226,8 +2246,7 @@ async function checkNotifications(){
       const lastSeen = localStorage.getItem('tt_last_seen_community_post') || '1970-01-01';
       const newCount = (posts || []).filter(p => p.created_at > lastSeen).length;
       const onComm = (function(){ const c = document.querySelector('.screen.active'); return c && (c.id === 'communities' || c.id === 'community-feed'); })();
-      if(onComm){ localStorage.setItem('tt_last_seen_community_post', new Date().toISOString()); setBadge('badge-communities', 0); }
-      else setBadge('badge-communities', newCount);
+      setBadge('badge-communities', newCount);
     } else {
       setBadge('badge-communities', 0);
     }
@@ -2237,15 +2256,14 @@ async function checkNotifications(){
   const curId = curScr ? curScr.id : '';
   try{
     const st = await loadNotifState();
-    setBadge('badge-requests', curId === 'requests' ? 0 : st.all.size);
+    setBadge('badge-requests', st.all.size);
   }catch(e){ /* silencieux */ }
 
   try{
     const { data } = await sb.from('services').select('id, created_at').order('created_at', {ascending:false}).limit(50);
     const lastSeen = localStorage.getItem('tt_last_seen_service') || '1970-01-01';
     const newCount = (data || []).filter(s => s.created_at > lastSeen).length;
-    if(curId === 'home'){ localStorage.setItem('tt_last_seen_service', new Date().toISOString()); setBadge('badge-home', 0); }
-    else setBadge('badge-home', newCount);
+    setBadge('badge-home', newCount);
   }catch(e){ /* silencieux */ }
 }
 
