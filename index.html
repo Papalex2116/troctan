@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 23</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 24</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -1548,10 +1548,10 @@ function openCommunitiesTab(){
   setBadge('badge-communities', 0);
   showScreen('communities');
 }
-function notifTags(st, r){
+function notifTags(st0, r){
   const H = pillHold || {newReceived:new Set(), statusChanged:new Set(), unreadMsgs:new Set(), unreadReviews:new Set()};
-  const has = (k) => st[k].has(r.id) || H[k].has(r.id);
-  st = {newReceived:{has:()=>has('newReceived')}, statusChanged:{has:()=>has('statusChanged')}, unreadMsgs:{has:()=>has('unreadMsgs')}, unreadReviews:{has:()=>has('unreadReviews')}};
+  const has = (k) => st0[k].has(r.id) || H[k].has(r.id);
+  const st = {newReceived:{has:() => has('newReceived')}, statusChanged:{has:() => has('statusChanged')}, unreadMsgs:{has:() => has('unreadMsgs')}, unreadReviews:{has:() => has('unreadReviews')}};
   const pill = (txt) => `<span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;white-space:nowrap;">${txt}</span>`;
   const t = [];
   if(st.newReceived.has(r.id)) t.push(pill('Nouvelle demande'));
