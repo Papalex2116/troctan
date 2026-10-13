@@ -14,40 +14,40 @@
 <style>
   :root{
     --bg:#f4f3ee; --card:#ffffff; --border:#e3e1d8; --border-strong:#c9c7bc;
-    --text:#1c1c1a; --text-secondary:#68675f; --text-muted:#94938a;
+    --text:#1c1c1a; --text-secondary:#44433d; --text-muted:#62615a;
     --accent-bg:#e6f1fb; --accent-text:#0c447c; --accent-border:#378add;
     --success-bg:#eaf3de; --success-text:#27500a;
     --radius:10px;
     --h:140; --sat:45%; --l1:94%; --l2:90%; --l3:92%;
     --r1:#d3e8da; --r2:#bcdcc7; --r3:#a3cdb2; --r4:#88bc9b; --r5:#6da584; --r6:#558f6d; --line:#3f7a58; --mist:#ffffff; --mist-o:.45; --sun:#fff6cf;
-    --card:rgba(255,255,255,.62); --border:rgba(60,110,80,.20); --border-strong:rgba(60,110,80,.34);
+    --card:rgba(255,255,255,.74); --border:rgba(60,110,80,.20); --border-strong:rgba(60,110,80,.34);
   }
   :root:not([data-theme="light"]){
     @media (prefers-color-scheme: dark){
       --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
-      --text:#f0efe9; --text-secondary:#b4b2a9; --text-muted:#888780;
+      --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
       --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
       --success-bg:#27500a; --success-text:#c0dd97;
       --sat:38%; --l1:14%; --l2:19%; --l3:16%;
-      --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#9fd0b3; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
-    --card:rgba(255,255,255,.11); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
+      --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
+    --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
     }
   }
   :root[data-theme="dark"]{
     --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
-    --text:#f0efe9; --text-secondary:#b4b2a9; --text-muted:#888780;
+    --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
     --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
     --success-bg:#27500a; --success-text:#c0dd97;
     --sat:38%; --l1:14%; --l2:19%; --l3:16%;
-    --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#9fd0b3; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
-    --card:rgba(255,255,255,.11); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
+    --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
+    --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
   }
   :root[data-theme="light"]{ --sat:45%; --l1:94%; --l2:90%; --l3:92%;
     --r1:#d3e8da; --r2:#bcdcc7; --r3:#a3cdb2; --r4:#88bc9b; --r5:#6da584; --r6:#558f6d; --line:#3f7a58; --mist:#ffffff; --mist-o:.45; --sun:#fff6cf;
-    --card:rgba(255,255,255,.62); --border:rgba(60,110,80,.20); --border-strong:rgba(60,110,80,.34);
+    --card:rgba(255,255,255,.74); --border:rgba(60,110,80,.20); --border-strong:rgba(60,110,80,.34);
   }
   *{box-sizing:border-box;}
-    #bg-art{position:absolute; inset:0; z-index:-1; pointer-events:none; overflow:hidden;}
+    #bg-art{position:absolute; inset:0; z-index:-1; pointer-events:none; overflow:hidden; opacity:.5;}
   #bg-art *{pointer-events:none;}
   #bg-art .scene{opacity:0; transition:opacity .9s ease;}
   body:not([data-screen]) #scene-home{opacity:1;}
@@ -243,7 +243,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 28</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 29</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -295,8 +295,15 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       </div>
       <p id="offline-note" style="display:none;font-size:12px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:12px;">Impossible de contacter le serveur — vérifie ta connexion.</p>
       <input type="text" id="home-search" placeholder="Rechercher un service..." oninput="renderHome()" style="margin-bottom:10px;">
-      <div id="category-filters" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:4px;"></div>
-      <p class="section-label">Près de chez toi</p>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+        <p class="section-label" style="margin:0;">Près de chez toi</p>
+        <select id="home-sort" onchange="setHomeSort(this.value)" style="width:auto; margin:0; font-size:12.5px; padding:6px 10px; border-radius:8px;">
+          <option value="dist">Classer : distance</option>
+          <option value="recent">Classer : plus récentes</option>
+          <option value="cat">Classer : catégorie</option>
+          <option value="hours">Classer : durée</option>
+        </select>
+      </div>
       <div class="list" id="home-list" style="max-height:28vh; overflow-y:auto; padding-right:2px;"></div>
 
       <p class="section-label" style="margin-top:0.8rem;">Carte</p>
@@ -647,18 +654,32 @@ function toggleCategoryFilter(key){
   renderHome();
 }
 
-function catSeenTime(key){
+function homeBaseline(){
   try{
     let base = localStorage.getItem('tt_home_baseline');
     if(!base){ base = new Date().toISOString(); localStorage.setItem('tt_home_baseline', base); }
-    const v = localStorage.getItem('tt_cat_seen_' + key);
-    return (v && v > base) ? v : base;
+    return base;
   }catch(e){ return '9999'; }
 }
-function markCatSeen(key, groupId){
-  try{ localStorage.setItem('tt_cat_seen_' + key, new Date().toISOString()); }catch(e){}
-  const el = document.querySelector('#' + groupId + ' .cat-new');
-  if(el) el.remove();
+function svcSeenSet(){ try{ return new Set(JSON.parse(localStorage.getItem('tt_svc_seen') || '[]')); }catch(e){ return new Set(); } }
+function markSvcSeen(id){
+  try{ const st = svcSeenSet(); st.add(id); localStorage.setItem('tt_svc_seen', JSON.stringify([...st].slice(-400))); }catch(e){}
+}
+function isNewSvc(s){ return !!(s.createdAt && s.authorId !== myId && s.createdAt > homeBaseline() && !svcSeenSet().has(s.id)); }
+function homeSortMode(){ try{ const m = localStorage.getItem('tt_home_sort'); return ['dist','recent','cat','hours'].includes(m) ? m : 'dist'; }catch(e){ return 'dist'; } }
+function setHomeSort(v){ try{ localStorage.setItem('tt_home_sort', v); }catch(e){} renderHome(); }
+function serviceCard(s){
+  const cat = CATEGORIES[s.category || 'autre'] || CATEGORIES.autre || Object.values(CATEGORIES)[0];
+  const dist = distanceLabel(s);
+  const nw = isNewSvc(s) ? '<span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:700;border-radius:8px;padding:2px 7px;margin-left:6px;white-space:nowrap;">Nouveau</span>' : '';
+  return `
+  <div class="item-card" onclick="openDetail('${s.id}')">
+    ${s.photoUrl ? `<img src="${esc(s.photoUrl)}" alt="" style="width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0;">` : `<i class="ti ${cat.icon}"></i>`}
+    <div>
+      <p class="item-title">${esc(s.title)}${nw}</p>
+      <p class="item-sub">${cat.emoji} ${esc(s.authorName)} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
+    </div>
+  </div>`;
 }
 function renderGroupedByCategory(services, sectionKey){
   if(!services.length) return '';
@@ -667,26 +688,15 @@ function renderGroupedByCategory(services, sectionKey){
     const group = services.filter(s => (s.category || 'autre') === key);
     if(!group.length) return;
     const groupId = sectionKey + '_' + key;
-    const seenT = catSeenTime(key);
-    const nNew = group.filter(s => s.authorId !== myId && s.createdAt && s.createdAt > seenT).length;
+    const nNew = group.filter(isNewSvc).length;
     html += `<details class="dropdown-section sub-dropdown" id="${groupId}" style="margin-bottom:10px;" open>
-      <summary style="display:flex; align-items:center; gap:10px; padding:2px 0;" onclick="markCatSeen('${key}', '${groupId}')">
+      <summary style="display:flex; align-items:center; gap:10px; padding:2px 0;">
         <span style="font-size:11.5px; font-weight:700; white-space:nowrap; padding:5px 12px; border-radius:20px; background:var(--accent-bg); color:var(--accent-text);">${cat.emoji} ${cat.label} · ${group.length}</span>
-        ${nNew ? `<span class="cat-new" style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:700;border-radius:10px;padding:2px 8px;white-space:nowrap;">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}
+        ${nNew ? `<span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:700;border-radius:10px;padding:2px 8px;white-space:nowrap;">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}
         <div style="flex:1; height:1px; background:var(--border);"></div>
       </summary>
       <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
-        ${group.map(s => {
-          const dist = distanceLabel(s);
-          return `
-          <div class="item-card" onclick="openDetail('${s.id}')">
-            ${s.photoUrl ? `<img src="${esc(s.photoUrl)}" alt="" style="width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0;">` : `<i class="ti ${cat.icon}"></i>`}
-            <div>
-              <p class="item-title">${esc(s.title)}</p>
-              <p class="item-sub">${esc(s.authorName)} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
-            </div>
-          </div>`;
-        }).join('')}
+        ${group.map(serviceCard).join('')}
       </div>
     </details>`;
   });
@@ -1392,6 +1402,14 @@ async function saveProfile(balance, lat, lng){
   }catch(e){ log('Erreur réseau (profil) : ' + e.message); }
 }
 
+function distanceMeters(s){
+  if(myLat === null || s.lat == null || s.lng == null) return null;
+  const R = 6371000;
+  const dLat = (s.lat - myLat) * Math.PI / 180;
+  const dLng = (s.lng - myLng) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(myLat*Math.PI/180) * Math.cos(s.lat*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 function distanceLabel(s){
   if(myLat === null || s.lat == null || s.lng == null) return '';
   const R = 6371000;
@@ -1403,7 +1421,6 @@ function distanceLabel(s){
 }
 
 function renderHome(){
-  renderCategoryFilters();
   const list = document.getElementById('home-list');
   const searchInput = document.getElementById('home-search');
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
@@ -1416,13 +1433,27 @@ function renderHome(){
     list.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun service ne correspond pour l'instant.</p>";
     return;
   }
-  list.innerHTML = renderGroupedByCategory(others, 'dd-home-cat');
+  const mode = homeSortMode();
+  const sel = document.getElementById('home-sort'); if(sel) sel.value = mode;
+  if(mode === 'cat'){ list.innerHTML = renderGroupedByCategory(others, 'dd-home-cat'); return; }
+  const byRecent = (a, b) => (b.createdAt || '').localeCompare(a.createdAt || '');
+  if(mode === 'recent') others.sort(byRecent);
+  else if(mode === 'hours') others.sort((a, b) => (a.hours - b.hours) || byRecent(a, b));
+  else others.sort((a, b) => {
+    const da = distanceMeters(a), db = distanceMeters(b);
+    if(da === null && db === null) return byRecent(a, b);
+    if(da === null) return 1; if(db === null) return -1;
+    return da - db;
+  });
+  list.innerHTML = others.map(serviceCard).join('');
 }
 
 function openDetail(id){
   const s = currentServices.find(x => x.id === id);
   if(!s) return;
   currentDetail = s;
+  markSvcSeen(s.id);
+  setTimeout(renderHome, 0);
   renderAvatar(document.getElementById('detail-avatar'), s.authorName, null);
   document.getElementById('detail-name').textContent = s.authorName;
   document.getElementById('detail-meta').textContent = s.authorId === myId ? 'Ton propre service' : 'Membre Troctan';
