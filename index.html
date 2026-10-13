@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 19</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 20</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -409,6 +409,7 @@
       <div class="backbar" onclick="showScreen('profile')"><i class="ti ti-arrow-left"></i> Retour</div>
       <p class="section-label">Administration</p>
       <p style="font-size:12.5px;color:var(--text-secondary);">Tu peux aussi retirer une publication, un commentaire ou une annonce directement depuis leur écran (bouton rouge).</p>
+      <button class="btn secondary" onclick="adminExportData()">💾 Exporter une sauvegarde des données</button>
       <p class="section-label" style="margin-top:14px;">Signalements</p>
       <div class="list" id="admin-reports"></div>
       <p class="section-label" style="margin-top:14px;">Utilisateurs</p>
@@ -1853,6 +1854,19 @@ async function adminDeleteService(){
   if(!data || !data.length){ log("Annonce non retirée : il manque une autorisation dans Supabase (lance le SQL « mise à jour 4 »)."); return; }
   log('Annonce retirée.');
   showScreen('home');
+}
+async function adminExportData(){
+  try{
+    const { data, error } = await sb.rpc('admin_export_data');
+    if(error){ log('Export impossible : ' + error.message + ' (lance le SQL « mise à jour 11 »)'); return; }
+    const blob = new Blob([JSON.stringify(data, null, 1)], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'troctan-sauvegarde-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    log('Sauvegarde téléchargée ✓');
+  }catch(e){ log('Erreur : ' + e.message); }
 }
 async function adminDismissReport(id){
   const { data, error } = await sb.from('reports').delete().eq('id', id).select();
