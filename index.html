@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 22</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 23</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -504,7 +504,7 @@
   </main>
 
   <nav class="tabbar" style="display:none;">
-    <button class="tab-btn active" data-tab="home" onclick="goHome()"><i class="ti ti-home"></i>Accueil<span class="tab-badge" id="badge-home"></span></button>
+    <button class="tab-btn active" data-tab="home" onclick="goHome()"><i class="ti ti-home"></i>Accueil</button>
     <button class="tab-btn" data-tab="requests" onclick="openRequestsTab()"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
     <button class="tab-btn" data-tab="propose" onclick="showScreen('propose')"><i class="ti ti-plus"></i>Proposer</button>
     <button class="tab-btn" data-tab="communities" onclick="openCommunitiesTab()"><i class="ti ti-users"></i>Groupes<span class="tab-badge" id="badge-communities"></span></button>
@@ -600,6 +600,19 @@ function toggleCategoryFilter(key){
   renderHome();
 }
 
+function catSeenTime(key){
+  try{
+    let base = localStorage.getItem('tt_home_baseline');
+    if(!base){ base = new Date().toISOString(); localStorage.setItem('tt_home_baseline', base); }
+    const v = localStorage.getItem('tt_cat_seen_' + key);
+    return (v && v > base) ? v : base;
+  }catch(e){ return '9999'; }
+}
+function markCatSeen(key, groupId){
+  try{ localStorage.setItem('tt_cat_seen_' + key, new Date().toISOString()); }catch(e){}
+  const el = document.querySelector('#' + groupId + ' .cat-new');
+  if(el) el.remove();
+}
 function renderGroupedByCategory(services, sectionKey){
   if(!services.length) return '';
   let html = '';
@@ -607,9 +620,12 @@ function renderGroupedByCategory(services, sectionKey){
     const group = services.filter(s => (s.category || 'autre') === key);
     if(!group.length) return;
     const groupId = sectionKey + '_' + key;
+    const seenT = catSeenTime(key);
+    const nNew = group.filter(s => s.authorId !== myId && s.createdAt && s.createdAt > seenT).length;
     html += `<details class="dropdown-section sub-dropdown" id="${groupId}" style="margin-bottom:10px;" open>
-      <summary style="display:flex; align-items:center; gap:10px; padding:2px 0;">
+      <summary style="display:flex; align-items:center; gap:10px; padding:2px 0;" onclick="markCatSeen('${key}', '${groupId}')">
         <span style="font-size:11.5px; font-weight:700; white-space:nowrap; padding:5px 12px; border-radius:20px; background:var(--accent-bg); color:var(--accent-text);">${cat.emoji} ${cat.label} · ${group.length}</span>
+        ${nNew ? `<span class="cat-new" style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:700;border-radius:10px;padding:2px 8px;white-space:nowrap;">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}
         <div style="flex:1; height:1px; background:var(--border);"></div>
       </summary>
       <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
@@ -2187,7 +2203,7 @@ async function fetchServices(){
     currentServices = (data || []).map(r => ({
       id: r.id, title: r.title, desc: r.description, hours: r.hours,
       icon: r.icon, authorId: r.author_id, authorName: r.author_name,
-      lat: r.lat, lng: r.lng, category: r.category, communityId: r.community_id, photoUrl: r.photo_url
+      lat: r.lat, lng: r.lng, category: r.category, communityId: r.community_id, photoUrl: r.photo_url, createdAt: r.created_at
     }));
     renderHome();
     document.getElementById('offline-note').style.display = 'none';
