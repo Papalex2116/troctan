@@ -243,7 +243,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 30</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 31</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -2375,6 +2375,33 @@ async function checkNotifications(){
     setBadge('badge-home', newCount);
   }catch(e){ /* silencieux */ }
 }
+
+// Bouton « œil » pour afficher / masquer les mots de passe saisis
+function addPasswordToggles(){
+  document.querySelectorAll('input[type="password"]').forEach(inp => {
+    if(inp.dataset.eye) return;
+    inp.dataset.eye = '1';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;';
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    inp.style.paddingRight = '46px';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Afficher ou masquer le mot de passe');
+    btn.textContent = '👁';
+    btn.style.cssText = 'position:absolute; right:4px; top:2px; width:40px; height:34px; border:none; background:transparent; font-size:18px; cursor:pointer; opacity:.7; padding:0;';
+    btn.addEventListener('click', () => {
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      btn.textContent = show ? '🙈' : '👁';
+      btn.style.opacity = show ? '1' : '.7';
+    });
+    wrap.appendChild(btn);
+  });
+}
+addPasswordToggles();
+document.addEventListener('DOMContentLoaded', addPasswordToggles);
 
 // Anti-clignotement : on ne redessine pas une liste si son contenu n'a pas changé
 (function(){
