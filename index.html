@@ -243,7 +243,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 31</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 32</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -807,6 +807,10 @@ const AUTH_SCREENS = ['login', 'check-email', 'setup-name', 'tutorial', 'reset-p
 
 function renderScreenOnly(id){
   if(!myId && !AUTH_SCREENS.includes(id) && id !== 'legal') id = 'login';
+  const prevScr = document.querySelector('.screen.active');
+  const prevId = prevScr ? prevScr.id : '';
+  if(prevId === 'requests' && id !== 'requests' && lastShownSt){ try{ markSeenFromState(lastShownSt, true); }catch(e){} lastShownSt = null; }
+  _requestsVisit = (id === 'requests' && prevId !== 'requests');
   document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.body.setAttribute('data-screen', id);
@@ -1029,10 +1033,11 @@ async function deleteCommunityPost(postId){
   fetchCommunityFeed();
 }
 
+let _requestsVisit = false;
 function refreshForScreen(id){
   if(!myId) return;
   if(id === 'home') fetchServices().then(renderMap);
-  else if(id === 'requests'){ refreshRequestLists(); }
+  else if(id === 'requests'){ if(_requestsVisit){ _requestsVisit = false; visitRequests().then(refreshRequestLists); } else refreshRequestLists(); }
   else if(id === 'profile') renderProfile();
   else if(id === 'communities') fetchCommunities();
   else if(id === 'community-feed') fetchCommunityFeed();
@@ -1346,6 +1351,7 @@ async function logout(){
   unsubscribeRealtime();
   try{ await pushUnregisterRow(); }catch(e){}
   try{ await sb.auth.signOut(); }catch(e){ /* on nettoie quand même localement */ }
+  _nsPulled = false; _nsPulling = null; lastShownSt = null;
   myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null; myAvatarUrl = null; myBlockedIds = new Set(); myIsAdmin = false;
   currentServices = [];
   try{ document.getElementById('hdr-name').textContent = '...'; }catch(e){}
@@ -1526,6 +1532,63 @@ async function requestExchange(){
 let currentChatExchangeId = null;
 
 let notifTimer = null;
+const NS_PREFIX = ['tt_req_seen_','tt_status_seen_','tt_chat_seen_','tt_rev_seen_'];
+let _nsPushTimer = null, _nsPulled = false, _nsPulling = null;
+function nsCollect(){
+  const o = {};
+  try{
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(k && NS_PREFIX.some(p => k.startsWith(p))) o[k] = localStorage.getItem(k);
+    }
+  }catch(e){}
+  return o;
+}
+function nsSchedulePush(){
+  if(!sb || !myId) return;
+  if(_nsPushTimer) clearTimeout(_nsPushTimer);
+  _nsPushTimer = setTimeout(async () => {
+    _nsPushTimer = null;
+    try{ await sb.from('notif_seen').upsert({user_id: myId, data: nsCollect(), updated_at: new Date().toISOString()}); }catch(e){}
+  }, 1500);
+}
+function nsPull(){
+  if(_nsPulled) return Promise.resolve();
+  if(_nsPulling) return _nsPulling;
+  _nsPulling = (async () => {
+    try{
+      const { data, error } = await sb.from('notif_seen').select('data').eq('user_id', myId).maybeSingle();
+      if(!error && data && data.data){
+        Object.entries(data.data).forEach(([k, v]) => {
+          if(!NS_PREFIX.some(p => k.startsWith(p))) return;
+          const cur = localStorage.getItem(k);
+          if(cur === null){ localStorage.setItem(k, v); return; }
+          if(k.startsWith('tt_chat_seen_') || k.startsWith('tt_rev_seen_')){
+            if(Date.parse(v) > Date.parse(cur)) localStorage.setItem(k, v);
+          } else if(k.startsWith('tt_status_seen_')){
+            const set = new Set(String(cur).split(',').concat(String(v).split(',')).filter(Boolean));
+            localStorage.setItem(k, [...set].join(','));
+          }
+        });
+        localStorage.setItem('tt_baseline_v3', '1');
+      }
+      if(!error) nsSchedulePush();
+    }catch(e){}
+    _nsPulled = true; _nsPulling = null;
+  })();
+  return _nsPulling;
+}
+function nsAddStatus(id, status){
+  try{
+    const k = 'tt_status_seen_' + id;
+    const set = new Set(String(localStorage.getItem(k) || '').split(',').filter(Boolean));
+    set.add(status);
+    localStorage.setItem(k, [...set].join(','));
+  }catch(e){}
+}
+function nsStatusSeen(id, status){
+  try{ return String(localStorage.getItem('tt_status_seen_' + id) || '').split(',').includes(status); }catch(e){ return false; }
+}
 let _refreshing = false;
 let _refreshAgain = false;
 
@@ -1533,8 +1596,14 @@ async function loadNotifState(){
   const st = {unreadMsgs:new Set(), newReceived:new Set(), statusChanged:new Set(), unreadReviews:new Set(), withMsgs:new Set(), all:new Set(), rows:[], msgs:[], revs:[]};
   if(!sb || !myId) return st;
   try{
+    await nsPull();
     const { data: ex } = await sb.from('exchanges').select('id, status, provider_id, requester_id').or(`requester_id.eq.${myId},provider_id.eq.${myId}`);
-    st.rows = ex || [];
+    let removed = new Set();
+    try{
+      const { data: rm } = await sb.from('exchange_archive').select('exchange_id').eq('user_id', myId).eq('deleted', true);
+      removed = new Set((rm || []).map(x => x.exchange_id));
+    }catch(e){}
+    st.rows = (ex || []).filter(r => !removed.has(r.id));
     const ids = st.rows.map(r => r.id);
     if(!ids.length) return st;
     const [mres, rres] = await Promise.all([
@@ -1543,13 +1612,14 @@ async function loadNotifState(){
     ]);
     st.msgs = mres.data || []; st.revs = rres.data || [];
     if(!localStorage.getItem('tt_baseline_v3')){
-      markSeenFromState(st, false);
+      markSeenFromState(st, true);
       localStorage.setItem('tt_baseline_v3', '1');
+      nsSchedulePush();
     }
     st.rows.forEach(r => {
       if(r.status === 'pending'){
         if(r.provider_id === myId && !localStorage.getItem('tt_req_seen_' + r.id)) st.newReceived.add(r.id);
-      } else if(localStorage.getItem('tt_status_seen_' + r.id) !== r.status){
+      } else if(!nsStatusSeen(r.id, r.status)){
         st.statusChanged.add(r.id);
       }
     });
@@ -1572,7 +1642,7 @@ async function loadNotifState(){
 function markSeenFromState(st, withChat){
   st.rows.forEach(r => {
     if(r.status === 'pending'){ if(r.provider_id === myId) localStorage.setItem('tt_req_seen_' + r.id, '1'); }
-    else localStorage.setItem('tt_status_seen_' + r.id, r.status);
+    else nsAddStatus(r.id, r.status);
   });
   st.revs.forEach(v => {
     const k = 'tt_rev_seen_' + v.exchange_id;
@@ -1587,10 +1657,12 @@ function markSeenFromState(st, withChat){
       if(Date.parse(m.created_at) > Date.parse(prev)) localStorage.setItem(k, m.created_at);
     });
   }
+  nsSchedulePush();
 }
 
 function markStatusSeen(id, status){
-  try{ localStorage.setItem('tt_status_seen_' + id, status); }catch(e){}
+  nsAddStatus(id, status);
+  nsSchedulePush();
 }
 
 function scheduleSeen(st){
@@ -1613,6 +1685,7 @@ async function refreshRequestLists(){
   try{
     const st = await loadNotifState();
     await Promise.all([fetchExchanges(st), fetchActiveExchanges(st), fetchCompletedExchanges(st)]);
+    { const sc0 = document.getElementById('requests'); if(sc0 && sc0.classList.contains('active')) lastShownSt = st; }
     const scr = document.getElementById('requests');
     checkNotifications();
   }catch(e){ log('Erreur : ' + e.message); }
@@ -1624,17 +1697,20 @@ async function refreshRequestLists(){
 
 let pillHold = null;
 function isNew(st, id){ return st.all.has(id) || !!(pillHold && pillHold.all.has(id)); }
+let lastShownSt = null;
+async function visitRequests(){
+  try{
+    const st = await loadNotifState();
+    // on garde l'affichage des pastilles pendant cette visite, mais on les marque comme lues
+    pillHold = {all:new Set(st.all), newReceived:new Set(st.newReceived), statusChanged:new Set(st.statusChanged), unreadMsgs:new Set(st.unreadMsgs), unreadReviews:new Set(st.unreadReviews)};
+    markSeenFromState(st, true);
+  }catch(e){}
+  setBadge('badge-requests', 0);
+}
 function openRequestsTab(){
-  (async () => {
-    try{
-      const st = await loadNotifState();
-      // on garde l'affichage des pastilles pendant cette visite, mais on les marque comme lues
-      pillHold = {all:new Set(st.all), newReceived:new Set(st.newReceived), statusChanged:new Set(st.statusChanged), unreadMsgs:new Set(st.unreadMsgs), unreadReviews:new Set(st.unreadReviews)};
-      markSeenFromState(st, true);
-    }catch(e){}
-    setBadge('badge-requests', 0);
-    showScreen('requests');
-  })();
+  const cur = document.querySelector('.screen.active');
+  if(cur && cur.id === 'requests'){ visitRequests().then(refreshRequestLists); }
+  else showScreen('requests');
 }
 function openCommunitiesTab(){
   try{ localStorage.setItem('tt_last_seen_community_post', new Date().toISOString()); }catch(e){}
@@ -1881,7 +1957,7 @@ async function fetchChatMessages(){
     if(data && data.length){
       const last = data[data.length-1].created_at;
       const prev = localStorage.getItem('tt_chat_seen_' + currentChatExchangeId) || '1970-01-01';
-      if(Date.parse(last) > Date.parse(prev)) localStorage.setItem('tt_chat_seen_' + currentChatExchangeId, last);
+      if(Date.parse(last) > Date.parse(prev)){ localStorage.setItem('tt_chat_seen_' + currentChatExchangeId, last); nsSchedulePush(); }
     }
     checkNotifications();
   }catch(e){ log('Erreur : ' + e.message); }
@@ -2365,7 +2441,7 @@ async function checkNotifications(){
   const curId = curScr ? curScr.id : '';
   try{
     const st = await loadNotifState();
-    setBadge('badge-requests', st.all.size);
+    setBadge('badge-requests', curId === 'requests' ? 0 : st.all.size);
   }catch(e){ /* silencieux */ }
 
   try{
@@ -2435,6 +2511,7 @@ setInterval(() => {
 
 async function handleSession(session){
   if(!session){
+    _nsPulled = false; _nsPulling = null; lastShownSt = null;
     myId = null; myEmail = null; myName = null;
     showScreen('login');
     return;
@@ -2460,6 +2537,7 @@ async function handleSession(session){
       loadAdminStatus();
       updatePushBtn();
       updateIdentifierButton();
+      await nsPull();
       await fetchBlockedIds();
       await fetchServices();
       renderProfile();
