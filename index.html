@@ -18,6 +18,7 @@
     --accent-bg:#e6f1fb; --accent-text:#0c447c; --accent-border:#378add;
     --success-bg:#eaf3de; --success-text:#27500a;
     --radius:10px;
+    --h:140; --sat:45%; --l1:94%; --l2:90%; --l3:92%;
   }
   :root:not([data-theme="light"]){
     @media (prefers-color-scheme: dark){
@@ -25,6 +26,7 @@
       --text:#f0efe9; --text-secondary:#b4b2a9; --text-muted:#888780;
       --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
       --success-bg:#27500a; --success-text:#c0dd97;
+      --sat:38%; --l1:14%; --l2:19%; --l3:16%;
     }
   }
   :root[data-theme="dark"]{
@@ -32,15 +34,32 @@
     --text:#f0efe9; --text-secondary:#b4b2a9; --text-muted:#888780;
     --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
     --success-bg:#27500a; --success-text:#c0dd97;
+    --sat:38%; --l1:14%; --l2:19%; --l3:16%;
   }
+  :root[data-theme="light"]{ --sat:45%; --l1:94%; --l2:90%; --l3:92%; }
   *{box-sizing:border-box;}
+  @keyframes bgflow{ 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
+  @media (prefers-reduced-motion: reduce){ body{animation:none !important;} }
+  body[data-screen="home"]{--h:142;}
+  body[data-screen="requests"]{--h:118;}
+  body[data-screen="propose"]{--h:158;}
+  body[data-screen="communities"], body[data-screen="community-feed"]{--h:168;}
+  body[data-screen="profile"]{--h:104;}
+  body[data-screen="chat"]{--h:150;}
+  body[data-screen="admin"]{--h:128;}
+  body[data-screen="login"]{--h:134;}
+  body[data-screen="detail"]{--h:162;}
   body{
-    margin:0; background:var(--bg); color:var(--text);
+    margin:0; color:var(--text);
+    background-color:hsl(var(--h) var(--sat) var(--l1));
+    background-image:linear-gradient(135deg, hsl(var(--h) var(--sat) var(--l1)), hsl(calc(var(--h) + 28) var(--sat) var(--l2)), hsl(calc(var(--h) - 22) var(--sat) var(--l3)), hsl(var(--h) var(--sat) var(--l1)));
+    background-size:300% 300%; animation:bgflow 22s ease-in-out infinite;
+    transition:background-color .6s;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     display:flex; justify-content:center; height:100vh; height:100dvh; overflow:hidden;
   }
   .phone{
-    width:100%; max-width:420px; height:100vh; height:100dvh; overflow:hidden; background:var(--bg);
+    width:100%; max-width:420px; height:100vh; height:100dvh; overflow:hidden; background:transparent;
     display:flex; flex-direction:column; position:relative;
   }
   header{
@@ -196,7 +215,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 25</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 26</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -752,6 +771,7 @@ function renderScreenOnly(id){
   if(!myId && !AUTH_SCREENS.includes(id) && id !== 'legal') id = 'login';
   document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  document.body.setAttribute('data-screen', id);
   if(id !== 'requests') pillHold = null;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
 
