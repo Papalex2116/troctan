@@ -243,7 +243,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 29</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 30</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -1420,6 +1420,20 @@ function distanceLabel(s){
   return d < 1000 ? Math.round(d) + 'm' : (d/1000).toFixed(1) + 'km';
 }
 
+function normText(t){
+  return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ');
+}
+function matchesKeywords(s, query){
+  const cat = CATEGORIES[s.category || 'autre'];
+  const hay = ' ' + normText([s.title, s.desc, s.authorName, cat ? cat.label : ''].join(' ')) + ' ';
+  const words = normText(query).split(/\s+/).filter(w => w.length > 0);
+  // chaque mot-clé doit se retrouver quelque part (début de mot ou milieu), avec tolérance sur le pluriel
+  return words.every(w => {
+    if(hay.includes(w)) return true;
+    if(w.length > 3 && /[sx]$/.test(w) && hay.includes(w.slice(0, -1))) return true;
+    return false;
+  });
+}
 function renderHome(){
   const list = document.getElementById('home-list');
   const searchInput = document.getElementById('home-search');
@@ -1427,7 +1441,7 @@ function renderHome(){
 
   let others = currentServices.filter(s => s.authorId !== myId && !myBlockedIds.has(s.authorId));
   if(activeCategory) others = others.filter(s => (s.category || 'autre') === activeCategory);
-  if(query) others = others.filter(s => (s.title + ' ' + (s.desc || '')).toLowerCase().includes(query));
+  if(query) others = others.filter(s => matchesKeywords(s, query));
 
   if(others.length === 0){
     list.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun service ne correspond pour l'instant.</p>";
