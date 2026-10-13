@@ -243,7 +243,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 32</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 33</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -361,6 +361,17 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       </select>
       <label>Durée estimée (en crédits)</label>
       <input type="number" min="0.5" step="0.5" placeholder="Ex. 1" id="p-hours">
+      <label>Valable pendant</label>
+      <select id="p-validity" onchange="onValidityChange()" style="width:100%; padding:9px 10px; border:1px solid var(--border-strong); border-radius:8px; background:var(--card); color:var(--text); font-size:14px; margin-bottom:10px;">
+        <option value="">Sans limite</option>
+        <option value="7">1 semaine</option>
+        <option value="14">2 semaines</option>
+        <option value="30">1 mois</option>
+        <option value="90">3 mois</option>
+        <option value="date">Jusqu'à une date précise…</option>
+      </select>
+      <input type="date" id="p-validity-date" style="display:none; margin-bottom:10px;">
+      <p id="p-validity-hint" style="font-size:12.5px; color:var(--text-muted); margin:-4px 0 10px; display:none;"></p>
       <label>Photo (optionnel)</label>
       <p id="p-photo-current" style="font-size:12.5px; color:var(--text-muted); margin:-4px 0 6px; display:none;">Une photo est déjà en place — choisis-en une nouvelle pour la remplacer, sinon laisse tel quel.</p>
       <input type="file" accept="image/*" id="p-photo" style="margin-bottom:10px;">
@@ -859,7 +870,7 @@ async function openCommunityFeed(communityId, name){
   showScreen('community-feed');
 
   const sel = document.getElementById('post-link-service');
-  const mine = currentServices.filter(s => s.authorId === myId);
+  const mine = currentServices.filter(s => s.authorId === myId && !isExpired(s));
   sel.innerHTML = '<option value="">Lier une de mes annonces (optionnel)</option>' +
     mine.map(s => `<option value="${s.id}" data-title="${esc(s.title)}">${esc(s.title)}</option>`).join('');
 
@@ -1445,7 +1456,7 @@ function renderHome(){
   const searchInput = document.getElementById('home-search');
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-  let others = currentServices.filter(s => s.authorId !== myId && !myBlockedIds.has(s.authorId));
+  let others = currentServices.filter(s => s.authorId !== myId && !myBlockedIds.has(s.authorId) && !isExpired(s));
   if(activeCategory) others = others.filter(s => (s.category || 'autre') === activeCategory);
   if(query) others = others.filter(s => matchesKeywords(s, query));
 
@@ -1482,7 +1493,7 @@ function openDetail(id){
   else { detailPhoto.style.display = 'none'; }
   document.getElementById('detail-title').textContent = s.title;
   document.getElementById('detail-desc').textContent = s.desc;
-  document.getElementById('detail-duration').textContent = s.hours + 'cr';
+  document.getElementById('detail-duration').textContent = s.hours + 'cr' + (s.expiresAt ? ' · jusqu\'au ' + fmtDateFr(s.expiresAt) : '');
   document.getElementById('detail-balance').textContent = (myBalanceCache - s.hours) + 'cr';
   const ads = document.getElementById('admin-del-service');
   if(ads) ads.style.display = (myIsAdmin && s.authorId !== myId) ? 'block' : 'none';
@@ -1506,6 +1517,7 @@ async function loadAuthorInfo(s){
 async function requestExchange(){
   if(!myId){ log('Connecte-toi avant de demander un échange.'); showScreen('login'); return; }
   if(!currentDetail) return;
+  if(isExpired(currentDetail)){ log("Cette annonce n'est plus valable."); return; }
   if(currentDetail.authorId === myId){
     log("C'est ton propre service, pas besoin de l'échanger avec toi-même.");
     return;
@@ -2256,6 +2268,37 @@ async function resizeImage(file, maxSize){
 
 let editingServiceId = null;
 
+function isExpired(s){ return !!(s && s.expiresAt && new Date(s.expiresAt).getTime() <= Date.now()); }
+function fmtDateFr(d){ return new Date(d).toLocaleDateString('fr-CH', {day:'numeric', month:'long', year:'numeric'}); }
+function localDateStr(d){ const x = new Date(d); return x.getFullYear() + '-' + String(x.getMonth()+1).padStart(2,'0') + '-' + String(x.getDate()).padStart(2,'0'); }
+function onValidityChange(){
+  const v = document.getElementById('p-validity').value;
+  const di = document.getElementById('p-validity-date');
+  const hint = document.getElementById('p-validity-hint');
+  di.style.display = v === 'date' ? 'block' : 'none';
+  if(v === 'date'){
+    di.min = localDateStr(Date.now());
+    if(!di.value) di.value = localDateStr(Date.now() + 14*86400000);
+  }
+  if(/^\d+$/.test(v)){
+    hint.textContent = "L'annonce restera visible jusqu'au " + fmtDateFr(Date.now() + parseInt(v,10)*86400000) + '.';
+    hint.style.display = 'block';
+  } else { hint.style.display = 'none'; }
+}
+// Renvoie {value: ISO|null} ou {error: texte}
+function readValidity(){
+  const v = document.getElementById('p-validity').value;
+  if(!v) return {value:null};
+  if(v === 'date'){
+    const ds = document.getElementById('p-validity-date').value;
+    if(!ds) return {error:'Choisis une date de fin.'};
+    const end = new Date(ds + 'T23:59:59');
+    if(isNaN(end.getTime()) || end.getTime() <= Date.now()) return {error:'La date de fin doit être dans le futur.'};
+    return {value:end.toISOString()};
+  }
+  return {value:new Date(Date.now() + parseInt(v,10)*86400000).toISOString()};
+}
+
 function openEditService(id){
   const s = currentServices.find(x => x.id === id && x.authorId === myId);
   if(!s) return;
@@ -2266,6 +2309,15 @@ function openEditService(id){
   document.getElementById('p-hours').value = s.hours;
   document.getElementById('p-photo').value = '';
   document.getElementById('p-photo-current').style.display = s.photoUrl ? 'block' : 'none';
+  if(s.expiresAt){
+    document.getElementById('p-validity').value = 'date';
+    onValidityChange();
+    document.getElementById('p-validity-date').value = localDateStr(s.expiresAt);
+    document.getElementById('p-validity-date').min = '';
+  } else {
+    document.getElementById('p-validity').value = '';
+    onValidityChange();
+  }
   document.getElementById('propose-title').textContent = "Modifier l'annonce";
   document.getElementById('propose-submit-btn').textContent = 'Enregistrer les modifications';
   showScreen('propose');
@@ -2279,6 +2331,9 @@ function resetProposeForm(){
   document.getElementById('p-photo').value = '';
   document.getElementById('p-photo-current').style.display = 'none';
   document.getElementById('p-category').value = 'autre';
+  document.getElementById('p-validity').value = '';
+  document.getElementById('p-validity-date').value = '';
+  onValidityChange();
   document.getElementById('propose-title').textContent = 'Proposer un service';
   document.getElementById('propose-submit-btn').textContent = 'Publier';
 }
@@ -2297,6 +2352,8 @@ async function publishService(){
   const photoFile = document.getElementById('p-photo').files[0];
   if(!title){ log('Ajoute un titre pour continuer.'); return; }
   if(!hours || hours <= 0){ log('Indique une durée en heures valide.'); return; }
+  const validity = readValidity();
+  if(validity.error){ log(validity.error); return; }
 
   let photoUrl = editingServiceId ? undefined : null; // undefined = ne pas toucher au champ en édition si pas de nouvelle photo
   if(photoFile){
@@ -2316,6 +2373,8 @@ async function publishService(){
   try{
     if(editingServiceId){
       const payload = { title, description: desc || '', hours, category };
+      const prevSvc = currentServices.find(x => x.id === editingServiceId);
+      if(validity.value || (prevSvc && prevSvc.expiresAt)) payload.expires_at = validity.value;
       if(photoUrl !== undefined) payload.photo_url = photoUrl;
       const { error } = await sb.from('services').update(payload).eq('id', editingServiceId).eq('author_id', myId);
       if(error){ log("Erreur Supabase (modification) : " + error.message); return; }
@@ -2325,7 +2384,8 @@ async function publishService(){
         title, description: desc || '', hours, category,
         icon: 'ti-hand-stop', photo_url: photoUrl,
         author_id: myId, author_name: myName,
-        lat: myLat, lng: myLng
+        lat: myLat, lng: myLng,
+        ...(validity.value ? {expires_at: validity.value} : {})
       });
       if(error){ log("Erreur Supabase (service) : " + error.message); return; }
     }
@@ -2354,7 +2414,7 @@ function renderProfile(){
         <i class="ti ${s.icon || 'ti-hand-stop'}"></i>
         <div style="flex:1;">
           <p class="item-title">${esc(s.title)}</p>
-          <p class="item-sub">${s.hours}cr proposé</p>
+          <p class="item-sub">${s.hours}cr proposé${s.expiresAt ? (isExpired(s) ? ' · <b style="color:#c23b3b;">Expirée</b> (modifie la date pour la remettre en ligne)' : ' · valable jusqu\'au ' + fmtDateFr(s.expiresAt)) : ''}</p>
         </div>
       </div>
       <div style="display:flex; gap:8px; margin-top:8px;">
@@ -2367,12 +2427,18 @@ function renderProfile(){
 
 async function fetchServices(){
   try{
-    const { data, error } = await sb.from('services').select('*').order('created_at', {ascending:false}).limit(50);
+    let q = sb.from('services').select('*').order('created_at', {ascending:false}).limit(50);
+    q = myId ? q.or('expires_at.is.null,expires_at.gt.' + new Date().toISOString() + ',author_id.eq.' + myId)
+             : q.or('expires_at.is.null,expires_at.gt.' + new Date().toISOString());
+    let { data, error } = await q;
+    if(error && /expires_at/.test(error.message || '')){ // colonne pas encore créée
+      ({ data, error } = await sb.from('services').select('*').order('created_at', {ascending:false}).limit(50));
+    }
     if(error) throw error;
     currentServices = (data || []).map(r => ({
       id: r.id, title: r.title, desc: r.description, hours: r.hours,
       icon: r.icon, authorId: r.author_id, authorName: r.author_name,
-      lat: r.lat, lng: r.lng, category: r.category, communityId: r.community_id, photoUrl: r.photo_url, createdAt: r.created_at
+      lat: r.lat, lng: r.lng, category: r.category, communityId: r.community_id, photoUrl: r.photo_url, createdAt: r.created_at, expiresAt: r.expires_at || null
     }));
     renderHome();
     document.getElementById('offline-note').style.display = 'none';
@@ -2445,7 +2511,7 @@ async function checkNotifications(){
   }catch(e){ /* silencieux */ }
 
   try{
-    const { data } = await sb.from('services').select('id, created_at').order('created_at', {ascending:false}).limit(50);
+    const { data } = await sb.from('services').select('id, created_at, expires_at').or('expires_at.is.null,expires_at.gt.' + new Date().toISOString()).order('created_at', {ascending:false}).limit(50);
     const lastSeen = localStorage.getItem('tt_last_seen_service') || '1970-01-01';
     const newCount = (data || []).filter(s => s.created_at > lastSeen).length;
     setBadge('badge-home', newCount);
@@ -3065,7 +3131,7 @@ async function renderMap(){
   setTimeout(() => mapInstance.invalidateSize(), 100);
 
   mapMarkersLayer.clearLayers();
-  currentServices.filter(s => s.authorId !== myId && !myBlockedIds.has(s.authorId)).forEach(s => {
+  currentServices.filter(s => s.authorId !== myId && !myBlockedIds.has(s.authorId) && !isExpired(s)).forEach(s => {
     if(s.lat == null || s.lng == null) return;
     const marker = L.marker([s.lat, s.lng]).addTo(mapMarkersLayer);
     marker.bindPopup('<b>' + esc(s.title) + '</b><br>' + esc(s.authorName) + ' · ' + s.hours + 'cr');
