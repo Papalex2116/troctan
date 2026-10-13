@@ -196,7 +196,7 @@
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 20</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 21</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -332,6 +332,8 @@
       </details>
       <p id="location-status" style="font-size:12.5px;color:var(--text-secondary);margin-top:14px;">Position : non configurée</p>
       <button class="btn secondary" onclick="updateLocation()">Mettre à jour ma position</button>
+      <button class="btn secondary" id="push-btn" style="display:none;" onclick="togglePush()">🔔 Activer les notifications</button>
+      <p id="push-hint" style="display:none; font-size:12px; color:var(--text-secondary); margin:-4px 0 8px;"></p>
       <button class="btn secondary" onclick="changeMyPassword()">Définir / changer mon mot de passe</button>
       <button class="btn secondary" id="idform-btn" style="display:none;" onclick="createMyIdentifier()">Créer mon identifiant (ancien compte)</button>
       <button class="btn secondary" id="admin-btn" style="display:none;" onclick="showScreen('admin')">🛠 Administration <span id="admin-badge" style="display:none; background:#e0453c; color:#fff; font-size:11px; font-weight:700; border-radius:10px; padding:2px 8px; margin-left:6px;"></span></button>
@@ -1201,8 +1203,75 @@ function finishNameSetup(){
   }
 }
 
+// ---------- Notifications push (téléphone) ----------
+const VAPID_PUBLIC = 'BN0M0GXXIXI4V5PTmnQ0pWeVtqfEnILLOTyZ8aeLIKshesqBgX7PtnfBuor4GtD-uva5_BrtkEWQ6Y7iNOpkG1w';
+function pushSupported(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
+function b64ToU8(b64){
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+async function pushGetSub(){
+  const reg = await navigator.serviceWorker.ready;
+  return reg.pushManager.getSubscription();
+}
+async function pushRegisterRow(sub){
+  const j = sub.toJSON();
+  const { error } = await sb.rpc('register_push', {p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth});
+  return error;
+}
+async function pushUnregisterRow(){
+  if(!pushSupported() || !myId) return;
+  const sub = await pushGetSub();
+  if(sub) await sb.rpc('unregister_push', {p_endpoint: sub.endpoint});
+}
+async function updatePushBtn(){
+  const b = document.getElementById('push-btn'), h = document.getElementById('push-hint');
+  if(!b) return;
+  if(!pushSupported()){
+    b.style.display = 'block'; b.textContent = '🔔 Notifications indisponibles';
+    b.disabled = true;
+    if(h){ h.style.display = 'block'; h.textContent = "Sur iPhone : ouvre le menu Partager de Safari > « Sur l'écran d'accueil », puis lance Troctan depuis l'icône."; }
+    return;
+  }
+  b.disabled = false; b.style.display = 'block';
+  let on = false;
+  try{
+    if(Notification.permission === 'granted'){
+      const sub = await pushGetSub();
+      if(sub){ on = true; pushRegisterRow(sub); }
+    }
+  }catch(e){}
+  b.textContent = on ? '🔔 Notifications activées (toucher pour désactiver)' : '🔔 Activer les notifications';
+  if(h){
+    if(Notification.permission === 'denied'){ h.style.display = 'block'; h.textContent = "Les notifications sont bloquées dans les réglages du navigateur pour ce site."; }
+    else h.style.display = 'none';
+  }
+}
+async function togglePush(){
+  if(!pushSupported()) return;
+  try{
+    const existing = await pushGetSub();
+    if(existing){
+      await sb.rpc('unregister_push', {p_endpoint: existing.endpoint});
+      await existing.unsubscribe();
+      log('Notifications désactivées.');
+      return updatePushBtn();
+    }
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted'){ log('Notifications refusées.'); return updatePushBtn(); }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC)});
+    const err = await pushRegisterRow(sub);
+    if(err){ log('Activation impossible : ' + err.message + ' (lance le SQL « mise à jour 12 »)'); await sub.unsubscribe(); return updatePushBtn(); }
+    log('Notifications activées ✓');
+  }catch(e){ log('Erreur notifications : ' + e.message); }
+  updatePushBtn();
+}
+
 async function logout(){
   unsubscribeRealtime();
+  try{ await pushUnregisterRow(); }catch(e){}
   try{ await sb.auth.signOut(); }catch(e){ /* on nettoie quand même localement */ }
   myId = null; myEmail = null; myName = null; myBalanceCache = 0; myLat = null; myLng = null; myAvatarUrl = null; myBlockedIds = new Set(); myIsAdmin = false;
   currentServices = [];
@@ -2235,6 +2304,7 @@ async function handleSession(session){
       showScreen('home');
       if(!localStorage.getItem('tt_tutorial_seen')) showTutorial();
       loadAdminStatus();
+      updatePushBtn();
       updateIdentifierButton();
       await fetchBlockedIds();
       await fetchServices();
