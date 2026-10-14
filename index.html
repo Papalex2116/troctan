@@ -18,6 +18,7 @@
     --accent-bg:#e6f1fb; --accent-text:#0c447c; --accent-border:#378add;
     --success-bg:#eaf3de; --success-text:#27500a;
     --radius:10px;
+    --pill-grad:linear-gradient(135deg,#79d68e,#f4d95b); --pill-text:#10331f; --warn-text:#7a5d00;
     --h:140; --sat:45%; --l1:94%; --l2:90%; --l3:92%;
     --r1:#d3e8da; --r2:#bcdcc7; --r3:#a3cdb2; --r4:#88bc9b; --r5:#6da584; --r6:#558f6d; --line:#3f7a58; --mist:#ffffff; --mist-o:.45; --sun:#fff6cf;
     --card:rgba(255,255,255,.74); --border:rgba(60,110,80,.20); --border-strong:rgba(60,110,80,.34);
@@ -27,7 +28,7 @@
       --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
       --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
       --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
-      --success-bg:#27500a; --success-text:#c0dd97;
+      --success-bg:#27500a; --success-text:#c0dd97; --warn-text:#f2d45c;
       --sat:38%; --l1:14%; --l2:19%; --l3:16%;
       --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
     --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
@@ -37,7 +38,7 @@
     --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
     --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
     --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
-    --success-bg:#27500a; --success-text:#c0dd97;
+    --success-bg:#27500a; --success-text:#c0dd97; --warn-text:#f2d45c;
     --sat:38%; --l1:14%; --l2:19%; --l3:16%;
     --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
     --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
@@ -100,7 +101,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
   main{flex:1; padding:0 1.1rem 90px; overflow-y:auto;}
   .screen{display:none;}
   #login, #check-email, #setup-name, #reset-password{overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:100vh; max-height:100dvh; padding-bottom:40px !important;}
-  .dd-badge{display:none; background:#e0453c; color:#fff; font-size:11px; font-weight:700; border-radius:10px; padding:1px 7px; margin-left:6px; vertical-align:middle;}
+  .dd-badge{display:none; background:var(--pill-grad); color:var(--pill-text); font-size:11px; font-weight:700; border-radius:10px; padding:1px 7px; margin-left:6px; vertical-align:middle;}
   .auth-details{margin-top:12px; border-top:1px solid var(--border); padding-top:10px;}
   .auth-details > summary{cursor:pointer; font-size:13.5px; font-weight:600; color:var(--accent-text); list-style:none; padding:4px 0;}
   .auth-details > summary::-webkit-details-marker{display:none;}
@@ -167,7 +168,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
 
   nav.tabbar button{position:relative;}
   .tab-badge{
-    position:absolute; top:2px; right:22%; background:#e0453c; color:#fff; font-size:10px;
+    position:absolute; top:2px; right:22%; background:var(--pill-grad); color:var(--pill-text); font-size:10px;
     min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center;
     padding:0 3px; font-weight:700; line-height:1;
   }
@@ -204,7 +205,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
     <span id="bulk-delete-count" style="font-size:13.5px; font-weight:600;"></span>
     <div style="display:flex; gap:8px;">
       <button onclick="cancelBulkSelection()" style="background:none; border:1px solid var(--bg); color:var(--bg); border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer;">Annuler</button>
-      <button onclick="bulkDeleteSelected()" style="background:#e0453c; border:none; color:white; border-radius:8px; padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer;">Supprimer</button>
+      <button onclick="bulkDeleteSelected()" style="background:var(--pill-grad); border:none; color:var(--pill-text); border-radius:8px; padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer;">Supprimer</button>
     </div>
   </div>
 
@@ -242,8 +243,8 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <input type="email" id="forgot-email" placeholder="toi@exemple.com" autocomplete="email">
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
-    <p id="login-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 33</p>
+    <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 34</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -254,7 +255,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
     <label>Nouveau mot de passe</label>
     <input type="password" id="reset-pass" autocomplete="new-password">
     <button class="btn" id="reset-btn">Enregistrer</button>
-    <p id="reset-error" style="font-size:12.5px;color:#c23b3b;display:none;margin:6px 0 0;"></p>
+    <p id="reset-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
     <button class="btn secondary" onclick="showScreen('login')">Retour à la connexion</button>
   </section>
 
@@ -265,7 +266,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
     <p style="font-size:14px;color:var(--text-secondary);line-height:1.5;margin-top:16px;">Sur téléphone, le lien ne marche pas toujours : tape plutôt le <b>code à 6 chiffres</b> écrit dans le même email.</p>
     <input type="text" id="otp-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code reçu par email" style="text-align:center; letter-spacing:4px; font-size:18px;">
     <button class="btn" id="otp-btn">Valider le code</button>
-    <p id="otp-error" style="font-size:12.5px;color:#c23b3b;display:none;"></p>
+    <p id="otp-error" style="font-size:12.5px;color:var(--warn-text);display:none;"></p>
     <button class="btn secondary" onclick="showScreen('login')">Utiliser un autre email</button>
   </section>
 
@@ -280,7 +281,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="showScreen('legal'); event.stopPropagation();" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a></span>
     </label>
     <button class="btn" id="onboard-btn">Continuer</button>
-    <p id="onboard-error" style="font-size:12.5px;color:#c23b3b;display:none;margin-top:-4px;">Entre un prénom et accepte les conditions pour continuer.</p>
+    <p id="onboard-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin-top:-4px;">Entre un prénom et accepte les conditions pour continuer.</p>
   </section>
 
   <main>
@@ -334,9 +335,9 @@ body[data-screen="login"] #scene-chat{opacity:1;}
         <span style="font-weight:600;" id="detail-balance">+7h</span>
       </div>
       <button class="btn" onclick="requestExchange()">Demander cet échange</button>
-      <button class="btn secondary" style="color:#c23b3b;" onclick="reportService()">Signaler ce service</button>
-      <button class="btn secondary" style="color:#c23b3b;" onclick="blockUserFromDetail()">Bloquer cette personne</button>
-      <button class="btn secondary" id="admin-del-service" style="display:none;color:#c23b3b;" onclick="adminDeleteService()">🛠 Retirer cette annonce (admin)</button>
+      <button class="btn secondary" style="color:var(--warn-text);" onclick="reportService()">Signaler ce service</button>
+      <button class="btn secondary" style="color:var(--warn-text);" onclick="blockUserFromDetail()">Bloquer cette personne</button>
+      <button class="btn secondary" id="admin-del-service" style="display:none;color:var(--warn-text);" onclick="adminDeleteService()">🛠 Retirer cette annonce (admin)</button>
     </section>
 
     <!-- PROPOSER -->
@@ -401,15 +402,15 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <p id="push-hint" style="display:none; font-size:12px; color:var(--text-secondary); margin:-4px 0 8px;"></p>
       <button class="btn secondary" onclick="changeMyPassword()">Définir / changer mon mot de passe</button>
       <button class="btn secondary" id="idform-btn" style="display:none;" onclick="createMyIdentifier()">Créer mon identifiant (ancien compte)</button>
-      <button class="btn secondary" id="admin-btn" style="display:none;" onclick="showScreen('admin')">🛠 Administration <span id="admin-badge" style="display:none; background:#e0453c; color:#fff; font-size:11px; font-weight:700; border-radius:10px; padding:2px 8px; margin-left:6px;"></span></button>
+      <button class="btn secondary" id="admin-btn" style="display:none;" onclick="showScreen('admin')">🛠 Administration <span id="admin-badge" style="display:none; background:var(--pill-grad); color:var(--pill-text); font-size:11px; font-weight:700; border-radius:10px; padding:2px 8px; margin-left:6px;"></span></button>
       <button class="btn secondary" onclick="showBlockedUsers()">Personnes bloquées</button>
       <button class="btn secondary" onclick="shareApp()">Partager Troctan</button>
       <button class="btn secondary" onclick="inviteByEmail()">Inviter par email</button>
       <button class="btn secondary" onclick="showTutorial()">Revoir le tutoriel</button>
       <button class="btn secondary" onclick="exportMyData()">Télécharger mes données</button>
       <button class="btn secondary" onclick="showScreen('legal')">Confidentialité &amp; conditions</button>
-      <button class="btn secondary" style="color:#c23b3b;" onclick="logout()">Se déconnecter</button>
-      <button class="btn secondary" style="color:#c23b3b;" onclick="deleteAccount()">Supprimer mon compte</button>
+      <button class="btn secondary" style="color:var(--warn-text);" onclick="logout()">Se déconnecter</button>
+      <button class="btn secondary" style="color:var(--warn-text);" onclick="deleteAccount()">Supprimer mon compte</button>
     </section>
 
     <!-- TUTORIEL -->
@@ -547,7 +548,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
             <option value="note">Classer par note donnée</option>
             <option value="recue">Classer par note reçue</option>
           </select>
-          <button class="btn secondary" id="arch-del-btn" style="margin:0 0 0 auto; padding:6px 12px; font-size:12.5px; color:#c23b3b; display:none;" onclick="archDeleteSelected()">Supprimer</button>
+          <button class="btn secondary" id="arch-del-btn" style="margin:0 0 0 auto; padding:6px 12px; font-size:12.5px; color:var(--warn-text); display:none;" onclick="archDeleteSelected()">Supprimer</button>
         </div>
         <div class="list" id="requests-archive" style="margin-top:10px;"></div>
       </details>
@@ -559,7 +560,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <p class="section-label" id="chat-title">Discussion</p>
       <div id="chat-review" style="display:none; background:var(--success-bg); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; color:var(--success-text); line-height:1.6;"></div>
       <div id="chat-contact" style="display:none; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:13px; color:var(--text-secondary); line-height:1.6;"></div>
-      <button class="btn secondary" id="chat-block-btn" style="color:#c23b3b; font-size:12.5px; padding:8px;" onclick="blockUserFromChat()">Bloquer cette personne</button>
+      <button class="btn secondary" id="chat-block-btn" style="color:var(--warn-text); font-size:12.5px; padding:8px;" onclick="blockUserFromChat()">Bloquer cette personne</button>
       <div id="chat-messages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
       <div style="display:flex; gap:8px;">
         <input type="text" id="chat-input" placeholder="Écris un message..." style="margin-bottom:0;">
@@ -682,7 +683,7 @@ function setHomeSort(v){ try{ localStorage.setItem('tt_home_sort', v); }catch(e)
 function serviceCard(s){
   const cat = CATEGORIES[s.category || 'autre'] || CATEGORIES.autre || Object.values(CATEGORIES)[0];
   const dist = distanceLabel(s);
-  const nw = isNewSvc(s) ? '<span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:700;border-radius:8px;padding:2px 7px;margin-left:6px;white-space:nowrap;">Nouveau</span>' : '';
+  const nw = isNewSvc(s) ? '<span style="background:var(--pill-grad); color:var(--pill-text);font-size:10.5px;font-weight:700;border-radius:8px;padding:2px 7px;margin-left:6px;white-space:nowrap;">Nouveau</span>' : '';
   return `
   <div class="item-card" onclick="openDetail('${s.id}')">
     ${s.photoUrl ? `<img src="${esc(s.photoUrl)}" alt="" style="width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0;">` : `<i class="ti ${cat.icon}"></i>`}
@@ -703,7 +704,7 @@ function renderGroupedByCategory(services, sectionKey){
     html += `<details class="dropdown-section sub-dropdown" id="${groupId}" style="margin-bottom:10px;" open>
       <summary style="display:flex; align-items:center; gap:10px; padding:2px 0;">
         <span style="font-size:11.5px; font-weight:700; white-space:nowrap; padding:5px 12px; border-radius:20px; background:var(--accent-bg); color:var(--accent-text);">${cat.emoji} ${cat.label} · ${group.length}</span>
-        ${nNew ? `<span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:700;border-radius:10px;padding:2px 8px;white-space:nowrap;">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}
+        ${nNew ? `<span style="background:var(--pill-grad); color:var(--pill-text);font-size:10.5px;font-weight:700;border-radius:10px;padding:2px 8px;white-space:nowrap;">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}
         <div style="flex:1; height:1px; background:var(--border);"></div>
       </summary>
       <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
@@ -747,7 +748,7 @@ async function fetchCommunities(){
         </div>
         <div style="display:flex; flex-direction:column; gap:6px;">
           <button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px;" onclick="event.stopPropagation(); leaveCommunity('${c.id}')">Quitter</button>
-          ${(c.creator_id === myId || myIsAdmin) ? `<button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px; color:#c23b3b;" onclick="event.stopPropagation(); deleteCommunity('${c.id}', ${jsArg(c.name)})">Supprimer</button>` : ''}
+          ${(c.creator_id === myId || myIsAdmin) ? `<button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px; color:var(--warn-text);" onclick="event.stopPropagation(); deleteCommunity('${c.id}', ${jsArg(c.name)})">Supprimer</button>` : ''}
         </div>
       </div>
     `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Tu n'as encore rejoint aucune communauté.</p>";
@@ -762,7 +763,7 @@ async function fetchCommunities(){
         </div>
         <div style="display:flex; flex-direction:column; gap:6px;">
           <button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px;" onclick="joinCommunity('${c.id}')">Rejoindre</button>
-          ${(c.creator_id === myId || myIsAdmin) ? `<button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px; color:#c23b3b;" onclick="deleteCommunity('${c.id}', ${jsArg(c.name)})">Supprimer</button>` : ''}
+          ${(c.creator_id === myId || myIsAdmin) ? `<button class="btn secondary" style="width:auto; margin-top:0; padding:8px 12px; color:var(--warn-text);" onclick="deleteCommunity('${c.id}', ${jsArg(c.name)})">Supprimer</button>` : ''}
         </div>
       </div>
     `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucune autre communauté pour l'instant.</p>";
@@ -974,7 +975,7 @@ async function fetchCommunityFeed(){
         <img src="${esc(p.photo_url)}" style="width:100%; max-height:420px; object-fit:cover; display:block;">
         <div style="padding:10px 12px;">
           <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
-            <button onclick="toggleCommunityLike('${p.id}', ${liked})" style="background:none; border:none; cursor:pointer; font-size:20px; color:${liked ? '#e0453c' : 'var(--text-muted)'};">${liked ? '❤️' : '🤍'}</button>
+            <button onclick="toggleCommunityLike('${p.id}', ${liked})" style="background:none; border:none; cursor:pointer; font-size:20px; color:${liked ? 'var(--warn-text)' : 'var(--text-muted)'};">${liked ? '💚' : '🤍'}</button>
             <span style="font-size:12.5px; color:var(--text-secondary);" id="like-count-${p.id}">${count} j'aime</span>
           </div>
           ${p.caption ? `<p style="font-size:13.5px; margin:0 0 6px;"><b>${esc(p.author_name)}</b> ${esc(p.caption)}</p>` : ''}
@@ -1733,7 +1734,7 @@ function notifTags(st0, r){
   const H = pillHold || {newReceived:new Set(), statusChanged:new Set(), unreadMsgs:new Set(), unreadReviews:new Set()};
   const has = (k) => st0[k].has(r.id) || H[k].has(r.id);
   const st = {newReceived:{has:() => has('newReceived')}, statusChanged:{has:() => has('statusChanged')}, unreadMsgs:{has:() => has('unreadMsgs')}, unreadReviews:{has:() => has('unreadReviews')}};
-  const pill = (txt) => `<span style="background:#e0453c;color:#fff;font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;white-space:nowrap;">${txt}</span>`;
+  const pill = (txt) => `<span style="background:var(--pill-grad); color:var(--pill-text);font-size:10.5px;font-weight:600;border-radius:8px;padding:2px 7px;margin-left:4px;white-space:nowrap;">${txt}</span>`;
   const t = [];
   if(st.newReceived.has(r.id)) t.push(pill('Nouvelle demande'));
   if(st.statusChanged.has(r.id)){
@@ -1856,7 +1857,7 @@ async function fetchCompletedExchanges(st){
       return `
       <div class="item-card" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')" style="flex-direction:column; align-items:stretch;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
-          <i class="ti ${refused ? 'ti-circle-x' : 'ti-circle-check'}" style="color:${refused ? '#c23b3b' : 'var(--success-text)'};"></i>
+          <i class="ti ${refused ? 'ti-circle-x' : 'ti-circle-check'}" style="color:${refused ? 'var(--warn-text)' : 'var(--success-text)'};"></i>
           <div style="flex:1;">
             <p class="item-title">${esc(r.service_title)}${notifTags(st, r)}</p>
             <p class="item-sub">${date} · ${refused ? (iAmRequester ? 'Refusée par ' : 'Refusée · demandeur : ') : 'Avec '}${esc(otherName)}</p>
@@ -1865,7 +1866,7 @@ async function fetchCompletedExchanges(st){
         ${reviewBtn(r.id, otherId, otherName, reviewedDone, true)}
         <div style="display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;">
           ${refused ? '' : `<button class="btn secondary" style="margin:0;" onclick="event.stopPropagation(); ${isArch ? 'unarchiveExchange' : 'archiveExchange'}('${r.id}')">${isArch ? 'Remettre dans « terminés »' : 'Archiver'}</button>`}
-          ${isArch ? `<button class="btn secondary" style="margin:0; color:#c23b3b;" onclick="event.stopPropagation(); archDelete(['${r.id}'])">Supprimer</button>` : ''}
+          ${isArch ? `<button class="btn secondary" style="margin:0; color:var(--warn-text);" onclick="event.stopPropagation(); archDelete(['${r.id}'])">Supprimer</button>` : ''}
         </div>
       </div>`;
     };
@@ -2059,7 +2060,7 @@ async function fetchExchanges(st){
         ${reviewBtn(r.id, r.provider_id, r.provider_name, reviewedIds, canReview(st, r))}
         ${r.status === 'pending' ? `<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
           <button class="btn secondary" style="margin-top:0;" onclick="openChat('${r.id}', ${jsArg(r.provider_name)}, '${r.provider_id}')">Discuter</button>
-          <button class="btn secondary" style="margin-top:0; color:#c23b3b;" onclick="cancelExchange('${r.id}')">Annuler la demande</button>
+          <button class="btn secondary" style="margin-top:0; color:var(--warn-text);" onclick="cancelExchange('${r.id}')">Annuler la demande</button>
         </div>` : ''}
         ${r.status !== 'pending' ? `<input type="checkbox" class="del-check" onclick="event.stopPropagation()" onchange="toggleSelect('${r.id}', this)" style="align-self:flex-end; width:18px; height:18px; margin-top:4px;" title="Sélectionner pour supprimer">` : ''}
       </div>
@@ -2107,7 +2108,7 @@ async function loadAdminPanel(){
         <p class="item-title">${r.reported_service_id ? esc(titles[r.reported_service_id] || 'Annonce déjà supprimée') : 'Signalement utilisateur'}</p>
         <p class="item-sub">${new Date(r.created_at).toLocaleDateString('fr-CH')} · ${esc(r.reason)}</p>
         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-          ${(r.reported_service_id && titles[r.reported_service_id]) ? `<button class="btn secondary" style="margin-top:0; color:#c23b3b;" onclick="adminRemoveService('${r.reported_service_id}')">Retirer l'annonce</button>` : ''}
+          ${(r.reported_service_id && titles[r.reported_service_id]) ? `<button class="btn secondary" style="margin-top:0; color:var(--warn-text);" onclick="adminRemoveService('${r.reported_service_id}')">Retirer l'annonce</button>` : ''}
           <button class="btn secondary" style="margin-top:0;" onclick="adminDismissReport('${r.id}')">Classer</button>
         </div>
       </div>`).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun signalement.</p>";
@@ -2119,7 +2120,7 @@ async function loadAdminPanel(){
       <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
         <p class="item-title">${esc(u.name)}</p>
         <p class="item-sub">${esc((u.email || '').replace('@membres.troctan.ch',''))} · ${u.balance}cr · ${u.rating_count > 0 ? Number(u.rating_avg).toFixed(1) + '★ (' + u.rating_count + ')' : 'pas d\'avis'}</p>
-        ${u.id !== myId ? `<button class="btn secondary" style="margin-top:8px; color:#c23b3b;" onclick="adminDeleteUser('${u.id}', ${jsArg(u.name)})">Supprimer ce compte</button>` : '<p class="item-sub">(toi)</p>'}
+        ${u.id !== myId ? `<button class="btn secondary" style="margin-top:8px; color:var(--warn-text);" onclick="adminDeleteUser('${u.id}', ${jsArg(u.name)})">Supprimer ce compte</button>` : '<p class="item-sub">(toi)</p>'}
       </div>`).join('');
   }catch(e){ ub.textContent = 'Erreur : ' + e.message; }
 }
@@ -2414,12 +2415,12 @@ function renderProfile(){
         <i class="ti ${s.icon || 'ti-hand-stop'}"></i>
         <div style="flex:1;">
           <p class="item-title">${esc(s.title)}</p>
-          <p class="item-sub">${s.hours}cr proposé${s.expiresAt ? (isExpired(s) ? ' · <b style="color:#c23b3b;">Expirée</b> (modifie la date pour la remettre en ligne)' : ' · valable jusqu\'au ' + fmtDateFr(s.expiresAt)) : ''}</p>
+          <p class="item-sub">${s.hours}cr proposé${s.expiresAt ? (isExpired(s) ? ' · <b style="color:var(--warn-text);">Expirée</b> (modifie la date pour la remettre en ligne)' : ' · valable jusqu\'au ' + fmtDateFr(s.expiresAt)) : ''}</p>
         </div>
       </div>
       <div style="display:flex; gap:8px; margin-top:8px;">
         <button class="btn secondary" style="margin-top:0; padding:8px;" onclick="openEditService('${s.id}')">Modifier</button>
-        <button class="btn secondary" style="margin-top:0; color:#c23b3b; padding:8px;" onclick="deleteMyService('${s.id}')">Retirer</button>
+        <button class="btn secondary" style="margin-top:0; color:var(--warn-text); padding:8px;" onclick="deleteMyService('${s.id}')">Retirer</button>
       </div>
     </div>
   `).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Tu n'as encore rien publié.</p>";
@@ -2929,7 +2930,7 @@ function renderGroupedByStatus(items, statusOrder, itemRenderFn, emptyText, sect
   const pillStyles = {
     accent: 'background:var(--accent-bg); color:var(--accent-text);',
     success: 'background:var(--success-bg); color:var(--success-text);',
-    danger: 'background:#f6dede; color:#a02020;',
+    danger: 'background:#fbf0c4; color:#6b5200;',
     muted: 'background:var(--card); color:var(--text-muted); border:1px solid var(--border);'
   };
   const defaultOpen = {pending:true, accepted:true, refused:false, cancelled:false, completed:true};
