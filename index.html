@@ -8,15 +8,15 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<meta name="theme-color" content="#378add">
+<meta name="theme-color" content="#1f5a43">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
   :root{
     --bg:#f4f3ee; --card:#ffffff; --border:#e3e1d8; --border-strong:#c9c7bc;
     --text:#1c1c1a; --text-secondary:#44433d; --text-muted:#62615a;
-    --accent-bg:#e6f1fb; --accent-text:#0c447c; --accent-border:#378add;
-    --success-bg:#eaf3de; --success-text:#27500a;
+    --accent-bg:#fbefc0; --accent-text:#5a4600; --accent-border:#d4ac16;
+    --success-bg:#d9eede; --success-text:#1d4a36;
     --radius:10px;
     --pill-grad:radial-gradient(ellipse at center,#f7e272 0%,#c3e07c 50%,#69cf8a 100%); --pill-text:#10331f; --warn-text:#7a5d00;
     --h:140; --sat:45%; --l1:94%; --l2:90%; --l3:92%;
@@ -27,8 +27,8 @@
     @media (prefers-color-scheme: dark){
       --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
       --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
-      --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
-      --success-bg:#27500a; --success-text:#c0dd97; --warn-text:#f2d45c;
+      --accent-bg:#4b3f0d; --accent-text:#f2d45c; --accent-border:#d4ac16;
+      --success-bg:#1f4a35; --success-text:#bfe6cc; --warn-text:#f2d45c;
       --sat:38%; --l1:14%; --l2:19%; --l3:16%;
       --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
     --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
@@ -37,8 +37,8 @@
   :root[data-theme="dark"]{
     --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
     --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
-    --accent-bg:#0c447c; --accent-text:#b5d4f4; --accent-border:#378add;
-    --success-bg:#27500a; --success-text:#c0dd97; --warn-text:#f2d45c;
+    --accent-bg:#4b3f0d; --accent-text:#f2d45c; --accent-border:#d4ac16;
+    --success-bg:#1f4a35; --success-text:#bfe6cc; --warn-text:#f2d45c;
     --sat:38%; --l1:14%; --l2:19%; --l3:16%;
     --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
     --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
@@ -176,7 +176,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
   .item-card{ animation:fadeInUp .25s ease both; }
   .btn{ transition:transform .1s ease; }
   .btn:active{ transform:scale(0.97); }
-  @keyframes softPulse{ 0%,100%{box-shadow:0 0 0 0 rgba(55,138,221,0.15);} 50%{box-shadow:0 0 0 6px rgba(55,138,221,0);} }
+  @keyframes softPulse{ 0%,100%{box-shadow:0 0 0 0 rgba(212,172,22,0.18);} 50%{box-shadow:0 0 0 6px rgba(212,172,22,0);} }
   .balance-card{ animation:softPulse 3s ease-in-out infinite; }
   .logo-badge{
     width:34px;height:34px;border-radius:9px;background:#f6f4ee;overflow:hidden;
@@ -244,7 +244,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 36</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 37</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -3140,7 +3140,7 @@ async function renderMap(){
   });
 
   if(myLat !== null){
-    L.circleMarker([myLat, myLng], {radius:7, color:'#378add', fillColor:'#378add', fillOpacity:0.8}).addTo(mapMarkersLayer).bindPopup('Toi (approximatif)');
+    L.circleMarker([myLat, myLng], {radius:7, color:'#2f7a5a', fillColor:'#2f7a5a', fillOpacity:0.8}).addTo(mapMarkersLayer).bindPopup('Toi (approximatif)');
   }
 }
 
