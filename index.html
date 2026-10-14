@@ -60,6 +60,8 @@ body[data-screen="propose"] #scene-propose{opacity:1;}
 body[data-screen="communities"] #scene-communities{opacity:1;}
 body[data-screen="community-feed"] #scene-communities{opacity:1;}
 body[data-screen="profile"] #scene-profile{opacity:1;}
+body[data-screen="credits"] #scene-profile{opacity:1;}
+body[data-screen="ratings"] #scene-profile{opacity:1;}
 body[data-screen="legal"] #scene-profile{opacity:1;}
 body[data-screen="tutorial"] #scene-profile{opacity:1;}
 body[data-screen="chat"] #scene-chat{opacity:1;}
@@ -136,6 +138,13 @@ body[data-screen="login"] #scene-chat{opacity:1;}
   .badge.accent{background:var(--accent-bg); color:var(--accent-text);}
   .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:1rem;}
   .stat{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:0.8rem; text-align:center;}
+  .stat.clickable{cursor:pointer; position:relative; transition:transform .12s;}
+  .stat.clickable:active, .balance-card.clickable:active{transform:scale(.98);}
+  .stat .chev{position:absolute; top:8px; right:9px; font-size:15px; color:var(--text-muted);}
+  .balance-card.clickable{cursor:pointer;}
+  .seg{display:flex; gap:6px; margin:0 0 12px;}
+  .seg button{flex:1; padding:8px; border:1px solid var(--border-strong); background:var(--card); color:var(--text); border-radius:10px; font-size:13.5px; font-weight:600; cursor:pointer;}
+  .seg button.on{background:var(--accent-bg); color:var(--accent-text); border-color:var(--accent-border);}
   .stat .n{font-size:20px; font-weight:600; margin:4px 0 0;}
   .stat .l{font-size:12px; color:var(--text-secondary); margin:0;}
   nav.tabbar{
@@ -244,7 +253,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 37</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 38</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -287,7 +296,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
   <main>
     <!-- ACCUEIL -->
     <section class="screen" id="home">
-      <div class="balance-card">
+      <div class="balance-card clickable" role="button" tabindex="0" onclick="showScreen('credits')">
         <div>
           <p class="label">Ton solde</p>
           <p class="value" id="balance-value">0cr</p>
@@ -389,8 +398,8 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       </div>
       <button class="btn secondary" onclick="openEditProfile()" style="margin-top:0; margin-bottom:14px;">✏️ Modifier mon profil</button>
       <div class="stat-grid">
-        <div class="stat"><p class="l">Solde actuel</p><p class="n" id="profile-balance">0cr</p></div>
-        <div class="stat"><p class="l">Note reçue</p><p class="n" id="profile-rating">–</p></div>
+        <div class="stat clickable" role="button" tabindex="0" onclick="showScreen('credits')"><i class="ti ti-chevron-right chev"></i><p class="l">Solde actuel</p><p class="n" id="profile-balance">0cr</p></div>
+        <div class="stat clickable" role="button" tabindex="0" onclick="showScreen('ratings')"><i class="ti ti-chevron-right chev"></i><p class="l">Note reçue</p><p class="n" id="profile-rating">–</p></div>
       </div>
       <details class="dropdown-section" id="dd-profile-services">
         <summary class="section-label">Mes services publiés</summary>
@@ -411,6 +420,34 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" onclick="showScreen('legal')">Confidentialité &amp; conditions</button>
       <button class="btn secondary" style="color:var(--warn-text);" onclick="logout()">Se déconnecter</button>
       <button class="btn secondary" style="color:var(--warn-text);" onclick="deleteAccount()">Supprimer mon compte</button>
+    </section>
+
+
+    <!-- HISTORIQUE DES CRÉDITS -->
+    <section class="screen" id="credits">
+      <div class="backbar" onclick="showScreen('profile')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <p class="section-label" style="font-size:16px;">Historique de mes crédits</p>
+      <div class="stat-grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="stat"><p class="l">Solde</p><p class="n" id="credits-balance">0cr</p></div>
+        <div class="stat"><p class="l">Gagnés</p><p class="n" id="credits-earned" style="color:var(--success-text);">0cr</p></div>
+        <div class="stat"><p class="l">Utilisés</p><p class="n" id="credits-spent" style="color:var(--warn-text);">0cr</p></div>
+      </div>
+      <div class="list" id="credits-list"></div>
+    </section>
+
+    <!-- HISTORIQUE DES NOTES -->
+    <section class="screen" id="ratings">
+      <div class="backbar" onclick="showScreen('profile')"><i class="ti ti-arrow-left"></i> Retour</div>
+      <p class="section-label" style="font-size:16px;">Mes notes</p>
+      <div class="seg">
+        <button id="rt-tab-received" class="on" onclick="setRatingsTab('received')">Reçues</button>
+        <button id="rt-tab-given" onclick="setRatingsTab('given')">Données</button>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><p class="l" id="rt-avg-label">Moyenne reçue</p><p class="n" id="rt-avg">–</p></div>
+        <div class="stat"><p class="l">Nombre d'avis</p><p class="n" id="rt-count">0</p></div>
+      </div>
+      <div class="list" id="ratings-list"></div>
     </section>
 
     <!-- TUTORIEL -->
@@ -827,7 +864,7 @@ function renderScreenOnly(id){
   document.getElementById(id).classList.add('active');
   document.body.setAttribute('data-screen', id);
   if(id !== 'requests') pillHold = null;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id || (b.dataset.tab === 'profile' && (id === 'credits' || id === 'ratings'))));
 
   const hdr = document.getElementById('app-header');
   if(hdr) hdr.style.display = (AUTH_SCREENS.includes(id) || !myId) ? 'none' : 'flex';
@@ -1051,6 +1088,8 @@ function refreshForScreen(id){
   if(id === 'home') fetchServices().then(renderMap);
   else if(id === 'requests'){ if(_requestsVisit){ _requestsVisit = false; visitRequests().then(refreshRequestLists); } else refreshRequestLists(); }
   else if(id === 'profile') renderProfile();
+  else if(id === 'credits') loadCredits();
+  else if(id === 'ratings') loadRatings();
   else if(id === 'communities') fetchCommunities();
   else if(id === 'community-feed') fetchCommunityFeed();
   else if(id === 'admin') loadAdminPanel();
@@ -2981,6 +3020,98 @@ async function fetchHistory(){
       </div>`;
     }, "Aucun échange terminé pour l'instant.", 'dd-history-g');
   }catch(e){ /* silencieux */ }
+}
+
+
+function fmtCr(n){ const v = Math.round(Number(n) * 100) / 100; return String(v).replace('.', ',') + 'cr'; }
+async function loadCredits(){
+  if(!myId) return;
+  const box = document.getElementById('credits-list');
+  document.getElementById('credits-balance').textContent = fmtCr(myBalanceCache);
+  box.innerHTML = '<p style="font-size:13px;color:var(--text-muted);">Chargement…</p>';
+  try{
+    const { data, error } = await sb.from('exchanges').select('*')
+      .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
+      .in('status', ['accepted','completed'])
+      .order('created_at', {ascending:false}).limit(100);
+    if(error) throw error;
+    const rows = data || [];
+    let earned = 0, spent = 0, bal = Number(myBalanceCache) || 0;
+    const html = rows.map(r => {
+      const iAmReq = r.requester_id === myId;
+      const h = Number(r.hours) || 0;
+      const delta = iAmReq ? -h : h;
+      if(iAmReq) spent += h; else earned += h;
+      const after = bal; bal -= delta;
+      const other = iAmReq ? r.provider_name : r.requester_name;
+      const otherId = iAmReq ? r.provider_id : r.requester_id;
+      const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short', year:'numeric'});
+      const col = delta >= 0 ? 'var(--success-text)' : 'var(--warn-text)';
+      return `
+      <div class="item-card" onclick="openChat('${r.id}', ${jsArg(other)}, '${otherId}')">
+        <i class="ti ${delta >= 0 ? 'ti-arrow-down-left' : 'ti-arrow-up-right'}" style="color:${col};"></i>
+        <div style="flex:1;">
+          <p class="item-title">${esc(r.service_title)}</p>
+          <p class="item-sub">${date} · ${esc(other)} · solde après : ${fmtCr(after)}</p>
+        </div>
+        <p style="margin:0; font-weight:700; color:${col}; white-space:nowrap;">${delta >= 0 ? '+' : '−'}${fmtCr(h)}</p>
+      </div>`;
+    }).join('');
+    document.getElementById('credits-earned').textContent = '+' + fmtCr(earned);
+    document.getElementById('credits-spent').textContent = '−' + fmtCr(spent);
+    const start = Math.abs(bal) > 0.001
+      ? `<div class="item-card" style="cursor:default;"><i class="ti ti-flag" style="color:var(--text-muted);"></i><div style="flex:1;"><p class="item-title">Solde de départ</p><p class="item-sub">Avant ton premier échange</p></div><p style="margin:0; font-weight:700;">${fmtCr(bal)}</p></div>` : '';
+    box.innerHTML = rows.length ? html + start : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange pour l'instant. Tes crédits apparaîtront ici dès ton premier échange accepté.</p>";
+  }catch(e){
+    box.innerHTML = '<p style="font-size:13px;color:var(--text-muted);">Impossible de charger l\'historique (' + esc(e.message || e) + ').</p>';
+  }
+}
+
+let ratingsTab = 'received';
+function setRatingsTab(t){ ratingsTab = t; loadRatings(); }
+function starsStr(n){ n = Math.max(0, Math.min(5, Number(n) || 0)); return '★'.repeat(n) + '☆'.repeat(5 - n); }
+async function loadRatings(){
+  if(!myId) return;
+  const received = ratingsTab === 'received';
+  document.getElementById('rt-tab-received').classList.toggle('on', received);
+  document.getElementById('rt-tab-given').classList.toggle('on', !received);
+  document.getElementById('rt-avg-label').textContent = received ? 'Moyenne reçue' : 'Moyenne donnée';
+  const box = document.getElementById('ratings-list');
+  box.innerHTML = '<p style="font-size:13px;color:var(--text-muted);">Chargement…</p>';
+  try{
+    const { data, error } = await sb.from('reviews').select('*')
+      .eq(received ? 'reviewed_id' : 'reviewer_id', myId)
+      .order('created_at', {ascending:false}).limit(100);
+    if(error) throw error;
+    const rows = data || [];
+    const ids = [...new Set(rows.map(r => r.exchange_id))];
+    let exMap = {};
+    if(ids.length){
+      const { data: ex } = await sb.from('exchanges').select('id, service_title, requester_id, requester_name, provider_id, provider_name').in('id', ids);
+      (ex || []).forEach(e => { exMap[e.id] = e; });
+    }
+    const n = rows.length;
+    const avg = n ? rows.reduce((a, r) => a + (Number(r.rating) || 0), 0) / n : 0;
+    document.getElementById('rt-avg').textContent = n ? avg.toFixed(1).replace('.', ',') + ' ★' : '–';
+    document.getElementById('rt-count').textContent = n;
+    box.innerHTML = n ? rows.map(r => {
+      const ex = exMap[r.exchange_id] || {};
+      const otherId = received ? r.reviewer_id : r.reviewed_id;
+      const otherName = ex.requester_id === otherId ? ex.requester_name : (ex.provider_id === otherId ? ex.provider_name : 'Membre');
+      const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short', year:'numeric'});
+      return `
+      <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch; gap:4px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
+          <span style="font-size:18px; letter-spacing:1px; color:var(--warn-text);">${starsStr(r.rating)}</span>
+          <span class="item-sub" style="margin:0;">${date}</span>
+        </div>
+        <p class="item-sub" style="margin:0;">${received ? 'de' : 'pour'} ${esc(otherName || 'Membre')}${ex.service_title ? ' · ' + esc(ex.service_title) : ''}</p>
+        ${r.comment ? `<p style="margin:4px 0 0; font-size:13.5px; font-style:italic;">« ${esc(r.comment)} »</p>` : ''}
+      </div>`;
+    }).join('') : `<p style="font-size:13px;color:var(--text-muted);">${received ? "Tu n'as pas encore reçu de note." : "Tu n'as pas encore donné de note."}</p>`;
+  }catch(e){
+    box.innerHTML = '<p style="font-size:13px;color:var(--text-muted);">Impossible de charger les notes (' + esc(e.message || e) + ').</p>';
+  }
 }
 
 let selectedForDelete = new Set();
