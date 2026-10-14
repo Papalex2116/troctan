@@ -18,7 +18,7 @@
     --accent-bg:#fbefc0; --accent-text:#5a4600; --accent-border:#d4ac16;
     --success-bg:#d9eede; --success-text:#1d4a36;
     --radius:10px;
-    --pill-grad:radial-gradient(ellipse at center,#f7e272 0%,#c3e07c 50%,#69cf8a 100%); --pill-text:#10331f; --warn-text:#7a5d00;
+    --pill-grad:radial-gradient(ellipse at center,#f7e272 0%,#c3e07c 50%,#69cf8a 100%); --pill-text:#10331f; --warn-text:#1f5a43; --star:#c8961a;
     --h:140; --sat:45%; --l1:94%; --l2:90%; --l3:92%;
     --r1:#d3e8da; --r2:#bcdcc7; --r3:#a3cdb2; --r4:#88bc9b; --r5:#6da584; --r6:#558f6d; --line:#3f7a58; --mist:#ffffff; --mist-o:.45; --sun:#fff6cf;
     --card:rgba(255,255,255,.74); --border:rgba(60,110,80,.20); --border-strong:rgba(60,110,80,.34);
@@ -28,7 +28,7 @@
       --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
       --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
       --accent-bg:#4b3f0d; --accent-text:#f2d45c; --accent-border:#d4ac16;
-      --success-bg:#1f4a35; --success-text:#bfe6cc; --warn-text:#f2d45c;
+      --success-bg:#1f4a35; --success-text:#bfe6cc; --warn-text:#bfe6cc; --star:#f0c43c;
       --sat:38%; --l1:14%; --l2:19%; --l3:16%;
       --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
     --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
@@ -38,7 +38,7 @@
     --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
     --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
     --accent-bg:#4b3f0d; --accent-text:#f2d45c; --accent-border:#d4ac16;
-    --success-bg:#1f4a35; --success-text:#bfe6cc; --warn-text:#f2d45c;
+    --success-bg:#1f4a35; --success-text:#bfe6cc; --warn-text:#bfe6cc; --star:#f0c43c;
     --sat:38%; --l1:14%; --l2:19%; --l3:16%;
     --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
     --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
@@ -110,10 +110,11 @@ body[data-screen="login"] #scene-chat{opacity:1;}
   .screen.active{display:block;}
   .balance-card{
     background:var(--card); border:1px solid var(--border); border-radius:14px;
-    padding:1rem 1.1rem; margin-bottom:1.1rem; display:flex; justify-content:space-between; align-items:center;
+    padding:.5rem .9rem; margin-bottom:.8rem; display:flex; justify-content:space-between; align-items:center;
   }
-  .balance-card .label{font-size:12.5px; color:var(--text-secondary); margin:0;}
-  .balance-card .value{font-size:26px; font-weight:600; margin:2px 0 0;}
+  .balance-card .label{font-size:11.5px; color:var(--text-secondary); margin:0;}
+  .balance-card .value{font-size:20px; font-weight:600; margin:0;}
+  .balance-card > i{font-size:20px !important;}
   .section-label{font-size:14px; font-weight:600; margin:0 0 8px;}
   .list{display:flex; flex-direction:column; gap:8px;}
   .item-card{
@@ -253,7 +254,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 38</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 39</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -430,7 +431,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <div class="stat-grid" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="stat"><p class="l">Solde</p><p class="n" id="credits-balance">0cr</p></div>
         <div class="stat"><p class="l">Gagnés</p><p class="n" id="credits-earned" style="color:var(--success-text);">0cr</p></div>
-        <div class="stat"><p class="l">Utilisés</p><p class="n" id="credits-spent" style="color:var(--warn-text);">0cr</p></div>
+        <div class="stat"><p class="l">Utilisés</p><p class="n" id="credits-spent">0cr</p></div>
       </div>
       <div class="list" id="credits-list"></div>
     </section>
@@ -3046,7 +3047,7 @@ async function loadCredits(){
       const other = iAmReq ? r.provider_name : r.requester_name;
       const otherId = iAmReq ? r.provider_id : r.requester_id;
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short', year:'numeric'});
-      const col = delta >= 0 ? 'var(--success-text)' : 'var(--warn-text)';
+      const col = delta >= 0 ? 'var(--success-text)' : 'var(--text-secondary)';
       return `
       <div class="item-card" onclick="openChat('${r.id}', ${jsArg(other)}, '${otherId}')">
         <i class="ti ${delta >= 0 ? 'ti-arrow-down-left' : 'ti-arrow-up-right'}" style="color:${col};"></i>
@@ -3102,7 +3103,7 @@ async function loadRatings(){
       return `
       <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch; gap:4px;">
         <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
-          <span style="font-size:18px; letter-spacing:1px; color:var(--warn-text);">${starsStr(r.rating)}</span>
+          <span style="font-size:18px; letter-spacing:1px; color:var(--star);">${starsStr(r.rating)}</span>
           <span class="item-sub" style="margin:0;">${date}</span>
         </div>
         <p class="item-sub" style="margin:0;">${received ? 'de' : 'pour'} ${esc(otherName || 'Membre')}${ex.service_title ? ' · ' + esc(ex.service_title) : ''}</p>
