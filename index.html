@@ -12,6 +12,25 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
+  .chip-dist{margin-left:auto; flex-shrink:0; align-self:center; font-size:11.5px; font-weight:700; color:var(--accent-text); background:var(--accent-bg); border:1px solid var(--accent-border); border-radius:20px; padding:3px 9px; white-space:nowrap;}
+  .cat-ico{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--accent-bg); color:var(--accent-text); font-size:12px; vertical-align:middle; margin-right:2px;}
+  .grp{border:1px solid var(--border); border-radius:12px; background:var(--card); margin:8px 0; padding:0 12px;}
+  .grp>summary{cursor:pointer; padding:11px 0; font-size:13px; font-weight:700; display:flex; justify-content:space-between; align-items:center; gap:8px; list-style:none;}
+  .grp>summary::-webkit-details-marker{display:none;}
+  .grp>summary::after{content:"\25BE"; color:var(--text-muted); margin-left:6px;}
+  .grp[open]>summary::after{content:"\25B4";}
+  .grp>summary .n{margin-left:auto; color:var(--text-muted); font-weight:600; font-size:12px;}
+  .grp[open]>summary{border-bottom:1px solid var(--border); margin-bottom:10px;}
+  .grp-tools{display:flex; gap:8px; margin:8px 0 2px;}
+  .grp-tools button{background:none; border:1px solid var(--border); color:var(--text-secondary); border-radius:16px; padding:4px 11px; font-size:12px; cursor:pointer;}
+  .cred-cols{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+  .cred-col h4{margin:0 0 8px; min-height:30px; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700; text-align:center; padding:6px; border-radius:10px;}
+  .cred-col.plus h4{background:var(--success-bg); color:var(--success-text);}
+  .cred-col.minus h4{background:var(--accent-bg); color:var(--accent-text);}
+  .cred-item{border:1px solid var(--border); background:var(--card); border-radius:10px; padding:8px 10px; margin-bottom:8px; cursor:pointer;}
+  .cred-item .t{font-size:13px; font-weight:600; margin:0; overflow-wrap:anywhere;}
+  .cred-item .s{font-size:11.5px; color:var(--text-muted); margin:2px 0 0;}
+  .cred-item .a{font-size:15px; font-weight:700; margin:4px 0 0;}
   :focus-visible{outline:2px solid var(--accent-border); outline-offset:2px;}
   @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important; transition-duration:.01ms !important;}}
   :root{
@@ -20,7 +39,7 @@
     --accent-bg:#fbefc0; --accent-text:#1d4a36; --accent-border:#d4ac16;
     --success-bg:#d9eede; --success-text:#1d4a36;
     --radius:10px;
-    --pill-grad:radial-gradient(ellipse at center,#f7e272 0%,#c3e07c 50%,#69cf8a 100%); --pill-text:#10331f; --warn-text:#1f5a43; --star:#c8961a;
+    --pill-grad:linear-gradient(180deg,#2d7d5a 0%,#1f5a43 100%); --pill-text:#ffffff; --warn-text:#1f5a43; --star:#c8961a;
     --h:140; --sat:45%; --l1:94%; --l2:90%; --l3:92%;
     --r1:#d3e8da; --r2:#bcdcc7; --r3:#a3cdb2; --r4:#88bc9b; --r5:#6da584; --r6:#558f6d; --line:#3f7a58; --mist:#ffffff; --mist-o:.45; --sun:#fff6cf;
     --card:rgba(255,255,255,.74); --border:rgba(60,110,80,.20); --border-strong:rgba(60,110,80,.34);
@@ -256,7 +275,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 46</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 47</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -450,6 +469,12 @@ body[data-screen="login"] #scene-chat{opacity:1;}
         <div class="stat"><p class="l" id="rt-avg-label">Moyenne reçue</p><p class="n" id="rt-avg">–</p></div>
         <div class="stat"><p class="l">Nombre d'avis</p><p class="n" id="rt-count">0</p></div>
       </div>
+      <select id="rt-view" onchange="setRatingsView(this.value)" style="width:100%; margin:10px 0 0; font-size:13px; padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--text);">
+        <option value="all">Afficher : tout (liste)</option>
+        <option value="note">Regrouper par note</option>
+        <option value="pers">Regrouper par personne</option>
+        <option value="mois">Regrouper par mois</option>
+      </select>
       <div class="list" id="ratings-list"></div>
     </section>
 
@@ -519,7 +544,11 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <p style="font-size:12.5px;color:var(--text-secondary);">Tu peux aussi retirer une publication, un commentaire ou une annonce directement depuis leur écran (bouton rouge).</p>
       <button class="btn secondary" onclick="adminExportData()">💾 Exporter une sauvegarde des données</button>
       <p class="section-label" style="margin-top:14px;">Signalements</p>
-      <div class="list" id="admin-reports"></div>
+      <div class="seg">
+        <button id="rep-tab-open" class="on" onclick="setReportsTab('open')">À traiter</button>
+        <button id="rep-tab-done" onclick="setReportsTab('done')">Classés</button>
+      </div>
+      <div class="list" id="admin-reports" style="margin-top:10px;"></div>
       <p class="section-label" style="margin-top:14px;">Utilisateurs</p>
       <div class="list" id="admin-users"></div>
     </section>
@@ -577,6 +606,10 @@ body[data-screen="login"] #scene-chat{opacity:1;}
         <summary class="section-label">Échanges terminés <span class="dd-badge" id="ddb-completed"></span></summary>
         <div class="list" id="requests-completed" style="margin-top:10px;"></div>
       </details>
+      <details class="dropdown-section" id="dd-refused" style="margin-top:1.2rem;">
+        <summary class="section-label">Demandes refusées <span class="dd-badge" id="ddb-refused"></span></summary>
+        <div id="requests-refused" style="margin-top:10px;"></div>
+      </details>
       <details class="dropdown-section" id="dd-archive" style="margin-top:1.2rem;">
         <summary class="section-label">Archives <span class="dd-badge" id="ddb-archive"></span></summary>
         <div id="arch-toolbar" style="display:none; margin-top:10px; padding:8px 10px; border:1px solid var(--border); border-radius:12px; background:var(--card); align-items:center; gap:8px; flex-wrap:wrap;">
@@ -584,7 +617,6 @@ body[data-screen="login"] #scene-chat{opacity:1;}
           <select id="arch-mode" onchange="archSetMode(this.value)" style="font-size:12.5px; padding:5px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
             <option value="date">Classer par date</option>
             <option value="prov">Classer par personne</option>
-            <option value="statut">Classer par statut (terminé / refusé)</option>
             <option value="note">Classer par note donnée</option>
             <option value="recue">Classer par note reçue</option>
           </select>
@@ -688,15 +720,15 @@ let myName = null;
 let currentServices = [];
 let currentDetail = null;
 const CATEGORIES = {
-  jardinage: {emoji:'🌱', label:'Jardinage', icon:'ti-plant-2'},
-  bricolage: {emoji:'🔨', label:'Bricolage', icon:'ti-hammer'},
-  cours: {emoji:'📚', label:'Cours', icon:'ti-book'},
-  garde: {emoji:'🧒', label:'Garde', icon:'ti-baby-carriage'},
+  jardinage: {emoji:'🌱', label:'Jardinage', icon:'ti-leaf'},
+  bricolage: {emoji:'🔨', label:'Bricolage', icon:'ti-tool'},
+  cours: {emoji:'📚', label:'Cours', icon:'ti-school'},
+  garde: {emoji:'🧒', label:'Garde', icon:'ti-mood-kid'},
   animaux: {emoji:'🐾', label:'Animaux', icon:'ti-paw'},
   informatique: {emoji:'💻', label:'Info', icon:'ti-device-laptop'},
-  cuisine: {emoji:'🍳', label:'Cuisine', icon:'ti-tools-kitchen-2'},
-  menage: {emoji:'🧹', label:'Ménage', icon:'ti-broom'},
-  autre: {emoji:'✨', label:'Autre', icon:'ti-hand-stop'}
+  cuisine: {emoji:'🍳', label:'Cuisine', icon:'ti-chef-hat'},
+  menage: {emoji:'🧹', label:'Ménage', icon:'ti-spray'},
+  autre: {emoji:'✨', label:'Autre', icon:'ti-sparkles'}
 };
 let activeCategory = null;
 
@@ -705,7 +737,7 @@ function renderCategoryFilters(){
   if(!box || box.dataset.rendered) return;
   box.dataset.rendered = '1';
   box.innerHTML = Object.entries(CATEGORIES).map(([key, c]) => `
-    <button class="btn secondary" data-cat="${key}" style="margin-top:0; width:auto; white-space:nowrap; padding:8px 12px; font-size:13px;" onclick="toggleCategoryFilter('${key}')">${c.emoji} ${c.label}</button>
+    <button class="btn secondary" data-cat="${key}" style="margin-top:0; width:auto; white-space:nowrap; padding:8px 12px; font-size:13px;" onclick="toggleCategoryFilter('${key}')"><span class="cat-ico"><i class="ti ${c.icon}"></i></span> ${c.label}</button>
   `).join('');
 }
 
@@ -741,8 +773,9 @@ function serviceCard(s){
     ${s.photoUrl ? `<img src="${esc(s.photoUrl)}" alt="" style="width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0;">` : `<i class="ti ${cat.icon}"></i>`}
     <div>
       <p class="item-title">${esc(s.title)}${nw}</p>
-      <p class="item-sub">${cat.emoji} ${esc(s.authorName)} · ${s.hours}cr${dist ? ' · ' + dist : ''}</p>
+      <p class="item-sub">${esc(s.authorName)} · ${s.hours}cr</p>
     </div>
+    ${dist ? `<span class="chip-dist"><i class="ti ti-map-pin" style="font-size:12px;"></i> ${dist}</span>` : ''}
   </div>`;
 }
 function renderGroupedByCategory(services, sectionKey){
@@ -755,7 +788,7 @@ function renderGroupedByCategory(services, sectionKey){
     const nNew = group.filter(isNewSvc).length;
     html += `<details class="dropdown-section sub-dropdown" id="${groupId}" style="margin-bottom:10px;" open>
       <summary style="display:flex; align-items:center; gap:10px; padding:2px 0;">
-        <span style="font-size:11.5px; font-weight:700; white-space:nowrap; padding:5px 12px; border-radius:20px; background:var(--accent-bg); color:var(--accent-text);">${cat.emoji} ${cat.label} · ${group.length}</span>
+        <span style="font-size:11.5px; font-weight:700; white-space:nowrap; padding:5px 12px; border-radius:20px; background:var(--accent-bg); color:var(--accent-text);"><span class="cat-ico" style="background:rgba(255,255,255,.55);"><i class="ti ${cat.icon}"></i></span> ${cat.label} · ${group.length}</span>
         ${nNew ? `<span style="background:var(--pill-grad); color:var(--pill-text);font-size:10.5px;font-weight:700;border-radius:10px;padding:2px 8px;white-space:nowrap;">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}
         <div style="flex:1; height:1px; background:var(--border);"></div>
       </summary>
@@ -1542,7 +1575,7 @@ function openDetail(id){
   setTimeout(renderHome, 0);
   renderAvatar(document.getElementById('detail-avatar'), s.authorName, null);
   document.getElementById('detail-name').textContent = s.authorName;
-  document.getElementById('detail-meta').textContent = s.authorId === myId ? 'Ton propre service' : 'Membre Troctan';
+  document.getElementById('detail-meta').textContent = (s.authorId === myId ? 'Ton propre service' : 'Membre Troctan') + (distanceLabel(s) ? ' · à ' + distanceLabel(s) : '');
   const detailPhoto = document.getElementById('detail-photo');
   if(s.photoUrl){ detailPhoto.src = s.photoUrl; detailPhoto.style.display = 'block'; }
   else { detailPhoto.style.display = 'none'; }
@@ -1847,8 +1880,20 @@ async function closeExchange(exchangeId, otherId, otherName){
   if(otherId && confirm('Échange clôturé. Veux-tu donner un avis sur ' + otherName + ' maintenant ?')) leaveReview(exchangeId, otherId, otherName);
 }
 
+
+const openGrp = new Set();
+function grpHtml(scope, groups, cardFn){
+  return groups.map(g => {
+    const id = scope + '|' + g.key;
+    return `<details class="grp" data-gid="${esc(id)}" ${openGrp.has(id) ? 'open' : ''} ontoggle="grpToggle(this)"><summary><span>${esc(g.label)}</span><span class="n">${g.items.length}</span></summary><div style="display:flex; flex-direction:column; gap:8px; padding-bottom:10px;">${g.items.map(cardFn).join('')}</div></details>`;
+  }).join('');
+}
+function grpToggle(el){ const id = el.dataset.gid; if(el.open) openGrp.add(id); else openGrp.delete(id); }
+function grpAll(boxId, open){ document.querySelectorAll('#' + boxId + ' details.grp').forEach(d => { d.open = open; }); }
+function grpTools(boxId){ return `<div class="grp-tools"><button onclick="grpAll('${boxId}', true)">Tout déplier</button><button onclick="grpAll('${boxId}', false)">Tout replier</button></div>`; }
+
 let archSel = new Set(), _archItems = [], _archRender = null;
-function archMode(){ try{ const m = localStorage.getItem('tt_arch_mode'); return ['prov','statut','note','recue'].includes(m) ? m : 'date'; }catch(e){ return 'date'; } }
+function archMode(){ try{ const m = localStorage.getItem('tt_arch_mode'); return ['prov','note','recue'].includes(m) ? m : 'date'; }catch(e){ return 'date'; } }
 function archSetMode(v){ try{ localStorage.setItem('tt_arch_mode', v); }catch(e){} if(_archRender) _archRender(); }
 function archToggle(id, on){ if(on) archSel.add(id); else archSel.delete(id); if(_archRender) _archRender(); }
 function archSelectAll(on){ archSel = on ? new Set(_archItems.map(r => r.id)) : new Set(); if(_archRender) _archRender(); }
@@ -1926,8 +1971,15 @@ async function fetchCompletedExchanges(st){
     };
     // Les demandes refusées vont automatiquement dans les archives
     const visible = (data || []).filter(r => r.status === 'completed' && !archived.has(r.id));
-    const arch = (data || []).filter(r => r.status === 'refused' || archived.has(r.id));
-    setSectionBadge('archive', arch.filter(r => r.status === 'refused' && isNew(st, r.id)).length);
+    const arch = (data || []).filter(r => r.status === 'completed' && archived.has(r.id));
+    const refusedList = (data || []).filter(r => r.status === 'refused');
+    setSectionBadge('refused', refusedList.filter(r => isNew(st, r.id)).length);
+    const refBox = document.getElementById('requests-refused');
+    if(refBox){
+      const rg = new Map();
+      refusedList.forEach(r => { const k = new Date(r.created_at).toLocaleDateString('fr-CH', {month:'long', year:'numeric'}); if(!rg.has(k)) rg.set(k, []); rg.get(k).push(r); });
+      refBox.innerHTML = refusedList.length ? grpTools('requests-refused') + grpHtml('ref', [...rg.keys()].map(k => ({key:k, label:k, items:rg.get(k)})), r => card(r, true)) : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucune demande refusée.</p>";
+    }
     setSectionBadge('completed', visible.filter(r => isNew(st, r.id)).length);
     list.innerHTML = visible.length ? visible.map(r => card(r, false)).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
     _archItems = arch;
@@ -1945,7 +1997,6 @@ async function fetchCompletedExchanges(st){
       const other = r => (r.requester_id === myId ? r.provider_name : r.requester_name) || 'Inconnu';
       const stars = n => n ? '★'.repeat(n) + '☆'.repeat(5 - n) + ' (' + n + '/5)' : null;
       const keyOf = r => mode === 'prov' ? other(r)
-        : mode === 'statut' ? (r.status === 'refused' ? 'Refusés' : 'Terminés')
         : mode === 'note' ? (stars(given[r.id]) || 'Sans note donnée')
         : mode === 'recue' ? (stars(received[r.id]) || 'Sans note reçue')
         : new Date(r.created_at).toLocaleDateString('fr-CH', {month:'long', year:'numeric'});
@@ -1954,7 +2005,7 @@ async function fetchCompletedExchanges(st){
       let keys = [...groups.keys()];
       if(mode === 'prov') keys.sort((a, b) => a.localeCompare(b));
       if(mode === 'note' || mode === 'recue'){ const v = k => { const m = k.match(/\((\d)\/5\)/); return m ? +m[1] : 0; }; keys.sort((a, b) => v(b) - v(a)); }
-      archBox.innerHTML = keys.map(k => `<p style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; color:var(--text-muted); margin:10px 0 4px;">${esc(k)} · ${groups.get(k).length}</p>` + groups.get(k).map(r => card(r, true)).join('')).join('');
+      archBox.innerHTML = grpTools('requests-archive') + grpHtml('arch' + mode, keys.map(k => ({key:k, label:k, items:groups.get(k)})), r => card(r, true));
     };
     _archRender();
   }catch(e){ log('Erreur : ' + e.message); }
@@ -2139,8 +2190,9 @@ async function refreshAdminBadge(){
   let n = 0;
   if(myIsAdmin && myId){
     try{
-      const { count } = await sb.from('reports').select('id', {count: 'exact', head: true});
-      n = count || 0;
+      let q = await sb.from('reports').select('id', {count: 'exact', head: true}).is('resolved_at', null);
+      if(q.error) q = await sb.from('reports').select('id', {count: 'exact', head: true});
+      n = q.count || 0;
     }catch(e){}
   }
   const ab = document.getElementById('admin-badge');
@@ -2153,22 +2205,30 @@ async function loadAdminPanel(){
   const rb = document.getElementById('admin-reports');
   const ub = document.getElementById('admin-users');
   try{
-    const { data: reps } = await sb.from('reports').select('*').order('created_at', {ascending:false}).limit(50);
-    const sids = [...new Set((reps || []).map(r => r.reported_service_id).filter(Boolean))];
+    const { data: allReps } = await sb.from('reports').select('*').order('created_at', {ascending:false}).limit(100);
+    const isDone = r => !!r.resolved_at;
+    const reps = (allReps || []).filter(r => reportsTab === 'done' ? isDone(r) : !isDone(r));
+    document.getElementById('rep-tab-open').classList.toggle('on', reportsTab === 'open');
+    document.getElementById('rep-tab-done').classList.toggle('on', reportsTab === 'done');
+    const sids = [...new Set(reps.map(r => r.reported_service_id).filter(Boolean))];
     let titles = {};
     if(sids.length){
       const { data: sv } = await sb.from('services').select('id, title').in('id', sids);
       (sv || []).forEach(x => { titles[x.id] = x.title; });
     }
-    rb.innerHTML = (reps && reps.length) ? reps.map(r => `
+    rb.innerHTML = reps.length ? reps.map(r => `
       <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
         <p class="item-title">${r.reported_service_id ? esc(titles[r.reported_service_id] || 'Annonce déjà supprimée') : 'Signalement utilisateur'}</p>
-        <p class="item-sub">${new Date(r.created_at).toLocaleDateString('fr-CH')} · ${esc(r.reason)}</p>
+        <p class="item-sub">${new Date(r.created_at).toLocaleDateString('fr-CH')} · ${esc(r.reason)}${isDone(r) ? ' · classé le ' + new Date(r.resolved_at).toLocaleDateString('fr-CH') : ''}</p>
         <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-          ${(r.reported_service_id && titles[r.reported_service_id]) ? `<button class="btn secondary" style="margin-top:0; color:var(--warn-text);" onclick="adminRemoveService('${r.reported_service_id}')">Retirer l'annonce</button>` : ''}
-          <button class="btn secondary" style="margin-top:0;" onclick="adminDismissReport('${r.id}')">Classer</button>
+          <button class="btn secondary" style="margin-top:0;" onclick="adminShowContext('${r.id}')">Voir l'historique</button>
+          ${(!isDone(r) && r.reported_service_id && titles[r.reported_service_id]) ? `<button class="btn secondary" style="margin-top:0; color:var(--warn-text);" onclick="adminRemoveService('${r.reported_service_id}')">Retirer l'annonce</button>` : ''}
+          ${isDone(r)
+            ? `<button class="btn secondary" style="margin-top:0;" onclick="adminReopenReport('${r.id}')">Rouvrir</button><button class="btn secondary" style="margin-top:0; color:var(--warn-text);" onclick="adminDeleteReport('${r.id}')">Supprimer</button>`
+            : `<button class="btn secondary" style="margin-top:0;" onclick="adminDismissReport('${r.id}')">Classer</button>`}
         </div>
-      </div>`).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun signalement.</p>";
+        <div id="rep-ctx-${r.id}" style="display:none; margin-top:10px;"></div>
+      </div>`).join('') : `<p style="font-size:13px;color:var(--text-muted);">${reportsTab === 'done' ? 'Aucun signalement classé.' : 'Aucun signalement à traiter.'}</p>`;
   }catch(e){ rb.textContent = 'Erreur : ' + e.message; }
   try{
     const { data: users, error } = await sb.rpc('admin_list_users');
@@ -2212,13 +2272,48 @@ async function adminExportData(){
     log('Sauvegarde téléchargée ✓');
   }catch(e){ log('Erreur : ' + e.message); }
 }
+let reportsTab = 'open';
+function setReportsTab(t){ reportsTab = t; loadAdminPanel(); }
+async function adminSetResolved(id, on){
+  const { data, error } = await sb.from('reports').update({resolved_at: on ? new Date().toISOString() : null, resolved_by: on ? myId : null}).eq('id', id).select();
+  if(error){ log('Erreur : ' + error.message + ' (lance le SQL « mise à jour 21 »)'); return false; }
+  if(!data || !data.length){ log("Action refusée : lance le SQL « mise à jour 21 »."); return false; }
+  return true;
+}
 async function adminDismissReport(id){
+  if(!(await adminSetResolved(id, true))) return;
+  log('Signalement classé ✓ (retrouvable dans « Classés »)');
+  loadAdminPanel(); refreshAdminBadge();
+}
+async function adminReopenReport(id){
+  if(!(await adminSetResolved(id, false))) return;
+  log('Signalement rouvert ✓');
+  loadAdminPanel(); refreshAdminBadge();
+}
+async function adminDeleteReport(id){
+  if(!confirm('Supprimer définitivement ce signalement ?')) return;
   const { data, error } = await sb.from('reports').delete().eq('id', id).select();
   if(error){ log('Erreur : ' + error.message); return; }
-  if(!data || !data.length){ log("Signalement non classé : il manque une autorisation dans Supabase (lance le SQL « mise à jour 4 »)."); return; }
-  log('Signalement classé ✓');
-  loadAdminPanel();
-  refreshAdminBadge();
+  if(!data || !data.length){ log("Signalement non supprimé : autorisation manquante."); return; }
+  log('Signalement supprimé ✓');
+  loadAdminPanel(); refreshAdminBadge();
+}
+async function adminShowContext(id){
+  const box = document.getElementById('rep-ctx-' + id);
+  if(!box) return;
+  if(box.style.display === 'block'){ box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = '<p class="item-sub">Chargement…</p>';
+  const { data, error } = await sb.rpc('admin_report_context', {rid: id});
+  if(error){ box.innerHTML = '<p class="item-sub">Erreur : ' + esc(error.message) + ' (lance le SQL « mise à jour 21 »)</p>'; return; }
+  const rows = data || [];
+  const stLab = {pending:'En attente', accepted:'Acceptée', refused:'Refusée', cancelled:'Annulée', completed:'Terminée'};
+  box.innerHTML = rows.length ? rows.map(e => `
+    <div style="border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:8px; background:var(--bg);">
+      <p style="margin:0; font-size:13px; font-weight:700;">${esc(e.service_title || 'Échange')} · ${esc(stLab[e.status] || e.status)} · ${e.hours}cr</p>
+      <p class="item-sub" style="margin:2px 0 6px;">${new Date(e.created_at).toLocaleDateString('fr-CH')} · ${esc(e.requester_name)} → ${esc(e.provider_name)}</p>
+      ${(e.messages || []).length ? e.messages.map(m => `<p style="margin:0 0 4px; font-size:12.5px;"><b>${esc(m.who)}</b> <span style="color:var(--text-muted);">${new Date(m.at).toLocaleString('fr-CH', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</span><br>${esc(m.text)}</p>`).join('') : '<p class="item-sub" style="margin:0;">Aucun message.</p>'}
+    </div>`).join('') : '<p class="item-sub">Aucun échange lié à ce signalement.</p>';
 }
 async function adminDeleteUser(id, name){
   if(!confirm('Supprimer définitivement le compte de ' + name + ' et ses contenus ?')) return;
@@ -2469,7 +2564,7 @@ function renderProfile(){
   list.innerHTML = mine.length ? mine.map(s => `
     <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch;">
       <div style="display:flex; gap:10px; align-items:flex-start;">
-        <i class="ti ${s.icon || 'ti-hand-stop'}"></i>
+        <i class="ti ${(CATEGORIES[s.category || 'autre'] || CATEGORIES.autre).icon}"></i>
         <div style="flex:1;">
           <p class="item-title">${esc(s.title)}</p>
           <p class="item-sub">${s.hours}cr proposé${s.expiresAt ? (isExpired(s) ? ' · <b style="color:var(--warn-text);">Expirée</b> (modifie la date pour la remettre en ligne)' : ' · valable jusqu\'au ' + fmtDateFr(s.expiresAt)) : ''}</p>
@@ -2755,7 +2850,7 @@ Troctan n'utilise aucun cookie, ni traceur publicitaire, ni outil de mesure d'au
 - Visibles uniquement des deux personnes concernées : une demande d'échange et sa discussion.
 - Visibles uniquement d'un partenaire d'échange accepté, si tu l'as choisi : ton téléphone et/ou ton adresse postale.
 - Jamais visibles des autres membres : ton email, ton solde, ta position, la liste des personnes que tu as bloquées.
-- Accessibles à l'administrateur de Troctan : uniquement pour la modération (signalements, retrait de contenus ou de comptes) et pour réaliser des sauvegardes techniques de la base de données, qui contiennent l'ensemble des données ci-dessus. Ces sauvegardes ne sont ni partagées ni utilisées à d'autres fins.
+- Accessibles à l'administrateur de Troctan : uniquement pour la modération (signalements, retrait de contenus ou de comptes, consultation des échanges et messages liés à un signalement) et pour réaliser des sauvegardes techniques de la base de données, qui contiennent l'ensemble des données ci-dessus. Ces sauvegardes ne sont ni partagées ni utilisées à d'autres fins.
 
 6. Prestataires techniques et pays de traitement
 - Supabase (base de données, connexion, stockage des photos) : société Supabase Inc./Pte Ltd, Etats-Unis. La région d'hébergement des données dépend de la configuration du projet (à vérifier dans les paramètres du projet) ; en tant que société américaine, Supabase peut être soumise au droit américain (CLOUD Act) même pour des données hébergées en Europe.
@@ -2850,7 +2945,30 @@ function finishTutorial(){
 function inviteByEmail(){
   const subject = 'Rejoins-moi sur Troctan';
   const body = "Bonjour,\n\nJe t'invite à rejoindre Troctan : l'échange de services entre voisins, sans argent (1 crédit = 1 heure).\n\nInscris-toi ici : https://troctan.ch\n\nÀ bientôt !";
-  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  const q = (u) => u.replace('{S}', encodeURIComponent(subject)).replace('{B}', encodeURIComponent(body));
+  const old = document.getElementById('invite-modal'); if(old) old.remove();
+  const m = document.createElement('div');
+  m.id = 'invite-modal';
+  m.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px;';
+  const btn = 'display:block; width:100%; text-align:center; box-sizing:border-box; margin:8px 0 0; padding:11px; border-radius:10px; border:1px solid var(--border-strong); background:#fff; color:#1c1c1a; font-size:14px; text-decoration:none; cursor:pointer;';
+  m.innerHTML = `<div style="background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:14px; padding:18px; max-width:360px; width:100%;">
+    <p style="font-weight:700; margin:0 0 4px;">Inviter par email</p>
+    <p style="font-size:12.5px; color:var(--text-secondary); margin:0 0 8px;">Choisis ta messagerie :</p>
+    <a style="${btn}" target="_blank" rel="noopener" href="${q('https://mail.google.com/mail/?view=cm&fs=1&su={S}&body={B}')}">Gmail</a>
+    <a style="${btn}" target="_blank" rel="noopener" href="${q('https://compose.mail.yahoo.com/?subj={S}&body={B}')}">Yahoo Mail</a>
+    <a style="${btn}" target="_blank" rel="noopener" href="${q('https://outlook.live.com/mail/0/deeplink/compose?subject={S}&body={B}')}">Outlook / Hotmail</a>
+    <a style="${btn}" href="${q('mailto:?subject={S}&body={B}')}">Application mail de l'appareil</a>
+    <button style="${btn}" id="invite-copy">Copier le message</button>
+    <button style="${btn} background:none; border:none; color:var(--text-muted);" id="invite-close">Fermer</button>
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', (e) => { if(e.target === m) m.remove(); });
+  document.getElementById('invite-close').onclick = () => m.remove();
+  document.getElementById('invite-copy').onclick = async () => {
+    try{ await navigator.clipboard.writeText(subject + '\n\n' + body); log('Message copié ✓'); }
+    catch(e){ log('Copie impossible : sélectionne le texte à la main.'); }
+    m.remove();
+  };
 }
 async function shareApp(){
   const url = 'https://troctan.ch';
@@ -3055,26 +3173,22 @@ async function loadCredits(){
     if(error) throw error;
     const rows = data || [];
     let earned = 0, spent = 0, bal = Number(myBalanceCache) || 0;
-    const html = rows.map(r => {
+    const plus = [], minus = [];
+    rows.forEach(r => {
       const iAmReq = r.requester_id === myId;
       const h = Number(r.hours) || 0;
       const delta = iAmReq ? -h : h;
       if(iAmReq) spent += h; else earned += h;
-      const after = bal; bal -= delta;
+      bal -= delta;
       const other = iAmReq ? r.provider_name : r.requester_name;
       const otherId = iAmReq ? r.provider_id : r.requester_id;
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short', year:'numeric'});
-      const col = delta >= 0 ? 'var(--success-text)' : 'var(--text-secondary)';
-      return `
-      <div class="item-card" onclick="openChat('${r.id}', ${jsArg(other)}, '${otherId}')">
-        <i class="ti ${delta >= 0 ? 'ti-arrow-down-left' : 'ti-arrow-up-right'}" style="color:${col};"></i>
-        <div style="flex:1;">
-          <p class="item-title">${esc(r.service_title)}</p>
-          <p class="item-sub">${date} · ${esc(other)} · solde après : ${fmtCr(after)}</p>
-        </div>
-        <p style="margin:0; font-weight:700; color:${col}; white-space:nowrap;">${delta >= 0 ? '+' : '−'}${fmtCr(h)}</p>
-      </div>`;
-    }).join('');
+      const col = delta >= 0 ? 'var(--success-text)' : 'var(--accent-text)';
+      const item = `<div class="cred-item" onclick="openChat('${r.id}', ${jsArg(other)}, '${otherId}')"><p class="t">${esc(r.service_title)}</p><p class="s">${date} · ${esc(other)}</p><p class="a" style="color:${col};">${delta >= 0 ? '+' : '−'}${fmtCr(h)}</p></div>`;
+      (delta >= 0 ? plus : minus).push(item);
+    });
+    const empty = '<p style="font-size:12px;color:var(--text-muted);text-align:center;">–</p>';
+    const html = `<div class="cred-cols"><div class="cred-col plus"><h4>＋ Gagnés</h4>${plus.join('') || empty}</div><div class="cred-col minus"><h4>− Utilisés</h4>${minus.join('') || empty}</div></div>`;
     document.getElementById('credits-earned').textContent = '+' + fmtCr(earned);
     document.getElementById('credits-spent').textContent = '−' + fmtCr(spent);
     const start = Math.abs(bal) > 0.001
@@ -3086,6 +3200,8 @@ async function loadCredits(){
 }
 
 let ratingsTab = 'received';
+let ratingsView = 'all';
+function setRatingsView(v){ ratingsView = v; loadRatings(); }
 function setRatingsTab(t){ ratingsTab = t; loadRatings(); }
 function starsStr(n){ n = Math.max(0, Math.min(5, Number(n) || 0)); return '★'.repeat(n) + '☆'.repeat(5 - n); }
 async function loadRatings(){
@@ -3112,10 +3228,14 @@ async function loadRatings(){
     const avg = n ? rows.reduce((a, r) => a + (Number(r.rating) || 0), 0) / n : 0;
     document.getElementById('rt-avg').textContent = n ? avg.toFixed(1).replace('.', ',') + ' ★' : '–';
     document.getElementById('rt-count').textContent = n;
-    box.innerHTML = n ? rows.map(r => {
+    const info = r => {
       const ex = exMap[r.exchange_id] || {};
       const otherId = received ? r.reviewer_id : r.reviewed_id;
       const otherName = ex.requester_id === otherId ? ex.requester_name : (ex.provider_id === otherId ? ex.provider_name : 'Membre');
+      return {ex, otherName: otherName || 'Membre'};
+    };
+    const card = r => {
+      const {ex, otherName} = info(r);
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short', year:'numeric'});
       return `
       <div class="item-card" style="cursor:default; flex-direction:column; align-items:stretch; gap:4px;">
@@ -3123,10 +3243,26 @@ async function loadRatings(){
           <span style="font-size:18px; letter-spacing:1px; color:var(--star);">${starsStr(r.rating)}</span>
           <span class="item-sub" style="margin:0;">${date}</span>
         </div>
-        <p class="item-sub" style="margin:0;">${received ? 'de' : 'pour'} ${esc(otherName || 'Membre')}${ex.service_title ? ' · ' + esc(ex.service_title) : ''}</p>
+        <p class="item-sub" style="margin:0;">${received ? 'de' : 'pour'} ${esc(otherName)}${ex.service_title ? ' · ' + esc(ex.service_title) : ''}</p>
         ${r.comment ? `<p style="margin:4px 0 0; font-size:13.5px; font-style:italic;">« ${esc(r.comment)} »</p>` : ''}
       </div>`;
-    }).join('') : `<p style="font-size:13px;color:var(--text-muted);">${received ? "Tu n'as pas encore reçu de note." : "Tu n'as pas encore donné de note."}</p>`;
+    };
+    const sel = document.getElementById('rt-view'); if(sel) sel.value = ratingsView;
+    if(!n){
+      box.innerHTML = `<p style="font-size:13px;color:var(--text-muted);">${received ? "Tu n'as pas encore reçu de note." : "Tu n'as pas encore donné de note."}</p>`;
+    } else if(ratingsView === 'all'){
+      box.innerHTML = rows.map(card).join('');
+    } else {
+      const keyOf = r => ratingsView === 'note' ? (starsStr(r.rating) + ' (' + (Number(r.rating) || 0) + '/5)')
+        : ratingsView === 'pers' ? info(r).otherName
+        : new Date(r.created_at).toLocaleDateString('fr-CH', {month:'long', year:'numeric'});
+      const g = new Map();
+      rows.forEach(r => { const k = keyOf(r); if(!g.has(k)) g.set(k, []); g.get(k).push(r); });
+      let keys = [...g.keys()];
+      if(ratingsView === 'note') keys.sort((a, b) => (+b.match(/\((\d)\/5\)/)[1]) - (+a.match(/\((\d)\/5\)/)[1]));
+      if(ratingsView === 'pers') keys.sort((a, b) => a.localeCompare(b));
+      box.innerHTML = grpTools('ratings-list') + grpHtml('rt' + ratingsTab + ratingsView, keys.map(k => ({key:k, label:k, items:g.get(k)})), card);
+    }
   }catch(e){
     box.innerHTML = '<p style="font-size:13px;color:var(--text-muted);">Impossible de charger les notes (' + esc(e.message || e) + ').</p>';
   }
