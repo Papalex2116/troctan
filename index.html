@@ -275,7 +275,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 49</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 50</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -484,10 +484,9 @@ body[data-screen="login"] #scene-chat{opacity:1;}
     </section>
 
     <!-- TUTORIEL -->
-    <section class="screen" id="tutorial" style="padding:0 1.1rem; text-align:center;">
-      <p class="section-label" style="font-size:18px; margin:18px 0 10px;">Bienvenue sur Troctan</p>
-      <video id="tut-video" src="/tutoriel.mp4#t=0.6" controls playsinline preload="metadata" style="width:100%; max-height:66vh; border-radius:14px; background:#123428; object-fit:contain;" onerror="tutVideoFailed()"></video>
-      <div id="tut-slides" style="display:none;">
+    <section class="screen" id="tutorial" style="padding:0 0 8px; text-align:center;">
+      <video id="tut-video" src="/tutoriel.mp4#t=0.6" controls playsinline preload="metadata" style="display:block; width:100%; height:calc(100vh - 150px); height:calc(100dvh - 150px); min-height:320px; background:#123428; object-fit:contain; border-radius:0;" onerror="tutVideoFailed()"></video>
+      <div id="tut-slides" style="display:none; padding:0 1.1rem;">
         <div style="margin-top:20px; min-height:230px;">
           <div id="tut-emoji" style="font-size:56px;"></div>
           <p id="tut-title" class="section-label" style="font-size:20px; margin-top:16px;"></p>
@@ -496,7 +495,10 @@ body[data-screen="login"] #scene-chat{opacity:1;}
         <div id="tut-dots" style="display:flex; justify-content:center; gap:8px; margin:18px 0;"></div>
         <button class="btn" id="tut-next" onclick="tutorialNext()">Suivant</button>
       </div>
-      <button class="btn" id="tut-start" onclick="finishTutorial()" style="margin-top:14px;">C'est parti !</button>
+      <div id="tut-start" style="display:flex; gap:8px; padding:10px 1rem 0;">
+        <button class="btn secondary" style="margin:0; width:auto; padding:10px 14px;" onclick="tutFullscreen()" title="Plein écran"><i class="ti ti-arrows-maximize"></i></button>
+        <button class="btn" style="margin:0; flex:1;" onclick="finishTutorial()">C'est parti !</button>
+      </div>
     </section>
 
     <!-- MODIFIER MON PROFIL -->
@@ -2935,6 +2937,14 @@ function renderTutorial(){
   document.getElementById('tut-next').textContent = (tutStep === TUTORIAL_STEPS.length - 1) ? "C'est parti !" : 'Suivant';
 }
 
+function tutFullscreen(){
+  const v = document.getElementById('tut-video'); if(!v) return;
+  try{
+    if(v.requestFullscreen) v.requestFullscreen();
+    else if(v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+    else if(v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+  }catch(e){}
+}
 function tutVideoFailed(){
   const v = document.getElementById('tut-video'); if(v) v.style.display = 'none';
   const sl = document.getElementById('tut-slides'); if(sl) sl.style.display = 'block';
