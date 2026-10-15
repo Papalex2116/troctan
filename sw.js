@@ -14,6 +14,7 @@ self.addEventListener('push', (e) => {
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     tag: d.tag || undefined,
+    renotify: !!d.tag,
     data: { url: d.url || '/' }
   }));
 });
