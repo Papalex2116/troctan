@@ -275,7 +275,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 48</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 49</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -326,6 +326,11 @@ body[data-screen="login"] #scene-chat{opacity:1;}
         <i class="ti ti-clock" style="font-size:26px;color:var(--accent-text);"></i>
       </div>
       <p id="offline-note" style="display:none;font-size:12px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:12px;">Impossible de contacter le serveur — vérifie ta connexion.</p>
+      <div id="loc-hint" style="display:none; align-items:center; gap:10px; background:var(--accent-bg); color:var(--accent-text); border:1px solid var(--accent-border); border-radius:12px; padding:9px 12px; margin-bottom:10px; font-size:12.5px;">
+        <i class="ti ti-map-pin" style="font-size:18px;"></i>
+        <span style="flex:1;">Active ta position pour voir la distance de chaque annonce.</span>
+        <button class="btn" style="width:auto; margin:0; padding:6px 12px; font-size:12.5px;" onclick="updateLocation()">Activer</button>
+      </div>
       <input type="text" id="home-search" placeholder="Rechercher un service..." oninput="renderHome()" style="margin-bottom:10px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
         <p class="section-label" style="margin:0;">Près de chez toi</p>
@@ -777,7 +782,7 @@ function serviceCard(s){
     ${s.photoUrl ? `<img src="${esc(s.photoUrl)}" alt="" style="width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0;">` : `<i class="ti ${cat.icon}"></i>`}
     <div>
       <p class="item-title">${esc(s.title)}${nw}</p>
-      <p class="item-sub">${esc(s.authorName)} · ${s.hours}cr</p>
+      <p class="item-sub"><span class="cat-ico"><i class="ti ${cat.icon}"></i></span> ${cat.label} · ${esc(s.authorName)} · ${s.hours}cr</p>
     </div>
     ${dist ? `<span class="chip-dist"><i class="ti ti-map-pin" style="font-size:12px;"></i> ${dist}</span>` : ''}
   </div>`;
@@ -1544,6 +1549,7 @@ function matchesKeywords(s, query){
   });
 }
 function renderHome(){
+  const lh = document.getElementById('loc-hint'); if(lh) lh.style.display = (myLat === null) ? 'flex' : 'none';
   const list = document.getElementById('home-list');
   const searchInput = document.getElementById('home-search');
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
