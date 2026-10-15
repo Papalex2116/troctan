@@ -254,7 +254,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 41</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 42</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -1334,7 +1334,7 @@ function finishNameSetup(){
 }
 
 // ---------- Notifications push (téléphone) ----------
-const VAPID_PUBLIC = 'BN0M0GXXIXI4V5PTmnQ0pWeVtqfEnILLOTyZ8aeLIKshesqBgX7PtnfBuor4GtD-uva5_BrtkEWQ6Y7iNOpkG1w';
+const VAPID_PUBLIC = 'BCBP9JgUnMwpRzYWa_RvuEfM_Q9cAsMTS2CGS3xET2WUtCPZUWCukBNNGYVzeuy84eVx2U-ufGGpJ7XpVibzT-A';
 function pushSupported(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
 function b64ToU8(b64){
   const pad = '='.repeat((4 - b64.length % 4) % 4);
