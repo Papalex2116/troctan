@@ -9,9 +9,41 @@
 <link rel="icon" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="theme-color" content="#1f5a43">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
+#balance-value::before,#profile-balance::before,#credits-balance::before,#credits-earned::before,#credits-spent::before,#detail-balance::before{content:'';display:inline-block;width:.85em;height:.85em;margin-right:4px;vertical-align:-.1em;background-color:currentColor;opacity:.75;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;--m:var(--m-clock)}
+:root{--m-clock:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' stroke-width='2' stroke='%23000' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0'/%3E%3Cpath d='M12 7v5l3 3'/%3E%3C/svg%3E")}
+.pcat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}.pcat{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;font-size:12px;font-weight:600;border:1px solid var(--border-strong);border-radius:10px;background:var(--card);color:var(--text);cursor:pointer}.pcat .ti{font-size:20px;color:var(--accent-text)}.pcat.on{background:var(--accent-bg);border-color:var(--accent-text)}
+
+/* icônes intégrées (Tabler, MIT) */
+.ti{display:inline-block;width:1em;height:1em;vertical-align:-.125em;background-color:currentColor;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;font-style:normal}
+.ti-arrow-left{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M5 12l14 0%22 /%3E %3Cpath d=%22M5 12l6 6%22 /%3E %3Cpath d=%22M5 12l6 -6%22 /%3E %3C/svg%3E ")}
+.ti-arrows-maximize{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M16 4l4 0l0 4%22 /%3E %3Cpath d=%22M14 10l6 -6%22 /%3E %3Cpath d=%22M8 20l-4 0l0 -4%22 /%3E %3Cpath d=%22M4 20l6 -6%22 /%3E %3Cpath d=%22M16 20l4 0l0 -4%22 /%3E %3Cpath d=%22M14 14l6 6%22 /%3E %3Cpath d=%22M8 4l-4 0l0 4%22 /%3E %3Cpath d=%22M4 4l6 6%22 /%3E %3C/svg%3E ")}
+.ti-calendar{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z%22 /%3E %3Cpath d=%22M16 3v4%22 /%3E %3Cpath d=%22M8 3v4%22 /%3E %3Cpath d=%22M4 11h16%22 /%3E %3Cpath d=%22M11 15h1%22 /%3E %3Cpath d=%22M12 15v3%22 /%3E %3C/svg%3E ")}
+.ti-chef-hat{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M12 3c1.918 0 3.52 1.35 3.91 3.151a4 4 0 0 1 2.09 7.723l0 7.126h-12v-7.126a4 4 0 1 1 2.092 -7.723a4 4 0 0 1 3.908 -3.151z%22 /%3E %3Cpath d=%22M6.161 17.009l11.839 -.009%22 /%3E %3C/svg%3E ")}
+.ti-chevron-right{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M9 6l6 6l-6 6%22 /%3E %3C/svg%3E ")}
+.ti-circle-check{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0%22 /%3E %3Cpath d=%22M9 12l2 2l4 -4%22 /%3E %3C/svg%3E ")}
+.ti-circle-x{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0%22 /%3E %3Cpath d=%22M10 10l4 4m0 -4l-4 4%22 /%3E %3C/svg%3E ")}
+.ti-clock{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0%22 /%3E %3Cpath d=%22M12 7v5l3 3%22 /%3E %3C/svg%3E ")}
+.ti-device-laptop{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M3 19l18 0%22 /%3E %3Cpath d=%22M5 6m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1z%22 /%3E %3C/svg%3E ")}
+.ti-exchange{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M5 18m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0%22 /%3E %3Cpath d=%22M19 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0%22 /%3E %3Cpath d=%22M19 8v5a5 5 0 0 1 -5 5h-3l3 -3m0 6l-3 -3%22 /%3E %3Cpath d=%22M5 16v-5a5 5 0 0 1 5 -5h3l-3 -3m0 6l3 -3%22 /%3E %3C/svg%3E ")}
+.ti-flag{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9z%22 /%3E %3Cpath d=%22M5 21v-7%22 /%3E %3C/svg%3E ")}
+.ti-hand-stop{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5%22 /%3E %3Cpath d=%22M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5%22 /%3E %3Cpath d=%22M14 5.5a1.5 1.5 0 0 1 3 0v6.5%22 /%3E %3Cpath d=%22M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47%22 /%3E %3C/svg%3E ")}
+.ti-history{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M12 8l0 4l2 2%22 /%3E %3Cpath d=%22M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5%22 /%3E %3C/svg%3E ")}
+.ti-home{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M5 12l-2 0l9 -9l9 9l-2 0%22 /%3E %3Cpath d=%22M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7%22 /%3E %3Cpath d=%22M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6%22 /%3E %3C/svg%3E ")}
+.ti-leaf{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M5 21c.5 -4.5 2.5 -8 7 -10%22 /%3E %3Cpath d=%22M9 18c6.218 0 10.5 -3.288 11 -12v-2h-4.014c-9 0 -11.986 4 -12 9c0 1 0 3 2 5h3z%22 /%3E %3C/svg%3E ")}
+.ti-map-pin{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0%22 /%3E %3Cpath d=%22M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z%22 /%3E %3C/svg%3E ")}
+.ti-mood-kid{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0%22 /%3E %3Cpath d=%22M9 10l.01 0%22 /%3E %3Cpath d=%22M15 10l.01 0%22 /%3E %3Cpath d=%22M9.5 15a3.5 3.5 0 0 0 5 0%22 /%3E %3Cpath d=%22M12 3a2 2 0 0 0 0 4%22 /%3E %3C/svg%3E ")}
+.ti-paw{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M14.7 13.5c-1.1 -2 -1.441 -2.5 -2.7 -2.5c-1.259 0 -1.736 .755 -2.836 2.747c-.942 1.703 -2.846 1.845 -3.321 3.291c-.097 .265 -.145 .677 -.143 .962c0 1.176 .787 2 1.8 2c1.259 0 3 -1 4.5 -1s3.241 1 4.5 1c1.013 0 1.8 -.823 1.8 -2c0 -.285 -.049 -.697 -.146 -.962c-.475 -1.451 -2.512 -1.835 -3.454 -3.538z%22 /%3E %3Cpath d=%22M20.188 8.082a1.039 1.039 0 0 0 -.406 -.082h-.015c-.735 .012 -1.56 .75 -1.993 1.866c-.519 1.335 -.28 2.7 .538 3.052c.129 .055 .267 .082 .406 .082c.739 0 1.575 -.742 2.011 -1.866c.516 -1.335 .273 -2.7 -.54 -3.052z%22 /%3E %3Cpath d=%22M9.474 9c.055 0 .109 0 .163 -.011c.944 -.128 1.533 -1.346 1.32 -2.722c-.203 -1.297 -1.047 -2.267 -1.932 -2.267c-.055 0 -.109 0 -.163 .011c-.944 .128 -1.533 1.346 -1.32 2.722c.204 1.293 1.048 2.267 1.933 2.267z%22 /%3E %3Cpath d=%22M16.456 6.733c.214 -1.376 -.375 -2.594 -1.32 -2.722a1.164 1.164 0 0 0 -.162 -.011c-.885 0 -1.728 .97 -1.93 2.267c-.214 1.376 .375 2.594 1.32 2.722c.054 .007 .108 .011 .162 .011c.885 0 1.73 -.974 1.93 -2.267z%22 /%3E %3Cpath d=%22M5.69 12.918c.816 -.352 1.054 -1.719 .536 -3.052c-.436 -1.124 -1.271 -1.866 -2.009 -1.866c-.14 0 -.277 .027 -.407 .082c-.816 .352 -1.054 1.719 -.536 3.052c.436 1.124 1.271 1.866 2.009 1.866c.14 0 .277 -.027 .407 -.082z%22 /%3E %3C/svg%3E ")}
+.ti-plus{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M12 5l0 14%22 /%3E %3Cpath d=%22M5 12l14 0%22 /%3E %3C/svg%3E ")}
+.ti-school{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M22 9l-10 -4l-10 4l10 4l10 -4v6%22 /%3E %3Cpath d=%22M6 10.6v5.4a6 3 0 0 0 12 0v-5.4%22 /%3E %3C/svg%3E ")}
+.ti-sparkles{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z%22 /%3E %3C/svg%3E ")}
+.ti-spray{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M4 10m0 2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v7a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2z%22 /%3E %3Cpath d=%22M6 10v-4a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v4%22 /%3E %3Cpath d=%22M15 7h.01%22 /%3E %3Cpath d=%22M18 9h.01%22 /%3E %3Cpath d=%22M18 5h.01%22 /%3E %3Cpath d=%22M21 3h.01%22 /%3E %3Cpath d=%22M21 7h.01%22 /%3E %3Cpath d=%22M21 11h.01%22 /%3E %3Cpath d=%22M10 7h1%22 /%3E %3C/svg%3E ")}
+.ti-tool{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M7 10h3v-3l-3.5 -3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1 -3 3l-6 -6a6 6 0 0 1 -8 -8l3.5 3.5%22 /%3E %3C/svg%3E ")}
+.ti-user{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0%22 /%3E %3Cpath d=%22M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2%22 /%3E %3C/svg%3E ")}
+.ti-user-off{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M8.18 8.189a4.01 4.01 0 0 0 2.616 2.627m3.507 -.545a4 4 0 1 0 -5.59 -5.552%22 /%3E %3Cpath d=%22M6 21v-2a4 4 0 0 1 4 -4h4c.412 0 .81 .062 1.183 .178m2.633 2.618c.12 .38 .184 .785 .184 1.204v2%22 /%3E %3Cpath d=%22M3 3l18 18%22 /%3E %3C/svg%3E ")}
+.ti-users{--m:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 stroke-width=%222%22 stroke=%22%23000%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cpath stroke=%22none%22 d=%22M0 0h24v24H0z%22 fill=%22none%22/%3E %3Cpath d=%22M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0%22 /%3E %3Cpath d=%22M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2%22 /%3E %3Cpath d=%22M16 3.13a4 4 0 0 1 0 7.75%22 /%3E %3Cpath d=%22M21 21v-2a4 4 0 0 0 -3 -3.85%22 /%3E %3C/svg%3E ")}
+
   .chip-dist{margin-left:auto; flex-shrink:0; align-self:center; font-size:11.5px; font-weight:700; color:var(--accent-text); background:var(--accent-bg); border:1px solid var(--accent-border); border-radius:20px; padding:3px 9px; white-space:nowrap;}
   .cat-ico{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--accent-bg); color:var(--accent-text); font-size:12px; vertical-align:middle; margin-right:2px;}
   .grp{border:1px solid var(--border); border-radius:12px; background:var(--card); margin:8px 0; padding:0 12px;}
@@ -46,23 +78,23 @@
   }
   :root:not([data-theme="light"]){
     @media (prefers-color-scheme: dark){
-      --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
+      --bg:#26332c; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
       --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
       --accent-bg:#2f5a43; --accent-text:#d7f2e0; --accent-border:#d4ac16;
       --success-bg:#1f4a35; --success-text:#bfe6cc; --warn-text:#bfe6cc; --star:#f0c43c;
-      --sat:38%; --l1:14%; --l2:19%; --l3:16%;
-      --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
-    --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
+      --sat:36%; --l1:25%; --l2:31%; --l3:28%;
+      --r1:#3a7a5c; --r2:#336d52; --r3:#2c6048; --r4:#265340; --r5:#204737; --r6:#1a3b2e; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
+    --card:rgba(255,255,255,.17); --border:rgba(255,255,255,.24); --border-strong:rgba(255,255,255,.32);
     }
   }
   :root[data-theme="dark"]{
-    --bg:#161513; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
+    --bg:#26332c; --card:#211f1c; --border:#3a3833; --border-strong:#4d4a43;
     --text:#f0efe9; --text-secondary:#dad8cf; --text-muted:#b9b7ad;
     --accent-bg:#2f5a43; --accent-text:#d7f2e0; --accent-border:#d4ac16;
     --success-bg:#1f4a35; --success-text:#bfe6cc; --warn-text:#bfe6cc; --star:#f0c43c;
-    --sat:38%; --l1:14%; --l2:19%; --l3:16%;
-    --r1:#22503c; --r2:#1d4634; --r3:#183d2d; --r4:#143525; --r5:#112d20; --r6:#0e261b; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
-    --card:rgba(255,255,255,.14); --border:rgba(255,255,255,.20); --border-strong:rgba(255,255,255,.32);
+    --sat:36%; --l1:25%; --l2:31%; --l3:28%;
+    --r1:#3a7a5c; --r2:#336d52; --r3:#2c6048; --r4:#265340; --r5:#204737; --r6:#1a3b2e; --line:#86bb9c; --mist:#7fb596; --mist-o:.14; --sun:#dfe9b9;
+    --card:rgba(255,255,255,.17); --border:rgba(255,255,255,.24); --border-strong:rgba(255,255,255,.32);
   }
   :root[data-theme="light"]{ --sat:45%; --l1:94%; --l2:90%; --l3:92%;
     --r1:#d3e8da; --r2:#bcdcc7; --r3:#a3cdb2; --r4:#88bc9b; --r5:#6da584; --r6:#558f6d; --line:#3f7a58; --mist:#ffffff; --mist-o:.45; --sun:#fff6cf;
@@ -275,7 +307,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 51</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 52</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -385,17 +417,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <label>Description</label>
       <textarea rows="3" maxlength="2000" placeholder="Décris ce que tu proposes" id="p-desc"></textarea>
       <label>Catégorie</label>
-      <select id="p-category" style="width:100%; padding:9px 10px; border:1px solid var(--border-strong); border-radius:8px; background:var(--card); color:var(--text); font-size:14px; margin-bottom:10px;">
-        <option value="jardinage">🌱 Jardinage</option>
-        <option value="bricolage">🔨 Bricolage</option>
-        <option value="cours">📚 Cours & soutien scolaire</option>
-        <option value="garde">🧒 Garde d'enfants</option>
-        <option value="animaux">🐾 Animaux domestiques</option>
-        <option value="informatique">💻 Informatique</option>
-        <option value="cuisine">🍳 Cuisine</option>
-        <option value="menage">🧹 Ménage</option>
-        <option value="autre" selected>✨ Autre</option>
-      </select>
+      <input type="hidden" id="p-category" value="autre"><div class="pcat-grid"><button type="button" class="pcat" data-k="jardinage" onclick="setPCat('jardinage')"><i class="ti ti-leaf"></i><span>Jardinage</span></button><button type="button" class="pcat" data-k="bricolage" onclick="setPCat('bricolage')"><i class="ti ti-tool"></i><span>Bricolage</span></button><button type="button" class="pcat" data-k="cours" onclick="setPCat('cours')"><i class="ti ti-school"></i><span>Cours</span></button><button type="button" class="pcat" data-k="garde" onclick="setPCat('garde')"><i class="ti ti-mood-kid"></i><span>Garde</span></button><button type="button" class="pcat" data-k="animaux" onclick="setPCat('animaux')"><i class="ti ti-paw"></i><span>Animaux</span></button><button type="button" class="pcat" data-k="informatique" onclick="setPCat('informatique')"><i class="ti ti-device-laptop"></i><span>Informatique</span></button><button type="button" class="pcat" data-k="cuisine" onclick="setPCat('cuisine')"><i class="ti ti-chef-hat"></i><span>Cuisine</span></button><button type="button" class="pcat" data-k="menage" onclick="setPCat('menage')"><i class="ti ti-spray"></i><span>Ménage</span></button><button type="button" class="pcat" data-k="autre" onclick="setPCat('autre')"><i class="ti ti-sparkles"></i><span>Autre</span></button></div>
       <label>Durée estimée (en crédits)</label>
       <input type="number" min="0.5" step="0.5" placeholder="Ex. 1" id="p-hours">
       <label>Valable pendant</label>
@@ -615,11 +637,15 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       </details>
       <details class="dropdown-section" id="dd-completed" style="margin-top:1.2rem;">
         <summary class="section-label">Échanges terminés <span class="dd-badge" id="ddb-completed"></span></summary>
-        <div class="list" id="requests-completed" style="margin-top:10px;"></div>
+        <div id="requests-completed" style="margin-top:10px;"></div>
       </details>
       <details class="dropdown-section" id="dd-refused" style="margin-top:1.2rem;">
         <summary class="section-label">Demandes refusées <span class="dd-badge" id="ddb-refused"></span></summary>
         <div id="requests-refused" style="margin-top:10px;"></div>
+      </details>
+      <details class="dropdown-section" id="dd-cancelled" style="margin-top:1.2rem;">
+        <summary class="section-label">Demandes annulées <span class="dd-badge" id="ddb-cancelled"></span></summary>
+        <div id="requests-cancelled" style="margin-top:10px;"></div>
       </details>
       <details class="dropdown-section" id="dd-archive" style="margin-top:1.2rem;">
         <summary class="section-label">Archives <span class="dd-badge" id="ddb-archive"></span></summary>
@@ -662,7 +688,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <script>
 let toastTimer = null;
 function log(msg){
@@ -742,6 +768,7 @@ const CATEGORIES = {
   autre: {emoji:'✨', label:'Autre', icon:'ti-sparkles'}
 };
 let activeCategory = null;
+function setPCat(k){document.getElementById('p-category').value=k;document.querySelectorAll('.pcat').forEach(b=>b.classList.toggle('on',b.dataset.k===k));}
 
 function renderCategoryFilters(){
   const box = document.getElementById('category-filters');
@@ -786,7 +813,7 @@ function serviceCard(s){
       <p class="item-title">${esc(s.title)}${nw}</p>
       <p class="item-sub"><span class="cat-ico"><i class="ti ${cat.icon}"></i></span> ${cat.label} · ${esc(s.authorName)} · ${s.hours}cr</p>
     </div>
-    ${dist ? `<span class="chip-dist"><i class="ti ti-map-pin" style="font-size:12px;"></i> ${dist}</span>` : ''}
+    <span class="chip-dist"${dist ? '' : ' style="opacity:.55"'}><i class="ti ti-map-pin" style="font-size:12px;"></i> ${dist || '? km'}</span>
   </div>`;
 }
 function renderGroupedByCategory(services, sectionKey){
@@ -1215,7 +1242,7 @@ async function submitPasswordReset(){
   log('Mot de passe modifié ✓ Connecte-toi avec ton identifiant.');
 }
 function checkResetLink(){
-  const m = /^#reset=([a-f0-9]{20,})&id=(.+)$/.exec(location.hash || '');
+  const m = /^#reset=([a-f0-9]{20,})&id=(.+)$/.exec(location.hash || '') || /^\?reset=([a-f0-9]{20,})&id=([^&#]+)/.exec(location.search || '');
   if(!m) return false;
   resetCtx = {token: m[1], id: decodeURIComponent(m[2])};
   try{ history.replaceState(null, '', location.pathname); }catch(e){}
@@ -1902,7 +1929,7 @@ function grpHtml(scope, groups, cardFn){
 }
 function grpToggle(el){ const id = el.dataset.gid; if(el.open) openGrp.add(id); else openGrp.delete(id); }
 function grpAll(boxId, open){ document.querySelectorAll('#' + boxId + ' details.grp').forEach(d => { d.open = open; }); }
-function grpTools(boxId){ return `<div class="grp-tools"><button onclick="grpAll('${boxId}', true)">Tout déplier</button><button onclick="grpAll('${boxId}', false)">Tout replier</button></div>`; }
+function grpTools(boxId){ return ''; }
 
 let archSel = new Set(), _archItems = [], _archRender = null;
 function archMode(){ try{ const m = localStorage.getItem('tt_arch_mode'); return ['prov','note','recue'].includes(m) ? m : 'date'; }catch(e){ return 'date'; } }
@@ -1941,7 +1968,7 @@ async function fetchCompletedExchanges(st){
   try{
     let { data } = await sb.from('exchanges').select('*')
       .or(`requester_id.eq.${myId},provider_id.eq.${myId}`)
-      .in('status', ['completed','refused'])
+      .in('status', ['completed','refused','cancelled'])
       .order('created_at', {ascending:false});
     let archived = new Set(), removed = new Set();
     try{
@@ -1964,36 +1991,51 @@ async function fetchCompletedExchanges(st){
       const otherName = iAmRequester ? r.provider_name : r.requester_name;
       const otherId = iAmRequester ? r.provider_id : r.requester_id;
       const date = new Date(r.created_at).toLocaleDateString('fr-CH', {day:'numeric', month:'short'});
-      const refused = r.status === 'refused';
+      const refused = r.status === 'refused', cancelled = r.status === 'cancelled', bad = refused || cancelled;
       return `
       <div class="item-card" onclick="openChat('${r.id}', ${jsArg(otherName)}, '${otherId}')" style="flex-direction:column; align-items:stretch;">
         <div style="display:flex; gap:10px; align-items:flex-start;">
-          <i class="ti ${refused ? 'ti-circle-x' : 'ti-circle-check'}" style="color:${refused ? 'var(--warn-text)' : 'var(--success-text)'};"></i>
+          <i class="ti ${bad ? 'ti-circle-x' : 'ti-circle-check'}" style="color:${refused ? 'var(--warn-text)' : cancelled ? 'var(--text-muted)' : 'var(--success-text)'};"></i>
           <div style="flex:1;">
             <p class="item-title">${esc(r.service_title)}${notifTags(st, r)}</p>
-            <p class="item-sub">${date} · ${refused ? (iAmRequester ? 'Refusée par ' : 'Refusée · demandeur : ') : 'Avec '}${esc(otherName)}</p>
+            <p class="item-sub">${date} · ${refused ? (iAmRequester ? 'Refusée par ' : 'Refusée · demandeur : ') : cancelled ? (iAmRequester ? 'Annulée par toi · avec ' : 'Annulée par ') : 'Avec '}${esc(otherName)}</p>
           </div>
         </div>
         ${reviewBtn(r.id, otherId, otherName, reviewedDone, true)}
         <div style="display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;">
-          ${refused ? '' : `<button class="btn secondary" style="margin:0;" onclick="event.stopPropagation(); ${isArch ? 'unarchiveExchange' : 'archiveExchange'}('${r.id}')">${isArch ? 'Remettre dans « terminés »' : 'Archiver'}</button>`}
-          ${isArch ? `<button class="btn secondary" style="margin:0; color:var(--warn-text);" onclick="event.stopPropagation(); archDelete(['${r.id}'])">Supprimer</button>` : ''}
+          <button class="btn secondary" style="margin:0;" onclick="event.stopPropagation(); ${archived.has(r.id) ? 'unarchiveExchange' : 'archiveExchange'}('${r.id}')">${archived.has(r.id) ? 'Sortir des archives' : 'Archiver'}</button>
+          ${archived.has(r.id) ? `<button class="btn secondary" style="margin:0; color:var(--warn-text);" onclick="event.stopPropagation(); archDelete(['${r.id}'])">Supprimer</button>` : ''}
         </div>
       </div>`;
     };
-    // Les demandes refusées vont automatiquement dans les archives
-    const visible = (data || []).filter(r => r.status === 'completed' && !archived.has(r.id));
-    const arch = (data || []).filter(r => r.status === 'completed' && archived.has(r.id));
-    const refusedList = (data || []).filter(r => r.status === 'refused');
-    setSectionBadge('refused', refusedList.filter(r => isNew(st, r.id)).length);
-    const refBox = document.getElementById('requests-refused');
-    if(refBox){
-      const rg = new Map();
-      refusedList.forEach(r => { const k = new Date(r.created_at).toLocaleDateString('fr-CH', {month:'long', year:'numeric'}); if(!rg.has(k)) rg.set(k, []); rg.get(k).push(r); });
-      refBox.innerHTML = refusedList.length ? grpTools('requests-refused') + grpHtml('ref', [...rg.keys()].map(k => ({key:k, label:k, items:rg.get(k)})), r => card(r, true)) : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucune demande refusée.</p>";
-    }
-    setSectionBadge('completed', visible.filter(r => isNew(st, r.id)).length);
-    list.innerHTML = visible.length ? visible.map(r => card(r, false)).join('') : "<p style=\"font-size:13px;color:var(--text-muted);\">Aucun échange terminé pour l'instant.</p>";
+    const live = st2 => (data || []).filter(r => r.status === st2 && !archived.has(r.id));
+    const visible = live('completed');
+    const arch = (data || []).filter(r => archived.has(r.id));
+    const other0 = r => (r.requester_id === myId ? r.provider_name : r.requester_name) || 'Inconnu';
+    const stars0 = n => n ? '★'.repeat(n) + '☆'.repeat(5 - n) + ' (' + n + '/5)' : null;
+    const secMode = k => { try{ const m = localStorage.getItem('tt_sec_' + k); return ['date','prov','note'].includes(m) ? m : 'date'; }catch(e){ return 'date'; } };
+    window.secSet = (k, v) => { try{ localStorage.setItem('tt_sec_' + k, v); }catch(e){} secRenders[k](); };
+    const secRenders = {};
+    const defSec = (k, status, empty, withNote) => {
+      const items = live(status);
+      setSectionBadge(k, items.filter(r => isNew(st, r.id)).length);
+      secRenders[k] = () => {
+        const box = document.getElementById('requests-' + k); if(!box) return;
+        if(!items.length){ box.innerHTML = "<p style=\"font-size:13px;color:var(--text-muted);\">" + empty + "</p>"; return; }
+        const mode = secMode(k);
+        const keyOf = r => mode === 'prov' ? other0(r) : mode === 'note' ? (stars0(given[r.id]) || 'Sans note donnée') : new Date(r.created_at).toLocaleDateString('fr-CH', {month:'long', year:'numeric'});
+        const g = new Map(); items.forEach(r => { const kk = keyOf(r); if(!g.has(kk)) g.set(kk, []); g.get(kk).push(r); });
+        let keys = [...g.keys()];
+        if(mode === 'prov') keys.sort((a, b) => a.localeCompare(b));
+        if(mode === 'note'){ const v = kk => { const m = kk.match(/\((\d)\/5\)/); return m ? +m[1] : 0; }; keys.sort((a, b) => v(b) - v(a)); }
+        const sel = `<select onchange="secSet('${k}', this.value)" style="font-size:12.5px; padding:5px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); margin-bottom:8px;"><option value="date" ${mode==='date'?'selected':''}>Classer par date</option><option value="prov" ${mode==='prov'?'selected':''}>Classer par personne</option>${withNote ? `<option value="note" ${mode==='note'?'selected':''}>Classer par note donnée</option>` : ''}</select>`;
+        box.innerHTML = sel + grpHtml(k + mode, keys.map(kk => ({key:kk, label:kk, items:g.get(kk)})), r => card(r, false));
+      };
+      secRenders[k]();
+    };
+    defSec('completed', 'completed', "Aucun échange terminé pour l'instant.", true);
+    defSec('refused', 'refused', 'Aucune demande refusée.', false);
+    defSec('cancelled', 'cancelled', 'Aucune demande annulée.', false);
     _archItems = arch;
     _archRender = () => {
       const tb = document.getElementById('arch-toolbar');
@@ -2470,7 +2512,7 @@ function openEditService(id){
   editingServiceId = id;
   document.getElementById('p-title').value = s.title;
   document.getElementById('p-desc').value = s.desc || '';
-  document.getElementById('p-category').value = s.category || 'autre';
+  setPCat(s.category || 'autre');
   document.getElementById('p-hours').value = s.hours;
   document.getElementById('p-photo').value = '';
   document.getElementById('p-photo-current').style.display = s.photoUrl ? 'block' : 'none';
@@ -2495,7 +2537,7 @@ function resetProposeForm(){
   document.getElementById('p-hours').value = '';
   document.getElementById('p-photo').value = '';
   document.getElementById('p-photo-current').style.display = 'none';
-  document.getElementById('p-category').value = 'autre';
+  setPCat('autre');
   document.getElementById('p-validity').value = '';
   document.getElementById('p-validity-date').value = '';
   onValidityChange();
