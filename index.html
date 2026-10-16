@@ -287,6 +287,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <input type="checkbox" id="login-stay" checked style="width:auto; margin:0;">
       <span style="font-size:13px; color:var(--text-secondary); font-weight:normal;">Rester connecté sur cet appareil</span>
     </label>
+    <div id="captcha-box" style="display:flex;justify-content:center;margin:8px 0;"></div>
     <button class="btn" id="login-btn">Se connecter</button>
     <details class="auth-details" id="signup-box">
       <summary>Nouveau sur Troctan ? Créer un compte</summary>
@@ -307,7 +308,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 52</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 53</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -1209,7 +1210,20 @@ function toLoginEmail(id){
   if(id.includes('@')) return id;
   return id.toLowerCase() + '@membres.troctan.ch';
 }
+const TURNSTILE_SITEKEY = ''; // clé publique Cloudflare Turnstile (vide = anti-robot désactivé)
+let _tsId = null, _tsTok = null;
+function initCaptcha(){
+  if(!TURNSTILE_SITEKEY) return;
+  const sc = document.createElement('script');
+  sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
+  sc.onload = () => { try{ _tsId = turnstile.render('#captcha-box', {sitekey: TURNSTILE_SITEKEY, callback: t => { _tsTok = t; }, 'expired-callback': () => { _tsTok = null; }}); }catch(e){} };
+  document.head.appendChild(sc);
+}
+function captchaReady(){ return !TURNSTILE_SITEKEY || !!_tsTok; }
+function takeCaptcha(){ const t = _tsTok; _tsTok = null; try{ if(_tsId !== null) turnstile.reset(_tsId); }catch(e){} return t || undefined; }
+const CAPTCHA_WAIT = 'Vérification anti-robot en cours : attends 2 secondes puis réessaie.';
 function translateAuthError(m){
+  if((m || '').toLowerCase().includes('captcha')) return 'Vérification anti-robot échouée : recharge la page et réessaie.';
   const t = (m || '').toLowerCase();
   if(t.includes('invalid login')) return 'Identifiant ou mot de passe incorrect.';
   if(t.includes('already registered')) return 'Cet identifiant existe déjà, choisis-en un autre.';
@@ -1257,10 +1271,11 @@ async function passwordLogin(){
   const id = document.getElementById('login-id').value.trim();
   const pass = document.getElementById('login-pass').value;
   if(!id || !pass){ loginError('Entre ton identifiant et ton mot de passe.'); return; }
+  if(!captchaReady()){ loginError(CAPTCHA_WAIT); return; }
   loginError('');
   setStayPreference();
   try{
-    const { error } = await sb.auth.signInWithPassword({ email: toLoginEmail(id), password: pass });
+    const { error } = await sb.auth.signInWithPassword({ email: toLoginEmail(id), password: pass, options: { captchaToken: takeCaptcha() } });
     if(error){
       loginError(translateAuthError(error.message));
       return;
@@ -1285,6 +1300,7 @@ async function passwordSignup(){
     loginError("Pour créer un compte, lis et accepte la politique de confidentialité et les conditions d'utilisation (case à cocher).");
     return;
   }
+  if(!captchaReady()){ loginError(CAPTCHA_WAIT); return; }
   loginError('');
   setStayPreference();
   try{
@@ -1292,13 +1308,14 @@ async function passwordSignup(){
     if(bn && bn.data === true){ loginError("Cette adresse ne peut pas être utilisée sur Troctan."); return; }
   }catch(e){ /* on continue */ }
   try{
-    const { data, error } = await sb.auth.signUp({ email: toLoginEmail(id), password: pass });
+    const { data, error } = await sb.auth.signUp({ email: toLoginEmail(id), password: pass, options: { captchaToken: takeCaptcha() } });
     if(error){ loginError(translateAuthError(error.message)); return; }
     pendingSignupEmail = contactEmail;
     if(data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
       loginError('Cet identifiant est déjà pris, choisis-en un autre.');
       return;
     }
+    if(!data.session && TURNSTILE_SITEKEY){ loginError('Compte créé ✓ Appuie maintenant sur « Se connecter ».'); return; }
     if(!data.session){
       const r = await sb.auth.signInWithPassword({ email: toLoginEmail(id), password: pass });
       if(r.error){ loginError(translateAuthError(r.error.message)); return; }
@@ -1365,12 +1382,13 @@ async function sendMagicLink(){
     loginError('Entre un email valide.');
     return;
   }
+  if(!captchaReady()){ loginError(CAPTCHA_WAIT); return; }
   loginError('');
   log('Envoi du lien de connexion...');
   try{
     const { error } = await sb.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin, shouldCreateUser: false }
+      options: { emailRedirectTo: window.location.origin, shouldCreateUser: false, captchaToken: takeCaptcha() }
     });
     if(error){ log('Erreur : ' + error.message); return; }
     document.getElementById('sent-email-display').textContent = email;
@@ -3443,6 +3461,7 @@ async function boot(){
   sb.auth.onAuthStateChange((event, session) => {
     handleSession(session);
   });
+  initCaptcha();
   const wantsReset = checkResetLink();
   const { data: { session } } = await sb.auth.getSession();
   await handleSession(session);
