@@ -217,6 +217,8 @@ body[data-screen="login"] #scene-chat{opacity:1;}
     width:100%; padding:9px 10px; border:1px solid var(--border-strong); border-radius:8px;
     background:var(--card); color:var(--text); font-size:14px; margin-bottom:10px; font-family:inherit;
   }
+  ::placeholder{color:var(--text-secondary); opacity:.9;}
+  input::placeholder, textarea::placeholder{color:var(--text-secondary); opacity:.9;}
   label{font-size:12.5px; color:var(--text-secondary); display:block; margin-bottom:4px;}
 
   .dropdown-section summary{
@@ -308,7 +310,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 57</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 58</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -656,6 +658,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
             <option value="prov">Classer par personne</option>
             <option value="note">Classer par note donnée</option>
             <option value="recue">Classer par note reçue</option>
+            <option value="statut">Classer par type (terminé, refusée, annulée)</option>
           </select>
           <button class="btn secondary" id="arch-del-btn" style="margin:0 0 0 auto; padding:6px 12px; font-size:12.5px; color:var(--warn-text); display:none;" onclick="archDeleteSelected()">Supprimer</button>
         </div>
@@ -1949,7 +1952,7 @@ function grpAll(boxId, open){ document.querySelectorAll('#' + boxId + ' details.
 function grpTools(boxId){ return ''; }
 
 let archSel = new Set(), _archItems = [], _archRender = null;
-function archMode(){ try{ const m = localStorage.getItem('tt_arch_mode'); return ['prov','note','recue'].includes(m) ? m : 'date'; }catch(e){ return 'date'; } }
+function archMode(){ try{ const m = localStorage.getItem('tt_arch_mode'); return ['prov','note','recue','statut'].includes(m) ? m : 'date'; }catch(e){ return 'date'; } }
 function archSetMode(v){ try{ localStorage.setItem('tt_arch_mode', v); }catch(e){} if(_archRender) _archRender(); }
 function archToggle(id, on){ if(on) archSel.add(id); else archSel.delete(id); if(_archRender) _archRender(); }
 function archSelectAll(on){ archSel = on ? new Set(_archItems.map(r => r.id)) : new Set(); if(_archRender) _archRender(); }
@@ -2070,11 +2073,13 @@ async function fetchCompletedExchanges(st){
       const keyOf = r => mode === 'prov' ? other(r)
         : mode === 'note' ? (stars(given[r.id]) || 'Sans note donnée')
         : mode === 'recue' ? (stars(received[r.id]) || 'Sans note reçue')
+        : mode === 'statut' ? (r.status === 'refused' ? 'Demandes refusées' : r.status === 'cancelled' ? 'Demandes annulées' : 'Échanges terminés')
         : new Date(r.created_at).toLocaleDateString('fr-CH', {month:'long', year:'numeric'});
       const groups = new Map();
       _archItems.forEach(r => { const k = keyOf(r); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
       let keys = [...groups.keys()];
       if(mode === 'prov') keys.sort((a, b) => a.localeCompare(b));
+      if(mode === 'statut'){ const o = ['Échanges terminés','Demandes refusées','Demandes annulées']; keys.sort((a, b) => o.indexOf(a) - o.indexOf(b)); }
       if(mode === 'note' || mode === 'recue'){ const v = k => { const m = k.match(/\((\d)\/5\)/); return m ? +m[1] : 0; }; keys.sort((a, b) => v(b) - v(a)); }
       archBox.innerHTML = grpTools('requests-archive') + grpHtml('arch' + mode, keys.map(k => ({key:k, label:k, items:groups.get(k)})), r => card(r, true));
     };
@@ -2717,9 +2722,9 @@ async function checkNotifications(){
     const { data: mine } = await sb.from('community_members').select('community_id').eq('user_id', myId);
     const communityIds = (mine || []).map(m => m.community_id);
     if(communityIds.length){
-      const { data: posts } = await sb.from('community_posts').select('id, created_at').in('community_id', communityIds).order('created_at', {ascending:false}).limit(50);
+      const { data: posts } = await sb.from('community_posts').select('id, created_at, author_id').in('community_id', communityIds).order('created_at', {ascending:false}).limit(50);
       const lastSeen = localStorage.getItem('tt_last_seen_community_post') || '1970-01-01';
-      const newCount = (posts || []).filter(p => p.created_at > lastSeen).length;
+      const newCount = (posts || []).filter(p => p.created_at > lastSeen && p.author_id !== myId).length;
       const onComm = (function(){ const c = document.querySelector('.screen.active'); return c && (c.id === 'communities' || c.id === 'community-feed'); })();
       setBadge('badge-communities', newCount);
     } else {
