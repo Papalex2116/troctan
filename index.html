@@ -308,7 +308,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 54</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 55</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
 
@@ -1210,7 +1210,7 @@ function toLoginEmail(id){
   if(id.includes('@')) return id;
   return id.toLowerCase() + '@membres.troctan.ch';
 }
-const TURNSTILE_SITEKEY = ''; // clé publique Cloudflare Turnstile (vide = anti-robot désactivé)
+const TURNSTILE_SITEKEY = '0x4AAAAAAFYxjRwFpz4VBbc3'; // clé publique Cloudflare Turnstile (vide = anti-robot désactivé)
 let _tsId = null, _tsTok = null;
 function initCaptcha(){
   if(!TURNSTILE_SITEKEY) return;
