@@ -2,343 +2,444 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
 <title>Troctan Jeunes</title>
 <link rel="icon" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="theme-color" content="#1f5a43">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <style>
-:root{--bg:#eaf4ef;--card:#fff;--text:#16352a;--sub:#4f6b60;--line:#cfe0d8;--acc:#1f5a43;--acc-t:#fff;--soft:#f2d9a0;--warn:#a23b2a;--ok:#1f6b3d}
-@media (prefers-color-scheme:dark){:root{--bg:#1f2d27;--card:#2c3d36;--text:#eaf4ef;--sub:#a9c3b8;--line:#42564d;--acc:#7cc9a3;--acc-t:#10261c;--soft:#f2d9a0;--warn:#ff9c88;--ok:#8fe0ab}}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.4}
-#app{max-width:520px;margin:0 auto;padding:14px 16px 90px}
-h1{font-size:22px} h2{font-size:17px;margin:16px 0 8px} p{margin:6px 0}
-.sub{color:var(--sub);font-size:13px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}
+:root{--bg:#e6f2ec;--card:#ffffff;--text:#16261e;--muted:#4d6358;--accent:#1f5a43;--accent2:#f2d9a0;--border:#c9ddd2;--warn:#a8321f;--ok:#1f6b45}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:linear-gradient(180deg,#d7ebe0 0%,#eef7f2 60%,#e6f2ec 100%);color:var(--text);min-height:100vh;padding-bottom:84px;font-size:15px;line-height:1.4}
+.wrap{max-width:560px;margin:0 auto;padding:14px 16px}
+header.top{display:flex;align-items:center;gap:10px;padding:10px 16px;max-width:560px;margin:0 auto}
+header.top img{width:40px;height:40px;border-radius:10px;background:#fff;padding:3px}
+header.top b{font-size:18px}
+header.top span{display:block;font-size:12.5px;color:var(--muted)}
+h2{font-size:17px;margin:16px 0 8px}
+p.hint{font-size:13px;color:var(--muted);margin:4px 0 10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin:0 0 10px}
+.card b.t{font-size:15.5px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.btn{display:block;width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--acc);background:var(--acc);color:var(--acc-t);font-size:15px;font-weight:600;cursor:pointer;margin:8px 0;text-align:center}
-.btn.sec{background:transparent;color:var(--text);border-color:var(--line)}
-.btn.warn{background:transparent;color:var(--warn);border-color:var(--warn)}
-.btn.sm{width:auto;display:inline-block;padding:7px 12px;font-size:13px;margin:4px 6px 0 0}
-input,select,textarea{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px;margin:4px 0 10px;font-family:inherit}
-label{font-size:13px;font-weight:600;color:var(--sub)}
-.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:5}
-.tabs button{flex:1;max-width:130px;padding:14px 4px;border:0;background:none;color:var(--sub);font-size:13px;font-weight:600;cursor:pointer;position:relative}
-.tabs button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
-.badge{display:inline-block;min-width:18px;padding:1px 6px;border-radius:9px;background:var(--warn);color:#fff;font-size:11px;font-weight:700;margin-left:4px}
-.pill{display:inline-block;padding:2px 9px;border-radius:9px;font-size:12px;font-weight:600;background:var(--soft);color:#2a3d1f}
-.pill.o{background:#cfe9dc;color:#16352a}.pill.d{background:#f2d9a0}
-.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0}
-.seg button{flex:1;padding:10px;border:0;background:var(--card);color:var(--sub);font-weight:600;cursor:pointer}
-.seg button.on{background:var(--acc);color:var(--acc-t)}
-.msg{max-width:82%;padding:8px 11px;border-radius:12px;margin:4px 0;background:var(--card);border:1px solid var(--line);font-size:14px;word-wrap:break-word}
-.msg.me{margin-left:auto;background:var(--soft);color:#2a3d1f;border-color:transparent}
-.msg small{display:block;opacity:.7;font-size:11px}
-#toast{position:fixed;left:16px;right:16px;bottom:78px;max-width:488px;margin:0 auto;background:#16352a;color:#fff;padding:12px 14px;border-radius:12px;display:none;z-index:9;font-size:14px}
-.big{font-size:26px;font-weight:800;letter-spacing:.08em;text-align:center;padding:12px;border:2px dashed var(--acc);border-radius:12px;margin:10px 0;user-select:all}
-.hidden{display:none!important}
-.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.chk{display:flex;gap:8px;align-items:flex-start;margin:8px 0;font-weight:400;color:var(--sub)}
-.chk input{width:auto;margin:3px 0 0}
-a{color:var(--acc)}
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:#e7f1ec;color:var(--accent)}
+.chip.y{background:var(--accent2);color:#4a3a10}
+.chip.r{background:#f7dcd6;color:var(--warn)}
+.chip.g{background:#d5ecdf;color:var(--ok)}
+label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text)}
+input[type=checkbox],input[type=radio]{width:auto}
+textarea{min-height:70px;resize:vertical}
+button.btn{display:block;width:100%;font:inherit;font-weight:700;padding:11px 14px;border-radius:12px;border:0;background:var(--accent);color:#fff;margin:8px 0 0;cursor:pointer}
+button.btn.sec{background:#fff;color:var(--accent);border:1px solid var(--border)}
+button.btn.warn{background:#fff;color:var(--warn);border:1px solid #e3b9b0}
+button.btn.small{display:inline-block;width:auto;padding:7px 12px;font-size:13.5px;margin:6px 6px 0 0}
+button:disabled{opacity:.55}
+.seg{display:flex;gap:6px;margin:8px 0}
+.seg button{flex:1;font:inherit;font-weight:600;padding:9px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--muted)}
+.seg button.on{background:var(--accent2);border-color:#d8bd7c;color:#3a2f10}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:10}
+nav.tabs button{flex:1;position:relative;border:0;background:none;font:inherit;font-size:12px;font-weight:600;color:var(--muted);padding:8px 2px;border-radius:10px}
+nav.tabs button.on{background:var(--accent2);color:#3a2f10}
+.badge{position:absolute;top:2px;right:18%;background:var(--warn);color:#fff;border-radius:99px;font-size:11px;min-width:18px;padding:1px 5px}
+.err{color:var(--warn);font-size:13.5px;margin:8px 0;display:none}
+.ok{color:var(--ok);font-size:13.5px;margin:8px 0;display:none}
+.screen{display:none}.screen.on{display:block}
+.chat{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.msg{max-width:82%;padding:8px 11px;border-radius:14px;background:#fff;border:1px solid var(--border);font-size:14.5px;word-wrap:break-word}
+.msg.me{align-self:flex-end;background:var(--accent2);border-color:#d8bd7c}
+.msg small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.code{font-size:26px;font-weight:800;letter-spacing:.08em;text-align:center;background:#fff8e6;border:2px dashed #d8bd7c;border-radius:12px;padding:14px;margin:10px 0}
+.backbar{display:inline-block;margin:8px 0;color:var(--accent);font-weight:600;cursor:pointer}
+.small{font-size:12.5px;color:var(--muted)}
+a{color:var(--accent)}
+#toast{position:fixed;left:16px;right:16px;bottom:92px;background:#16261e;color:#fff;padding:11px 14px;border-radius:12px;display:none;z-index:50;text-align:center}
+details{margin:10px 0}summary{font-weight:700;cursor:pointer;padding:6px 0}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<header class="top"><img src="/logo-emblem.png" alt=""><div><b>Troctan Jeunes</b><span>Entraide entre jeunes, encadrée par les parents</span></div></header>
 <div id="toast"></div>
+
+<!-- CONNEXION -->
+<section class="screen on wrap" id="auth">
+  <div class="seg" id="role-seg">
+    <button class="on" data-role="jeune" onclick="setRole('jeune')">Je suis jeune</button>
+    <button data-role="parent" onclick="setRole('parent')">Je suis parent</button>
+  </div>
+  <p class="hint" id="role-hint">Connecte-toi avec l'identifiant et le mot de passe créés avec le code de ton parent.</p>
+  <label>Identifiant</label>
+  <input type="text" id="login-id" autocomplete="username" autocapitalize="none" maxlength="60">
+  <label>Mot de passe</label>
+  <input type="password" id="login-pass" autocomplete="current-password">
+  <div id="captcha-box" style="display:flex;justify-content:center;margin:10px 0;"></div>
+  <p class="err" id="auth-err"></p>
+  <button class="btn" id="login-btn" onclick="doLogin()">Se connecter</button>
+  <details id="signup-box">
+    <summary>Première fois ? J'ai un code de mon parent</summary>
+    <p class="hint">Ton parent crée ton code dans « Troctan Jeunes » (onglet <b>Mes enfants</b>). Ensuite, choisis ici ton identifiant et ton mot de passe. Pas d'email nécessaire.</p>
+    <label>Code de ton parent</label>
+    <input type="text" id="su-code" placeholder="JE-XXXXXXXX" autocapitalize="characters" autocomplete="off" maxlength="20">
+    <label>Choisis ton identifiant (minuscules, chiffres, point, tiret)</label>
+    <input type="text" id="su-id" autocapitalize="none" autocomplete="off" maxlength="30">
+    <label>Choisis ton mot de passe (8 caractères minimum)</label>
+    <input type="password" id="su-pass" autocomplete="new-password">
+    <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400"><input type="checkbox" id="su-rules"><span class="small">J'ai lu les <a href="#" onclick="event.preventDefault();showRules()">règles et la protection des données</a> et je les respecte.</span></label>
+    <p class="err" id="su-err"></p>
+    <button class="btn sec" onclick="doSignup()">Créer mon compte</button>
+  </details>
+  <p class="small" style="margin-top:16px">Tu es parent et tu n'as pas encore de compte ? Crée-le d'abord sur <a href="/">troctan.ch</a> (adultes, avec un code d'invitation), puis reviens ici.</p>
+  <p class="small"><a href="#" onclick="event.preventDefault();showRules()">Règles et protection des données</a> · <a href="/">Troctan (adultes)</a></p>
+</section>
+
+<!-- REGLES -->
+<section class="screen wrap" id="rules">
+  <span class="backbar" onclick="backFromRules()">← Retour</span>
+  <h2>Règles pour les jeunes</h2>
+  <div class="card">
+    <p>• Ne donne jamais ton numéro, ton adresse, tes réseaux ni tes photos. L'appli bloque d'ailleurs ces infos dans les messages.</p>
+    <p>• Les rencontres se font <b>seulement</b> dans les lieux proposés (école, bibliothèque, maison de quartier, à la maison avec un parent présent) et <b>seulement</b> après l'accord des deux parents.</p>
+    <p>• Tes parents (et ceux de l'autre jeune) peuvent lire vos messages. C'est fait pour te protéger.</p>
+    <p>• Sois respectueux. Si quelque chose te met mal à l'aise, utilise « Signaler » et parles-en à un adulte.</p>
+    <p>• 1 crédit = 1 heure. Les crédits n'ont pas de valeur en argent.</p>
+  </div>
+  <h2>Pour les parents</h2>
+  <div class="card">
+    <p>• <b>Qui peut s'inscrire :</b> les jeunes de 12 à 17 ans, avec un code créé par leur représentant légal. En créant le code, le parent confirme être représentant légal et autoriser l'inscription.</p>
+    <p>• <b>Ce que nous enregistrons :</b> le prénom, l'année de naissance, la tranche d'âge (12-14 ou 15-17), les annonces, les échanges et les messages. <b>Aucune</b> position, aucune photo, aucun email du jeune.</p>
+    <p>• <b>Qui voit quoi :</b> un jeune ne voit que les annonces de sa tranche d'âge, avec le prénom des autres. Vous voyez les échanges et les messages de vos enfants. L'administrateur voit les signalements.</p>
+    <p>• <b>Votre contrôle :</b> chaque échange nécessite l'accord des deux parents avant que la discussion s'ouvre. Vous pouvez suspendre le compte, changer le mot de passe ou le supprimer définitivement (toutes ses données sont effacées).</p>
+    <p>• <b>Hébergement :</b> mêmes prestataires que Troctan (Supabase, GitHub, Cloudflare pour l'anti-robot). Voir la politique de confidentialité sur <a href="/">troctan.ch</a>.</p>
+    <p>• Contact : contact.troctan@gmail.com</p>
+  </div>
+</section>
+
+<!-- JEUNE : ACCUEIL -->
+<section class="screen wrap" id="y-home">
+  <div class="seg" id="kind-seg">
+    <button class="on" data-k="" onclick="setKind('')">Tout</button>
+    <button data-k="offre" onclick="setKind('offre')">Je peux aider</button>
+    <button data-k="demande" onclick="setKind('demande')">Je cherche de l'aide</button>
+  </div>
+  <div id="y-list"></div>
+</section>
+<!-- JEUNE : PROPOSER -->
+<section class="screen wrap" id="y-new">
+  <h2>Nouvelle annonce</h2>
+  <div class="seg" id="new-kind"><button class="on" data-k="offre" onclick="setNewKind('offre')">Je propose</button><button data-k="demande" onclick="setNewKind('demande')">Je cherche</button></div>
+  <label>Titre</label><input type="text" id="n-title" maxlength="80" placeholder="Ex. Aide en maths (6e–8e)">
+  <label>Description (facultatif)</label><textarea id="n-desc" maxlength="400"></textarea>
+  <label>Catégorie</label>
+  <select id="n-cat"><option value="soutien">Soutien scolaire</option><option value="sport">Sport</option><option value="musique">Musique</option><option value="creatif">Créatif</option><option value="jeux">Jeux</option><option value="informatique">Informatique</option><option value="autre">Autre</option></select>
+  <label>Durée</label>
+  <select id="n-hours"><option value="1">1 heure</option><option value="2">2 heures</option><option value="3">3 heures</option></select>
+  <label>Lieu (toujours un lieu sûr)</label>
+  <select id="n-lieu"><option value="bibliotheque">Bibliothèque</option><option value="ecole">À l'école</option><option value="maison_quartier">Maison de quartier</option><option value="chez_parent">À la maison, parent présent</option><option value="en_ligne">En ligne (parent à proximité)</option></select>
+  <p class="err" id="n-err"></p>
+  <button class="btn" onclick="publishService()">Publier</button>
+  <h2>Mes annonces</h2><div id="y-mine"></div>
+</section>
+<!-- JEUNE : ECHANGES -->
+<section class="screen wrap" id="y-ex"><h2>Mes échanges</h2><div id="y-ex-list"></div></section>
+<!-- JEUNE : PROFIL -->
+<section class="screen wrap" id="y-profile">
+  <h2 id="p-name"></h2>
+  <div class="card"><b class="t">Solde</b><div style="font-size:26px;font-weight:800" id="p-bal">0</div><span class="small">crédits (1 crédit = 1 heure)</span></div>
+  <div class="card"><span class="small" id="p-band"></span></div>
+  <button class="btn sec" onclick="showRules()">Règles et protection des données</button>
+  <button class="btn sec" onclick="doLogout()">Me déconnecter</button>
+</section>
+
+<!-- PARENT -->
+<section class="screen wrap" id="p-valid"><h2>À valider</h2><p class="hint">Quand un jeune répond à une annonce, les deux parents doivent donner leur accord avant que la discussion s'ouvre.</p><div id="p-valid-list"></div></section>
+<section class="screen wrap" id="p-kids">
+  <h2>Mes enfants</h2><div id="p-kids-list"></div>
+  <h2>Ajouter un enfant (12 à 17 ans)</h2>
+  <div class="card">
+    <label>Prénom de l'enfant</label><input type="text" id="k-name" maxlength="30">
+    <label>Année de naissance</label><select id="k-year"></select>
+    <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400"><input type="checkbox" id="k-consent"><span class="small">Je suis le représentant légal de cet enfant, j'autorise son inscription à Troctan Jeunes et j'ai lu <a href="#" onclick="event.preventDefault();showRules()">les règles et la protection des données</a>.</span></label>
+    <p class="err" id="k-err"></p>
+    <button class="btn" onclick="createKid()">Créer le code d'inscription</button>
+    <div id="k-code"></div>
+  </div>
+  <div id="p-codes"></div>
+</section>
+<section class="screen wrap" id="p-chats"><h2>Discussions de mes enfants</h2><div id="p-chats-list"></div></section>
+<section class="screen wrap" id="p-mod"><h2>Modération</h2><div id="p-mod-list"></div></section>
+<section class="screen wrap" id="p-account"><h2>Mon compte parent</h2><button class="btn sec" onclick="showRules()">Règles et protection des données</button><button class="btn sec" onclick="doLogout()">Me déconnecter</button></section>
+
+<!-- DISCUSSION (jeune et parent) -->
+<section class="screen wrap" id="chat">
+  <span class="backbar" onclick="closeChat()">← Retour</span>
+  <h2 id="chat-title"></h2>
+  <p class="small" id="chat-sub"></p>
+  <div class="chat" id="chat-msgs"></div>
+  <div id="chat-form">
+    <textarea id="chat-input" maxlength="500" placeholder="Écris ton message (pas de numéros, liens ni adresses)"></textarea>
+    <button class="btn" onclick="sendMsg()">Envoyer</button>
+  </div>
+  <div id="chat-actions"></div>
+</section>
+
+<nav class="tabs" id="tabs" style="display:none"></nav>
+
 <script>
-const SUPABASE_URL='https://bhhdzjrmxsrzoermijyu.supabase.co';
-const SUPABASE_KEY='sb_publishable_JCGZxtJauhU3GfXqzRR__w_F8RDn7m4';
-const TURNSTILE_SITEKEY='0x4AAAAAAFYxjRwFpz4VBbc3';
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:'implicit'}});
-const $=id=>document.getElementById(id);
-const esc=x=>String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const CATS={soutien:'Soutien scolaire',sport:'Sport',musique:'Musique',creatif:'Créatif',jeux:'Jeux',informatique:'Informatique',autre:'Autre'};
-const LIEUX={ecole:'À l\'école',bibliotheque:'À la bibliothèque',maison_quartier:'Maison de quartier',chez_parent:'Chez un parent (présent)',en_ligne:'En ligne'};
-const STATUS={pending_parents:'En attente des parents',accepted:'Validé',completed:'Terminé',refused:'Refusé',cancelled:'Annulé'};
-let role=null,me=null,tab='home',people={},openChat=null,pollT=null,authMode='jeune';
+const SUPABASE_URL = 'https://bhhdzjrmxsrzoermijyu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_JCGZxtJauhU3GfXqzRR__w_F8RDn7m4';
+const TURNSTILE_SITEKEY = '0x4AAAAAAFYxjRwFpz4VBbc3';
+const YDOM = '@jeunes.troctan.ch', ADOM = '@membres.troctan.ch';
+const CATS = {soutien:'Soutien scolaire',sport:'Sport',musique:'Musique',creatif:'Créatif',jeux:'Jeux',informatique:'Informatique',autre:'Autre'};
+const LIEUX = {ecole:"À l'école",bibliotheque:'Bibliothèque',maison_quartier:'Maison de quartier',chez_parent:'À la maison, parent présent',en_ligne:'En ligne (parent à proximité)'};
+const STATUTS = {pending_parents:'En attente des parents',accepted:'Accepté',completed:'Terminé',refused:'Refusé',cancelled:'Annulé'};
+const esc = x => String(x==null?'':x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
 
-function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>e.style.display='none',4500);}
-function fail(e){const m=(e&&e.message)||String(e);toast(/foreign key|violates/i.test(m)?'Action impossible.':m);}
-async function rpc(n,a){const r=await sb.rpc(n,a||{});if(r.error)throw r.error;return r.data;}
+let sb = null;
+try{ sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{flowType:'implicit'}}); }catch(e){}
 
-/* ---- anti-robot ---- */
-let _tsId=null,_tsTok=null;
-function initCaptcha(){const sc=document.createElement('script');sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';sc.async=true;
- sc.onload=()=>{window._tsReady=true;renderCaptcha();};document.head.appendChild(sc);}
-function renderCaptcha(){const b=$('cap');if(!b||!window.turnstile)return;b.innerHTML='';_tsTok=null;try{_tsId=turnstile.render(b,{sitekey:TURNSTILE_SITEKEY,language:'fr',callback:t=>{_tsTok=t;},'expired-callback':()=>{_tsTok=null;}});}catch(e){}}
-function takeCaptcha(){const t=_tsTok;_tsTok=null;try{if(_tsId!==null)turnstile.reset(_tsId);}catch(e){}return t||undefined;}
-function authErr(m){const t=(m||'').toLowerCase();
- if(t.includes('captcha'))return 'Vérification anti-robot échouée : recharge la page et réessaie.';
- if(t.includes('invalid login'))return 'Identifiant ou mot de passe incorrect.';
- if(t.includes('already registered'))return 'Cet identifiant existe déjà, choisis-en un autre.';
- if(t.includes('database error')||t.includes('code parent'))return 'Code parent invalide ou expiré. Demande un nouveau code à ton parent.';
- if(t.includes('password'))return 'Mot de passe trop court (8 caractères minimum).';return m;}
+let me = null, role = null, myProfile = null, isAdmin = false, loginRole = 'jeune';
+let curScreen = 'auth', prevScreen = null, kindFilter = '', newKind = 'offre';
+let people = {}, chatEx = null, chatReadonly = false;
 
-/* ---- écran de connexion ---- */
-function viewLogin(){
- const jeune=authMode==='jeune';
- $('app').innerHTML=`<div style="text-align:center;margin:18px 0 6px"><img src="/icon-192.png" width="72" height="72" style="border-radius:18px" alt=""></div>
- <h1 style="text-align:center">Troctan Jeunes</h1><p class="sub" style="text-align:center">Entraide entre jeunes de 12 à 17 ans, avec l'accord des parents</p>
- <div class="seg"><button id="m-j" class="${jeune?'on':''}" onclick="authMode='jeune';viewLogin()">Je suis jeune</button><button id="m-p" class="${jeune?'':'on'}" onclick="authMode='parent';viewLogin()">Je suis parent</button></div>
- <div class="card">
- ${jeune?'':`<p class="sub">Connecte-toi avec ton compte Troctan (adulte). Pas encore de compte ? Crée-le d'abord sur <a href="/">troctan.ch</a> avec le code d'invitation de la commune.</p>`}
- <label>Identifiant</label><input id="li" autocapitalize="none" autocomplete="username">
- <label>Mot de passe</label><input id="lp" type="password" autocomplete="current-password">
- <div id="cap" style="display:flex;justify-content:center;margin:6px 0"></div>
- <p id="lerr" class="sub" style="color:var(--warn);display:none"></p>
- <button class="btn" onclick="doLogin()">Se connecter</button></div>
- ${jeune?`<details class="card"><summary style="font-weight:700;cursor:pointer">J'ai un code de mon parent</summary>
- <p class="sub" style="margin-top:8px">Ton parent crée ton accès depuis son compte et te donne un code (valable 7 jours). Choisis ensuite ton identifiant et ton mot de passe.</p>
- <label>Code parent</label><input id="sc" placeholder="JE-XXXXXXXX" autocapitalize="characters" maxlength="14">
- <label>Choisis ton identifiant (minuscules, chiffres, point, tiret)</label><input id="si" autocapitalize="none" maxlength="30">
- <label>Choisis ton mot de passe (8 caractères minimum)</label><input id="sp" type="password" autocomplete="new-password">
- <label class="chk"><input type="checkbox" id="sr"><span>J'ai lu les <a href="#" onclick="event.preventDefault();viewRules()">règles de Troctan Jeunes</a> et je les respecte.</span></label>
- <button class="btn sec" onclick="doSignup()">Créer mon compte</button></details>`:''}
- <p class="sub" style="text-align:center;margin-top:14px"><a href="#" onclick="event.preventDefault();viewRules()">Règles et protection des jeunes</a></p>`;
- renderCaptcha();
+/* ---------- utilitaires ---------- */
+function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>t.style.display='none',4200); }
+function showErr(id,m){ const e=$(id); e.textContent=m||''; e.style.display=m?'block':'none'; }
+function rpcMsg(e){ const m=(e&&e.message)||String(e||''); return m.replace(/^.*?:\s*/,'').slice(0,160); }
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $(id).classList.add('on'); curScreen=id; window.scrollTo(0,0);
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.s===id));
 }
-function lerr(m){const e=$('lerr');if(!e)return;e.textContent=m;e.style.display=m?'block':'none';}
-function mail(id){id=(id||'').trim().toLowerCase();return id+(authMode==='jeune'?'@jeunes.troctan.ch':'@membres.troctan.ch');}
+function dt(s){ try{ return new Date(s).toLocaleString('fr-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+
+/* anti-robot */
+let _tsId=null,_tsTok=null;
+function initCaptcha(){
+  if(!TURNSTILE_SITEKEY) return;
+  const sc=document.createElement('script'); sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async=true;
+  sc.onload=()=>{ try{ _tsId=turnstile.render('#captcha-box',{sitekey:TURNSTILE_SITEKEY,language:'fr',callback:t=>{_tsTok=t;},'expired-callback':()=>{_tsTok=null;}}); }catch(e){} };
+  document.head.appendChild(sc);
+}
+function captchaReady(){ return !TURNSTILE_SITEKEY || !!_tsTok; }
+function takeCaptcha(){ const t=_tsTok; _tsTok=null; try{ if(_tsId!==null) turnstile.reset(_tsId); }catch(e){} return t||undefined; }
+function authErr(m){
+  const t=(m||'').toLowerCase();
+  if(t.includes('captcha')) return 'Vérification anti-robot échouée : recharge la page et réessaie.';
+  if(t.includes('invalid login')) return 'Identifiant ou mot de passe incorrect.';
+  if(t.includes('database error') || t.includes('code parent')) return 'Code parent invalide, déjà utilisé ou expiré. Demande un nouveau code à ton parent.';
+  if(t.includes('already registered')) return 'Cet identifiant existe déjà, choisis-en un autre.';
+  if(t.includes('password')) return 'Mot de passe trop court ou refusé (8 caractères minimum).';
+  return m;
+}
+
+/* ---------- connexion ---------- */
+function setRole(r){
+  loginRole=r;
+  document.querySelectorAll('#role-seg button').forEach(b=>b.classList.toggle('on',b.dataset.role===r));
+  $('role-hint').textContent = r==='jeune' ? "Connecte-toi avec l'identifiant et le mot de passe créés avec le code de ton parent." : "Connecte-toi avec ton compte Troctan (adultes), le même que sur troctan.ch.";
+  $('signup-box').style.display = r==='jeune' ? '' : 'none';
+}
+function loginEmail(id){ id=(id||'').trim().toLowerCase(); if(id.includes('@')) return id; return id + (loginRole==='jeune'?YDOM:ADOM); }
 async function doLogin(){
- const id=$('li').value.trim(),pw=$('lp').value;if(!id||!pw){lerr('Entre ton identifiant et ton mot de passe.');return;}
- if(!_tsTok){lerr('Vérification anti-robot en cours : attends 2 secondes puis réessaie.');return;}
- lerr('');const {error}=await sb.auth.signInWithPassword({email:mail(id),password:pw,options:{captchaToken:takeCaptcha()}});
- if(error){lerr(authErr(error.message));return;}
+  const id=$('login-id').value.trim(), pw=$('login-pass').value;
+  if(!id||!pw){ showErr('auth-err','Entre ton identifiant et ton mot de passe.'); return; }
+  if(!captchaReady()){ showErr('auth-err','Vérification anti-robot en cours : attends 2 secondes puis réessaie.'); return; }
+  showErr('auth-err','');
+  const {error}=await sb.auth.signInWithPassword({email:loginEmail(id),password:pw,options:{captchaToken:takeCaptcha()}});
+  if(error){ showErr('auth-err',authErr(error.message)); return; }
+  await boot();
 }
 async function doSignup(){
- const code=$('sc').value.trim(),id=$('si').value.trim().toLowerCase(),pw=$('sp').value;
- if(code.length<6){lerr('Entre le code donné par ton parent.');return;}
- if(!/^[a-z0-9._-]{3,30}$/.test(id)){lerr('Identifiant invalide : 3 à 30 caractères, minuscules, chiffres, point, tiret.');return;}
- if(pw.length<8){lerr('Mot de passe : 8 caractères minimum.');return;}
- if(!$('sr').checked){lerr('Coche la case pour accepter les règles.');return;}
- if(!_tsTok){lerr('Vérification anti-robot en cours : attends 2 secondes puis réessaie.');return;}
- authMode='jeune';lerr('');
- const {data,error}=await sb.auth.signUp({email:mail(id),password:pw,options:{captchaToken:takeCaptcha(),data:{kind:'youth',parent_code:code}}});
- if(error){lerr(authErr(error.message));return;}
- if(!data.session){lerr('Compte créé ✓ Appuie maintenant sur « Se connecter » (en haut).');}
+  const code=$('su-code').value.trim(), id=$('su-id').value.trim().toLowerCase(), pw=$('su-pass').value;
+  if(code.length<6){ showErr('su-err','Entre le code créé par ton parent.'); return; }
+  if(!/^[a-z0-9._-]{3,30}$/.test(id)){ showErr('su-err','Identifiant : 3 à 30 caractères, minuscules, chiffres, point ou tiret.'); return; }
+  if(pw.length<8){ showErr('su-err','Mot de passe : 8 caractères minimum.'); return; }
+  if(!$('su-rules').checked){ showErr('su-err','Lis et accepte les règles (case à cocher).'); return; }
+  if(!captchaReady()){ showErr('su-err','Vérification anti-robot en cours : attends 2 secondes puis réessaie.'); return; }
+  showErr('su-err','');
+  const {data,error}=await sb.auth.signUp({email:id+YDOM,password:pw,options:{captchaToken:takeCaptcha(),data:{kind:'youth',parent_code:code}}});
+  if(error){ showErr('su-err',authErr(error.message)); return; }
+  if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){ showErr('su-err','Cet identifiant est déjà pris.'); return; }
+  if(!data.session){ toast('Compte créé ✓ Appuie maintenant sur « Se connecter » (onglet jeune).'); $('login-id').value=id; $('signup-box').open=false; return; }
+  await boot();
 }
-async function logout(){clearInterval(pollT);await sb.auth.signOut();role=null;me=null;viewLogin();}
+async function doLogout(){ try{ await sb.auth.signOut(); }catch(e){} me=null; role=null; location.reload(); }
 
-/* ---- règles ---- */
-function viewRules(){
- $('app').innerHTML=`<div class="top"><h1>Règles</h1><button class="btn sec sm" onclick="${me?'go(tab)':'viewLogin()'}">Retour</button></div>
- <div class="card"><h2 style="margin-top:0">Pour les jeunes</h2>
- <p>• Troctan Jeunes est réservé aux 12 à 17 ans. Ton parent crée ton accès et valide chaque échange.</p>
- <p>• Tu échanges seulement avec des jeunes de ta tranche d'âge (12-14 ou 15-17 ans).</p>
- <p>• Les rendez-vous se font à l'école, à la bibliothèque, dans une maison de quartier, en ligne, ou chez un parent présent. Jamais seul(e) avec un inconnu.</p>
- <p>• Pas de numéro de téléphone, d'adresse, de lien ou de réseau social dans les messages : ils sont refusés.</p>
- <p>• Tes parents peuvent lire tes discussions. Si quelque chose te met mal à l'aise, utilise « Signaler » et parles-en à un adulte de confiance.</p>
- <p>• Sois respectueux. Un compte peut être suspendu en cas d'abus.</p></div>
- <div class="card"><h2 style="margin-top:0">Pour les parents</h2>
- <p>• Vous créez le compte de votre enfant (prénom et année de naissance seulement) et validez chaque échange. Les deux familles doivent accepter avant que la discussion s'ouvre.</p>
- <p>• Vous pouvez lire les discussions, suspendre, changer le mot de passe ou supprimer le compte de votre enfant à tout moment.</p>
- <p>• Données collectées : prénom, année de naissance, annonces et messages. Pas de photo, pas de position, pas d'email du jeune. Elles sont conservées tant que le compte existe et effacées à sa suppression (les sauvegardes techniques le sont dans les 90 jours).</p>
- <p>• Troctan Jeunes met en relation, mais n'organise ni ne surveille les rencontres : la responsabilité reste celle des familles. Contact : contact.troctan@gmail.com</p></div>`;
-}
-
-/* ---- navigation ---- */
-function tabsHtml(){
- const items=role==='parent'?[['kids','Enfants'],['valid','Validation'],['exch','Échanges']]:[['home','Accueil'],['new','Proposer'],['exch','Échanges'],['me','Profil']];
- if(role==='parent'&&isAdminUser)items.push(['mod','Modération']);
- return `<div class="tabs">${items.map(([k,l])=>`<button class="${tab===k?'on':''}" onclick="go('${k}')">${l}${k==='valid'&&pendingCount?`<span class="badge">${pendingCount}</span>`:''}</button>`).join('')}</div>`;
-}
-let pendingCount=0,isAdminUser=false;
-async function go(t){openChat=null;tab=t;await render();}
-async function render(){
- const v=$('app');
- try{
-  if(role==='parent'){
-   if(tab==='kids')await viewKids();else if(tab==='valid')await viewValid();else if(tab==='exch')await viewExch();else if(tab==='mod')await viewMod();
-  }else{
-   if(tab==='home')await viewHome();else if(tab==='new')viewNew();else if(tab==='exch')await viewExch();else if(tab==='me')await viewMe();
+async function boot(){
+  const {data}=await sb.auth.getSession();
+  if(!data||!data.session){ buildTabs(null); show('auth'); return; }
+  me=data.session.user.id;
+  const w=await sb.rpc('y_whoami'); role=w.data;
+  if(!role){ show('auth'); return; }
+  try{ const a=await sb.rpc('is_admin'); isAdmin=a.data===true; }catch(e){ isAdmin=false; }
+  if(role==='jeune'){
+    const {data:p}=await sb.from('y_profiles').select('*').eq('id',me).maybeSingle(); myProfile=p;
+    if(!p){ toast('Profil introuvable.'); return; }
+    if(p.paused){ document.body.insertAdjacentHTML('afterbegin','<div class="wrap"><div class="card"><b>Compte suspendu</b><br>Tes parents ont suspendu ton compte. Parles-en avec eux.</div></div>'); }
+    buildTabs('jeune'); show('y-home'); loadHome();
+    if(!localStorage.getItem('yrules_'+me)){ showRules(true); }
+  } else {
+    fillYears(); buildTabs('parent'); show('p-valid'); loadParent();
   }
-  v.insertAdjacentHTML('beforeend',tabsHtml());
- }catch(e){fail(e);}
 }
-async function loadPeople(){const {data}=await sb.from('y_people').select('id,name,band');people={};(data||[]).forEach(p=>people[p.id]=p);}
-const nm=id=>(people[id]&&people[id].name)||'…';
+function buildTabs(r){
+  const n=$('tabs'); if(!r){ n.style.display='none'; return; } n.style.display='flex';
+  const t = r==='jeune'
+    ? [['y-home','Accueil'],['y-new','Proposer'],['y-ex','Échanges'],['y-profile','Profil']]
+    : [['p-valid','À valider'],['p-kids','Enfants'],['p-chats','Discussions']].concat(isAdmin?[['p-mod','Modération']]:[]).concat([['p-account','Compte']]);
+  n.innerHTML=t.map(x=>`<button data-s="${x[0]}" onclick="goTab('${x[0]}')">${x[1]}${x[0]==='p-valid'?'<span class="badge" id="b-valid" style="display:none"></span>':''}</button>`).join('');
+}
+function goTab(s){ show(s); refresh(); }
+function refresh(){
+  if(role==='jeune'){ if(curScreen==='y-home') loadHome(); if(curScreen==='y-new') loadMine(); if(curScreen==='y-ex') loadExchanges(); if(curScreen==='y-profile') loadProfile(); }
+  else if(role==='parent'){ loadParent(); }
+  if(curScreen==='chat') loadChat();
+}
+let _rulesBack='auth';
+function showRules(first){ _rulesBack = first?'y-home':curScreen; if(first && me) localStorage.setItem('yrules_'+me,'1'); show('rules'); }
+function backFromRules(){ show(_rulesBack==='rules'?'auth':_rulesBack); }
 
-/* ---- JEUNE : accueil ---- */
-let fKind='',fCat='';
-async function viewHome(){
- await loadPeople();
- let q=sb.from('y_services').select('*').eq('active',true).order('created_at',{ascending:false}).limit(60);
- if(fKind)q=q.eq('kind',fKind);if(fCat)q=q.eq('category',fCat);
- const {data,error}=await q;if(error)throw error;
- const list=(data||[]).filter(s=>s.author_id!==me);
- $('app').innerHTML=`<div class="top"><h1>Accueil</h1><span class="pill">${esc(myBand)} ans</span></div>
- <p class="sub">Annonces des jeunes de ta tranche d'âge. 1 heure donnée = 1 crédit.</p>
- <div class="row"><select style="flex:1" onchange="fKind=this.value;render()"><option value="">Offres et demandes</option><option value="offre" ${fKind==='offre'?'selected':''}>Offres</option><option value="demande" ${fKind==='demande'?'selected':''}>Demandes</option></select>
- <select style="flex:1" onchange="fCat=this.value;render()"><option value="">Toutes catégories</option>${Object.entries(CATS).map(([k,l])=>`<option value="${k}" ${fCat===k?'selected':''}>${l}</option>`).join('')}</select></div>
- ${list.map(s=>`<div class="card"><div class="row"><span class="pill ${s.kind==='offre'?'o':'d'}">${s.kind==='offre'?'Je propose':'Besoin d\'aide'}</span><span class="sub">${esc(CATS[s.category])} · ${s.hours} h</span></div>
- <p style="font-weight:700;margin-top:6px">${esc(s.title)}</p>${s.description?`<p class="sub">${esc(s.description)}</p>`:''}
- <p class="sub">${esc(nm(s.author_id))} · ${esc(LIEUX[s.lieu])}</p>
- <button class="btn sm" onclick="respond('${s.id}')">${s.kind==='offre'?'Je suis intéressé·e':'Je peux aider'}</button></div>`).join('')||'<p class="sub" style="margin-top:14px">Aucune annonce pour le moment. Sois le premier à en publier une !</p>'}`;
+/* ---------- JEUNE ---------- */
+async function loadPeople(){
+  const {data}=await sb.from('y_people').select('id,name,band'); people={}; (data||[]).forEach(p=>people[p.id]=p);
+}
+function setKind(k){ kindFilter=k; document.querySelectorAll('#kind-seg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k)); loadHome(); }
+async function loadHome(){
+  await loadPeople();
+  let q=sb.from('y_services').select('*').eq('active',true).neq('author_id',me).order('created_at',{ascending:false}).limit(60);
+  if(kindFilter) q=q.eq('kind',kindFilter);
+  const {data,error}=await q;
+  if(error){ $('y-list').innerHTML='<p class="hint">Impossible de charger les annonces.</p>'; return; }
+  $('y-list').innerHTML=(data||[]).map(s=>`<div class="card"><div class="row"><span class="chip ${s.kind==='offre'?'g':'y'}">${s.kind==='offre'?'Propose son aide':'Cherche de l\'aide'}</span><span class="chip">${esc(CATS[s.category]||s.category)}</span></div>
+    <p style="margin:6px 0 2px"><b class="t">${esc(s.title)}</b></p>${s.description?`<p class="small" style="margin:0 0 4px">${esc(s.description)}</p>`:''}
+    <p class="small" style="margin:0">${esc((people[s.author_id]||{}).name||'Un jeune')} · ${s.hours} h · ${esc(LIEUX[s.lieu]||'')}</p>
+    <button class="btn small" onclick="respond('${s.id}')">${s.kind==='offre'?'Ça m\'intéresse':'Je peux aider'}</button></div>`).join('') || '<p class="hint">Aucune annonce pour le moment. Sois le premier à en publier une !</p>';
 }
 async function respond(id){
- if(!confirm('Envoyer la demande ? Tes parents et ceux de l\'autre jeune devront la valider avant que vous puissiez discuter.'))return;
- try{await rpc('y_respond',{p_service:id});toast('Demande envoyée. En attente de la validation des parents.');go('exch');}catch(e){fail(e);}
+  if(!confirm("Envoyer ta demande ? Les parents des deux jeunes devront donner leur accord avant de discuter.")) return;
+  const {error}=await sb.rpc('y_respond',{p_service:id});
+  if(error){ toast(rpcMsg(error)); return; }
+  toast('Demande envoyée. En attente de l\'accord des parents.'); goTab('y-ex');
+}
+function setNewKind(k){ newKind=k; document.querySelectorAll('#new-kind button').forEach(b=>b.classList.toggle('on',b.dataset.k===k)); }
+async function publishService(){
+  const title=$('n-title').value.trim();
+  if(title.length<3){ showErr('n-err','Écris un titre (3 caractères minimum).'); return; }
+  if(/(@|https?:|www\.|[0-9]{6,})/i.test(title+' '+$('n-desc').value)){ showErr('n-err','Pas de numéros, liens ni adresses dans les annonces.'); return; }
+  showErr('n-err','');
+  const {error}=await sb.from('y_services').insert({author_id:me,band:myProfile.band,kind:newKind,title,description:$('n-desc').value.trim(),category:$('n-cat').value,hours:parseFloat($('n-hours').value),lieu:$('n-lieu').value});
+  if(error){ showErr('n-err',rpcMsg(error)); return; }
+  $('n-title').value=''; $('n-desc').value=''; toast('Annonce publiée ✓'); loadMine();
+}
+async function loadMine(){
+  const {data}=await sb.from('y_services').select('*').eq('author_id',me).order('created_at',{ascending:false});
+  $('y-mine').innerHTML=(data||[]).map(s=>`<div class="card"><b class="t">${esc(s.title)}</b> <span class="chip ${s.active?'g':''}">${s.active?'active':'retirée'}</span><br><span class="small">${s.kind==='offre'?'Je propose':'Je cherche'} · ${esc(CATS[s.category])} · ${s.hours} h</span>
+    <div><button class="btn small warn" onclick="removeService('${s.id}')">Supprimer</button></div></div>`).join('') || '<p class="hint">Tu n\'as pas encore d\'annonce.</p>';
+}
+async function removeService(id){ if(!confirm('Supprimer cette annonce ?')) return; const {error}=await sb.from('y_services').delete().eq('id',id); if(error){ toast(rpcMsg(error)); return; } loadMine(); }
+async function loadExchanges(){
+  await loadPeople();
+  const {data}=await sb.from('y_exchanges').select('*').order('created_at',{ascending:false}).limit(60);
+  $('y-ex-list').innerHTML=(data||[]).map(e=>{
+    const other=e.requester_id===me?e.provider_id:e.requester_id, mine=e.requester_id===me;
+    const done=mine?e.req_done:e.prov_done;
+    return `<div class="card"><div class="row"><span class="chip ${e.status==='accepted'?'g':e.status==='pending_parents'?'y':e.status==='completed'?'g':'r'}">${STATUTS[e.status]}</span><span class="chip">${mine?'Je reçois de l\'aide':'Je donne de l\'aide'}</span></div>
+      <p style="margin:6px 0 2px"><b class="t">${esc(e.service_title||'Échange')}</b></p><p class="small" style="margin:0">Avec ${esc((people[other]||{}).name||'?')} · ${e.hours} h · ${esc(LIEUX[e.lieu]||'')}</p>
+      ${e.status==='accepted'?`<button class="btn small" onclick="openChat('${e.id}',false)">Discuter</button><button class="btn small sec" ${done?'disabled':''} onclick="markDone('${e.id}')">${done?'En attente de l\'autre':'C\'est fait'}</button>`:''}
+      ${(e.status==='accepted'||e.status==='pending_parents')?`<button class="btn small warn" onclick="cancelEx('${e.id}')">Annuler</button>`:''}</div>`;
+  }).join('') || '<p class="hint">Aucun échange. Réponds à une annonce depuis l\'accueil.</p>';
+}
+async function markDone(id){ const {error}=await sb.rpc('y_mark_done',{p_exchange:id}); if(error){ toast(rpcMsg(error)); return; } toast('Merci ! Quand les deux ont confirmé, les crédits sont transférés.'); loadExchanges(); }
+async function cancelEx(id){ if(!confirm('Annuler cet échange ?')) return; const {error}=await sb.rpc('y_cancel',{p_exchange:id}); if(error){ toast(rpcMsg(error)); return; } refresh(); }
+async function loadProfile(){
+  const {data:p}=await sb.from('y_profiles').select('*').eq('id',me).maybeSingle(); if(!p) return; myProfile=p;
+  $('p-name').textContent='Bonjour '+p.name; $('p-bal').textContent=Number(p.balance).toString();
+  $('p-band').textContent='Tranche d\'âge '+p.band+' ans : tu vois seulement les annonces de ta tranche d\'âge.';
 }
 
-/* ---- JEUNE : proposer ---- */
-function viewNew(){
- $('app').innerHTML=`<h1>Proposer</h1><div class="card">
- <div class="seg"><button id="k-o" class="on" onclick="setK('offre')">Je propose</button><button id="k-d" onclick="setK('demande')">J'ai besoin d'aide</button></div>
- <label>Titre</label><input id="nt" maxlength="80" placeholder="Ex. Aide en maths niveau 8H">
- <label>Description (facultatif)</label><textarea id="nd" rows="3" maxlength="400" placeholder="Sans numéro de téléphone, adresse ni réseau social"></textarea>
- <label>Catégorie</label><select id="nc">${Object.entries(CATS).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
- <label>Durée</label><select id="nh">${[0.5,1,1.5,2,2.5,3].map(h=>`<option value="${h}" ${h===1?'selected':''}>${h} heure${h>1?'s':''}</option>`).join('')}</select>
- <label>Lieu du rendez-vous</label><select id="nl">${Object.entries(LIEUX).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
- <button class="btn" onclick="publish()">Publier</button></div>`;
+/* ---------- DISCUSSION ---------- */
+function openChat(id,readonly){ chatEx=id; chatReadonly=!!readonly; prevScreen=curScreen; show('chat'); $('chat-form').style.display=readonly?'none':'block'; loadChat(); }
+function closeChat(){ chatEx=null; show(prevScreen||(role==='jeune'?'y-ex':'p-chats')); refresh(); }
+async function loadChat(){
+  if(!chatEx) return;
+  await loadPeople();
+  const {data:e}=await sb.from('y_exchanges').select('*').eq('id',chatEx).maybeSingle(); if(!e) return;
+  const {data:ms}=await sb.from('y_messages').select('*').eq('exchange_id',chatEx).order('created_at',{ascending:true}).limit(200);
+  const nm=id=>(people[id]||{}).name||'?';
+  $('chat-title').textContent=e.service_title||'Discussion';
+  $('chat-sub').textContent=nm(e.requester_id)+' (reçoit) · '+nm(e.provider_id)+' (donne) · '+e.hours+' h · '+(LIEUX[e.lieu]||'')+' · '+STATUTS[e.status];
+  const box=$('chat-msgs'), atEnd=(window.innerHeight+window.scrollY)>=document.body.scrollHeight-60;
+  box.innerHTML=(ms||[]).map(m=>`<div class="msg ${m.sender_id===me?'me':''}">${esc(m.content)}<small>${esc(nm(m.sender_id))} · ${dt(m.created_at)}</small></div>`).join('') || '<p class="hint">Aucun message pour l\'instant.</p>';
+  if(atEnd) window.scrollTo(0,document.body.scrollHeight);
+  $('chat-form').style.display=(!chatReadonly && e.status==='accepted')?'block':'none';
+  $('chat-actions').innerHTML=`<button class="btn small warn" onclick="reportChat()">Signaler</button>${(role==='parent'&&(e.status==='accepted'||e.status==='pending_parents'))?'<button class="btn small warn" onclick="cancelEx(\''+e.id+'\')">Annuler l\'échange</button>':''}`;
 }
-let nKind='offre';function setK(k){nKind=k;$('k-o').classList.toggle('on',k==='offre');$('k-d').classList.toggle('on',k==='demande');}
-async function publish(){
- const title=$('nt').value.trim();if(title.length<3){toast('Ajoute un titre (3 caractères minimum).');return;}
- const txt=title+' '+$('nd').value;
- if(/(https?:\/\/|www\.|@|\d[\d .\-]{6,}\d)/i.test(txt)||/(whatsapp|snap|insta|telegram|discord|tiktok|signal)/i.test(txt)){toast('Pas de numéro, lien, adresse ni réseau social dans l\'annonce.');return;}
- const {error}=await sb.from('y_services').insert({author_id:me,kind:nKind,title,description:$('nd').value.trim()||null,category:$('nc').value,hours:parseFloat($('nh').value),lieu:$('nl').value,band:myBand});
- if(error){fail(error);return;}toast('Annonce publiée ✓');go('home');
+async function sendMsg(){
+  const t=$('chat-input').value.trim(); if(!t||!chatEx) return;
+  const {error}=await sb.rpc('y_send_message',{p_exchange:chatEx,p_content:t});
+  if(error){ toast(rpcMsg(error)); return; }
+  $('chat-input').value=''; loadChat();
+}
+async function reportChat(){
+  const r=prompt('Dis-nous ce qui ne va pas (quelques mots) :'); if(!r||r.trim().length<3) return;
+  const {error}=await sb.rpc('y_report',{p_exchange:chatEx,p_service:null,p_reason:r}); if(error){ toast(rpcMsg(error)); return; }
+  toast('Signalement envoyé. Parles-en aussi à un adulte de confiance.');
 }
 
-/* ---- JEUNE : profil ---- */
-let myName='',myBal=0,myBand='';
-async function viewMe(){
- const {data:p}=await sb.from('y_profiles').select('*').eq('id',me).maybeSingle();
- const {data:mine}=await sb.from('y_services').select('*').eq('author_id',me).order('created_at',{ascending:false});
- if(p){myName=p.name;myBal=p.balance;}
- $('app').innerHTML=`<h1>Salut ${esc(myName)}</h1><div class="card"><p class="sub">Ton solde</p><p style="font-size:28px;font-weight:800">${myBal} crédit${Math.abs(myBal)>1?'s':''}</p>
- <p class="sub">1 heure donnée = 1 crédit gagné. Ton solde reste compris entre -5 et +10.</p></div>
- <h2>Mes annonces</h2>${(mine||[]).map(s=>`<div class="card"><p style="font-weight:700">${esc(s.title)}</p><p class="sub">${s.kind==='offre'?'Je propose':'Besoin d\'aide'} · ${esc(CATS[s.category])}${s.active?'':' · retirée'}</p>
- <button class="btn warn sm" onclick="delService('${s.id}')">Supprimer</button></div>`).join('')||'<p class="sub">Aucune annonce.</p>'}
- <button class="btn sec" onclick="viewRules()">Règles</button><button class="btn sec" onclick="logout()">Se déconnecter</button>`;
+/* ---------- PARENT ---------- */
+function fillYears(){ const y=new Date().getFullYear(), s=$('k-year'); if(s.options.length) return; for(let a=y-12;a>=y-17;a--){ const o=document.createElement('option'); o.value=a; o.textContent=a+' ('+(y-a)+' ans)'; s.appendChild(o); } }
+async function loadParent(){
+  const {data:fam}=await sb.from('y_family').select('child_id').eq('parent_id',me);
+  const kidIds=(fam||[]).map(f=>f.child_id);
+  const {data:kids}=kidIds.length?await sb.from('y_profiles').select('*').in('id',kidIds):{data:[]};
+  await loadPeople();
+  const {data:exs}=await sb.from('y_exchanges').select('*').order('created_at',{ascending:false}).limit(100);
+  const mine=new Set(kidIds), nm=id=>(people[id]||{}).name||'?';
+  // à valider
+  const pend=(exs||[]).filter(e=>e.status==='pending_parents' && ((mine.has(e.requester_id)&&!e.req_parent_ok)||(mine.has(e.provider_id)&&!e.prov_parent_ok)));
+  const bv=$('b-valid'); if(bv){ bv.textContent=pend.length; bv.style.display=pend.length?'inline-block':'none'; }
+  $('p-valid-list').innerHTML=pend.map(e=>`<div class="card"><b class="t">${esc(e.service_title||'Échange')}</b><p class="small" style="margin:4px 0">${esc(nm(e.requester_id))} reçoit de l'aide de ${esc(nm(e.provider_id))} · ${e.hours} h · ${esc(LIEUX[e.lieu]||'')}</p>
+    <button class="btn small" onclick="decide('${e.id}',true)">Autoriser</button><button class="btn small warn" onclick="decide('${e.id}',false)">Refuser</button></div>`).join('') || '<p class="hint">Rien à valider pour le moment.</p>';
+  // enfants
+  $('p-kids-list').innerHTML=(kids||[]).map(k=>`<div class="card"><b class="t">${esc(k.name)}</b> <span class="chip">${esc(k.band)} ans</span> ${k.paused?'<span class="chip r">suspendu</span>':''}<br><span class="small">Solde : ${Number(k.balance)} crédit(s)</span>
+    <div><button class="btn small sec" onclick="pausedKid('${k.id}',${!k.paused})">${k.paused?'Réactiver':'Suspendre'}</button><button class="btn small sec" onclick="resetKid('${k.id}')">Nouveau mot de passe</button><button class="btn small warn" onclick="deleteKid('${k.id}','${esc(k.name)}')">Supprimer le compte</button></div></div>`).join('') || '<p class="hint">Aucun enfant inscrit pour le moment.</p>';
+  const {data:codes}=await sb.from('y_child_codes').select('*').is('used_by',null).gt('expires_at',new Date().toISOString());
+  $('p-codes').innerHTML=(codes&&codes.length)?'<h2>Codes en attente</h2>'+codes.map(c=>`<div class="card"><b>${esc(c.code)}</b> · ${esc(c.child_name)}<br><span class="small">valable jusqu'au ${dt(c.expires_at)}</span><div><button class="btn small warn" onclick="delCode('${esc(c.code)}')">Annuler ce code</button></div></div>`).join(''):'';
+  // discussions
+  const chats=(exs||[]).filter(e=>e.status==='accepted'||e.status==='completed');
+  $('p-chats-list').innerHTML=chats.map(e=>`<div class="card"><b class="t">${esc(e.service_title||'Échange')}</b> <span class="chip ${e.status==='completed'?'g':'y'}">${STATUTS[e.status]}</span><p class="small" style="margin:4px 0">${esc(nm(e.requester_id))} ↔ ${esc(nm(e.provider_id))}</p><button class="btn small" onclick="openChat('${e.id}',true)">Lire la discussion</button></div>`).join('') || '<p class="hint">Aucune discussion pour le moment.</p>';
+  if(isAdmin) loadMod();
 }
-async function delService(id){if(!confirm('Supprimer cette annonce ?'))return;const {error}=await sb.from('y_services').delete().eq('id',id);if(error)fail(error);else render();}
+async function decide(id,ok){ if(!ok && !confirm('Refuser cet échange ?')) return; const {error}=await sb.rpc('y_parent_decide',{p_exchange:id,p_approve:ok}); if(error){ toast(rpcMsg(error)); return; } toast(ok?'Autorisé ✓':'Refusé'); loadParent(); }
+async function createKid(){
+  const name=$('k-name').value.trim();
+  if(name.length<2){ showErr('k-err','Entre le prénom de ton enfant.'); return; }
+  if(!$('k-consent').checked){ showErr('k-err','Confirme que tu es le représentant légal (case à cocher).'); return; }
+  showErr('k-err','');
+  const {data,error}=await sb.rpc('y_create_child_code',{p_name:name,p_birth_year:parseInt($('k-year').value,10)});
+  if(error){ showErr('k-err',rpcMsg(error)); return; }
+  $('k-code').innerHTML=`<div class="code" id="k-code-v">${esc(data)}</div><p class="small">Valable 7 jours, utilisable une seule fois. Ton enfant ouvre <b>troctan.ch/jeunes</b>, touche « Première fois ? J'ai un code de mon parent » et choisit son identifiant et son mot de passe.</p><button class="btn small sec" onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(data)}').then(()=>toast('Code copié'))">Copier le code</button>`;
+  $('k-name').value=''; $('k-consent').checked=false; loadParent();
+}
+async function delCode(c){ const {error}=await sb.from('y_child_codes').delete().eq('code',c); if(error){ toast(rpcMsg(error)); return; } loadParent(); }
+async function pausedKid(id,p){ const {error}=await sb.rpc('y_parent_set_paused',{p_child:id,p_paused:p}); if(error){ toast(rpcMsg(error)); return; } loadParent(); }
+async function resetKid(id){ const pw=prompt('Nouveau mot de passe pour ton enfant (8 caractères minimum) :'); if(!pw) return; const {error}=await sb.rpc('y_parent_reset_password',{p_child:id,p_password:pw}); if(error){ toast(rpcMsg(error)); return; } toast('Mot de passe changé ✓'); }
+async function deleteKid(id,name){ const t=prompt('Supprimer définitivement le compte de '+name+' et toutes ses données ? Tape SUPPRIMER pour confirmer.'); if(t!=='SUPPRIMER') return; const {error}=await sb.rpc('y_parent_delete_child',{p_child:id}); if(error){ toast(rpcMsg(error)); return; } toast('Compte supprimé.'); loadParent(); }
+async function loadMod(){
+  const {data}=await sb.from('y_reports').select('*').is('resolved_at',null).order('created_at',{ascending:false}).limit(50);
+  $('p-mod-list').innerHTML=(data||[]).map(r=>`<div class="card"><b class="t">Signalement</b> <span class="small">${dt(r.created_at)}</span><p style="margin:4px 0">${esc(r.reason)}</p>${r.exchange_id?`<button class="btn small sec" onclick="openChat('${r.exchange_id}',true)">Voir la discussion</button>`:''}<button class="btn small" onclick="resolveRep('${r.id}')">Classer</button></div>`).join('') || '<p class="hint">Aucun signalement.</p>';
+}
+async function resolveRep(id){ const {error}=await sb.rpc('y_admin_resolve_report',{p_id:id}); if(error){ toast(rpcMsg(error)); return; } loadMod(); }
 
-/* ---- ÉCHANGES (jeune + parent) ---- */
-async function viewExch(){
- if(openChat)return viewChat();
- await loadPeople();
- const {data,error}=await sb.from('y_exchanges').select('*').order('created_at',{ascending:false}).limit(60);if(error)throw error;
- const kids=role==='parent'?await myKids():[];const kidIds=new Set(kids.map(k=>k.id));
- $('app').innerHTML=`<h1>Échanges</h1>${(data||[]).map(e=>{
-  const other=role==='parent'?`${nm(e.requester_id)} ⇄ ${nm(e.provider_id)}`:`${e.requester_id===me?'Avec '+nm(e.provider_id):'Avec '+nm(e.requester_id)}`;
-  const mineRole=role==='parent'?'':(e.requester_id===me?'Tu reçois de l\'aide':'Tu aides');
-  return `<div class="card"><div class="row"><span class="pill">${STATUS[e.status]}</span><span class="sub">${e.hours} h · ${esc(LIEUX[e.lieu]||'')}</span></div>
-  <p style="font-weight:700;margin-top:6px">${esc(e.service_title||'Annonce supprimée')}</p><p class="sub">${esc(other)}${mineRole?' · '+mineRole:''}</p>
-  ${['accepted','completed'].includes(e.status)?`<button class="btn sm" onclick="openChat='${e.id}';render()">${role==='parent'?'Lire la discussion':'Discussion'}</button>`:''}
-  ${e.status==='accepted'||e.status==='pending_parents'?`<button class="btn warn sm" onclick="cancelEx('${e.id}')">Annuler</button>`:''}</div>`;}).join('')||'<p class="sub">Aucun échange pour le moment.</p>'}`;
-}
-async function cancelEx(id){if(!confirm('Annuler cet échange ?'))return;try{await rpc('y_cancel',{p_exchange:id});render();}catch(e){fail(e);}}
-async function viewChat(){
- const id=openChat;
- const {data:ex}=await sb.from('y_exchanges').select('*').eq('id',id).maybeSingle();
- const {data:ms}=await sb.from('y_messages').select('*').eq('exchange_id',id).order('created_at',{ascending:true}).limit(300);
- if(!ex){openChat=null;return viewExch();}
- const done=role==='parent'?'':(ex.status==='accepted'?((ex.requester_id===me?ex.req_done:ex.prov_done)?'<p class="sub">Tu as confirmé. En attente de l\'autre jeune.</p>':'<button class="btn sm" onclick="markDone()">Échange terminé ✓</button>'):'');
- const box=$('app');const keep=box.querySelector('#ci')?box.querySelector('#ci').value:'';
- box.innerHTML=`<div class="top"><h1 style="font-size:18px">${esc(ex.service_title||'Échange')}</h1><button class="btn sec sm" onclick="openChat=null;render()">Retour</button></div>
- <p class="sub">${role==='parent'?'Lecture seule : vous voyez la discussion de votre enfant.':'Tes parents peuvent lire cette discussion. Pas de numéro, lien ni adresse.'} Lieu : ${esc(LIEUX[ex.lieu]||'')}.</p>
- <div id="msgs" style="margin:10px 0">${(ms||[]).map(m=>`<div class="msg ${m.sender_id===me?'me':''}"><small>${esc(nm(m.sender_id))}</small>${esc(m.content)}</div>`).join('')||'<p class="sub">Aucun message.</p>'}</div>
- ${role!=='parent'&&ex.status==='accepted'?`<div class="row"><input id="ci" maxlength="500" placeholder="Ton message" style="flex:1;margin:0" value="${esc(keep)}" onkeydown="if(event.key==='Enter')sendMsg()"><button class="btn sm" style="margin:0" onclick="sendMsg()">Envoyer</button></div>`:''}
- ${done}<button class="btn warn sm" onclick="reportEx('${ex.id}')">Signaler</button>`;
- setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
-}
-async function sendMsg(){const i=$('ci');const t=i.value.trim();if(!t)return;try{await rpc('y_send_message',{p_exchange:openChat,p_content:t});i.value='';render();}catch(e){fail(e);}}
-async function markDone(){try{await rpc('y_mark_done',{p_exchange:openChat});toast('Merci ✓');render();}catch(e){fail(e);}}
-async function reportEx(id){const r=prompt('Pourquoi signales-tu cet échange ? (quelques mots)');if(!r||r.trim().length<3)return;try{await rpc('y_report',{p_exchange:id,p_service:null,p_reason:r});toast('Signalement envoyé. Merci.');}catch(e){fail(e);}}
-
-/* ---- PARENT ---- */
-let kidsCache=[];
-async function myKids(){
- const {data:fam}=await sb.from('y_family').select('child_id').eq('parent_id',me);
- const ids=(fam||[]).map(f=>f.child_id);if(!ids.length){kidsCache=[];return [];}
- const {data}=await sb.from('y_profiles').select('*').in('id',ids);kidsCache=data||[];return kidsCache;
-}
-async function viewKids(){
- const kids=await myKids();
- const {data:codes}=await sb.from('y_child_codes').select('*').is('used_by',null).gt('expires_at',new Date().toISOString());
- const yr=new Date().getFullYear();
- $('app').innerHTML=`<div class="top"><h1>Mes enfants</h1><button class="btn sec sm" onclick="logout()">Quitter</button></div>
- <p class="sub">Vous créez l'accès de votre enfant et validez chaque échange. Vous pouvez lire ses discussions.</p>
- ${kids.map(k=>`<div class="card"><p style="font-weight:700">${esc(k.name)} <span class="pill">${esc(k.band)} ans</span>${k.paused?' <span class="pill d">suspendu</span>':''}</p><p class="sub">Solde : ${k.balance} crédit(s)</p>
- <button class="btn sec sm" onclick="resetPw('${k.id}')">Nouveau mot de passe</button>
- <button class="btn sec sm" onclick="pauseKid('${k.id}',${!k.paused})">${k.paused?'Réactiver':'Suspendre'}</button>
- <button class="btn warn sm" onclick="delKid('${k.id}')">Supprimer</button></div>`).join('')||'<p class="sub">Aucun enfant pour le moment.</p>'}
- ${(codes||[]).map(c=>`<div class="card"><p class="sub">Code en attente pour ${esc(c.child_name)} (valable jusqu'au ${new Date(c.expires_at).toLocaleDateString('fr-CH')})</p><div class="big">${esc(c.code)}</div><button class="btn warn sm" onclick="delCode('${esc(c.code)}')">Annuler ce code</button></div>`).join('')}
- <h2>Ajouter un enfant (12 à 17 ans)</h2><div class="card">
- <label>Prénom de l'enfant</label><input id="kn" maxlength="30">
- <label>Année de naissance</label><select id="ky">${Array.from({length:6},(_,i)=>yr-12-i).map(y=>`<option>${y}</option>`).join('')}</select>
- <label class="chk"><input type="checkbox" id="kc"><span>Je suis le représentant légal de cet enfant. J'autorise son inscription, j'ai lu les <a href="#" onclick="event.preventDefault();viewRules()">règles</a> et j'accepte que ses discussions puissent être lues par les parents.</span></label>
- <button class="btn" onclick="addKid()">Créer le code d'accès</button></div>`;
-}
-async function addKid(){
- const n=$('kn').value.trim();if(n.length<2){toast('Entre le prénom.');return;}if(!$('kc').checked){toast('Coche la case d\'autorisation parentale.');return;}
- try{const c=await rpc('y_create_child_code',{p_name:n,p_birth_year:parseInt($('ky').value,10)});toast('Code créé. Donnez-le à votre enfant : troctan.ch/jeunes → « J\'ai un code de mon parent ».');render();}catch(e){fail(e);}
-}
-async function delCode(c){const {error}=await sb.from('y_child_codes').delete().eq('code',c);if(error)fail(error);else render();}
-async function resetPw(id){const p=prompt('Nouveau mot de passe pour votre enfant (8 caractères minimum) :');if(!p)return;try{await rpc('y_parent_reset_password',{p_child:id,p_password:p});toast('Mot de passe changé ✓');}catch(e){fail(e);}}
-async function pauseKid(id,v){try{await rpc('y_parent_set_paused',{p_child:id,p_paused:v});render();}catch(e){fail(e);}}
-async function delKid(id){if(!confirm('Supprimer définitivement le compte de votre enfant et toutes ses données ?'))return;try{await rpc('y_parent_delete_child',{p_child:id});toast('Compte supprimé.');render();}catch(e){fail(e);}}
-
-async function viewValid(){
- await loadPeople();const kids=await myKids();const ids=new Set(kids.map(k=>k.id));
- const {data}=await sb.from('y_exchanges').select('*').eq('status','pending_parents').order('created_at',{ascending:false});
- const todo=(data||[]).filter(e=>(ids.has(e.requester_id)&&!e.req_parent_ok)||(ids.has(e.provider_id)&&!e.prov_parent_ok));
- pendingCount=todo.length;
- $('app').innerHTML=`<h1>À valider</h1><p class="sub">Un échange s'ouvre seulement quand les parents des deux jeunes l'ont accepté.</p>
- ${todo.map(e=>{const mineId=ids.has(e.requester_id)?e.requester_id:e.provider_id;const otherId=mineId===e.requester_id?e.provider_id:e.requester_id;
- return `<div class="card"><p style="font-weight:700">${esc(e.service_title||'Annonce')}</p>
- <p class="sub">${esc(nm(mineId))} ${mineId===e.requester_id?'reçoit de l\'aide de':'aide'} ${esc(nm(otherId))} · ${e.hours} h</p><p class="sub">Lieu : ${esc(LIEUX[e.lieu]||'')}</p>
- <button class="btn sm" onclick="decide('${e.id}',true)">Accepter</button><button class="btn warn sm" onclick="decide('${e.id}',false)">Refuser</button></div>`;}).join('')||'<p class="sub">Rien à valider pour le moment.</p>'}`;
-}
-async function decide(id,ok){try{await rpc('y_parent_decide',{p_exchange:id,p_approve:ok});toast(ok?'Accepté ✓':'Refusé.');render();}catch(e){fail(e);}}
-
-/* ---- MODÉRATION (administrateurs) ---- */
-async function viewMod(){
- const {data}=await sb.from('y_reports').select('*').is('resolved_at',null).order('created_at',{ascending:false});
- $('app').innerHTML=`<h1>Signalements</h1>${(data||[]).map(r=>`<div class="card"><p>${esc(r.reason)}</p><p class="sub">${new Date(r.created_at).toLocaleString('fr-CH')}</p>
- ${r.exchange_id?`<button class="btn sec sm" onclick="openChat='${r.exchange_id}';tab='exch';render()">Voir la discussion</button>`:''}
- <button class="btn sm" onclick="resolveRep('${r.id}')">Classer</button></div>`).join('')||'<p class="sub">Aucun signalement.</p>'}`;
-}
-async function resolveRep(id){try{await rpc('y_admin_resolve_report',{p_id:id});render();}catch(e){fail(e);}}
-
-/* ---- démarrage ---- */
-async function onSession(session){
- clearInterval(pollT);
- if(!session){role=null;me=null;viewLogin();return;}
- me=session.user.id;
- try{role=await rpc('y_whoami');}catch(e){role=null;}
- if(!role){await sb.auth.signOut();viewLogin();return;}
- if(role==='parent'){
-  try{const a=await sb.from('admins').select('user_id').eq('user_id',me).maybeSingle();isAdminUser=!!a.data;}catch(e){}
-  tab='kids';await refreshPending();
- }else{
-  const {data:p}=await sb.from('y_profiles').select('*').eq('id',me).maybeSingle();
-  if(p){myName=p.name;myBand=p.band;myBal=p.balance;if(p.paused){$('app').innerHTML='<h1>Compte suspendu</h1><p>Ton compte a été suspendu par tes parents ou par la modération.</p><button class="btn sec" onclick="logout()">Se déconnecter</button>';return;}}
-  tab='home';
- }
- await render();
- pollT=setInterval(poll,8000);
-}
-async function refreshPending(){
- if(role!=='parent')return;
- try{await loadPeople();const kids=await myKids();const ids=new Set(kids.map(k=>k.id));
- const {data}=await sb.from('y_exchanges').select('requester_id,provider_id,req_parent_ok,prov_parent_ok').eq('status','pending_parents');
- pendingCount=(data||[]).filter(e=>(ids.has(e.requester_id)&&!e.req_parent_ok)||(ids.has(e.provider_id)&&!e.prov_parent_ok)).length;}catch(e){}
-}
-async function poll(){
- if(document.hidden||!me)return;
- const a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'))return;
- if(role==='parent')await refreshPending();
- if(openChat||tab==='exch'||tab==='valid'||tab==='home'||(role==='parent'&&tab==='mod'))await render();
- else if(role==='parent'){const t=document.querySelector('.tabs');if(t)t.outerHTML=tabsHtml();}
-}
+/* ---------- démarrage ---------- */
 initCaptcha();
-sb.auth.onAuthStateChange((ev,s)=>{ if(ev==='INITIAL_SESSION'||ev==='SIGNED_IN'||ev==='SIGNED_OUT')setTimeout(()=>onSession(s),0); });
+setRole('jeune');
+(function(){ try{ const c=new URLSearchParams(location.search).get('code'); if(c){ $('su-code').value=c.slice(0,20); $('signup-box').open=true; history.replaceState(null,'',location.pathname); } }catch(e){} })();
+if(sb){ boot(); setInterval(()=>{ if(!document.hidden && me && curScreen!=='auth' && curScreen!=='rules' && document.activeElement && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) refresh(); }, 8000); }
 </script>
 </body>
 </html>
