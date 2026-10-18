@@ -58,6 +58,31 @@ nav.tabs button.on{background:var(--accent2);color:#3a2f10}
 a{color:var(--accent)}
 #toast{position:fixed;left:16px;right:16px;bottom:92px;background:#16261e;color:#fff;padding:11px 14px;border-radius:12px;display:none;z-index:50;text-align:center}
 details{margin:10px 0}summary{font-weight:700;cursor:pointer;padding:6px 0}
+
+#toast{top:16px !important;bottom:auto !important}
+#troc-fab{position:fixed;right:12px;bottom:90px;width:62px;height:62px;border-radius:50%;border:2px solid #fff;background:#d5ecdf;box-shadow:0 4px 14px rgba(31,90,67,.35);padding:0;z-index:30;cursor:pointer;animation:bob 3s ease-in-out infinite}
+#troc-fab svg{width:100%;height:100%}
+#troc-tip{position:fixed;right:80px;bottom:104px;max-width:210px;background:#fff;border:1px solid var(--border);border-radius:14px 14px 4px 14px;padding:8px 11px;font-size:13px;box-shadow:0 3px 10px rgba(0,0,0,.12);z-index:30;display:none}
+#troc-panel{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.2);z-index:40;padding:14px 16px calc(16px + env(safe-area-inset-bottom));max-height:78vh;overflow:auto;display:none;transform:translateY(100%);transition:transform .25s}
+#troc-panel.on{transform:translateY(0)}
+#troc-back{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:35;display:none}
+.tp-head{display:flex;gap:10px;align-items:flex-start;max-width:560px;margin:0 auto}
+.tp-av{width:64px;height:64px;flex:none}
+.tp-bubble{background:#eef7f2;border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:14.5px;flex:1}
+.tp-bubble p{margin:0 0 6px}.tp-bubble p:last-child{margin:0}
+.tp-opts{max-width:560px;margin:10px auto 0;display:flex;flex-direction:column;gap:7px}
+.tp-opts button,.tp-opts a{font:inherit;font-weight:600;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--accent);cursor:pointer;text-decoration:none;display:block}
+.tp-opts .main{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tp-opts .sos{background:#fff3f0;color:var(--warn);border-color:#e3b9b0}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.eye{transform-origin:center;transform-box:fill-box;animation:blink 4.5s infinite}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+.pop{animation:pop .45s ease-out}
+.cic{width:34px;height:34px;flex:none;border-radius:10px;background:#e7f1ec;display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.cic svg{width:20px;height:20px}
+.card .head{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+@media (prefers-reduced-motion:reduce){#troc-fab,.eye,.pop{animation:none}#troc-panel{transition:none}}
 </style>
 </head>
 <body>
@@ -185,6 +210,11 @@ details{margin:10px 0}summary{font-weight:700;cursor:pointer;padding:6px 0}
   <div id="chat-actions"></div>
 </section>
 
+
+<button id="troc-fab" aria-label="Demander de l'aide à Troc" onclick="trocOpen()"></button>
+<div id="troc-tip"></div>
+<div id="troc-back" onclick="trocClose()"></div>
+<div id="troc-panel" role="dialog" aria-label="Troc, ton guide"><div class="tp-head"><div class="tp-av" id="tp-av"></div><div class="tp-bubble" id="tp-text"></div></div><div class="tp-opts" id="tp-opts"></div></div>
 <nav class="tabs" id="tabs" style="display:none"></nav>
 
 <script>
@@ -212,6 +242,7 @@ function rpcMsg(e){ const m=(e&&e.message)||String(e||''); return m.replace(/^.*
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $(id).classList.add('on'); curScreen=id; window.scrollTo(0,0);
+  $('troc-fab').style.display=(id==='chat'||id==='rules')?'none':'block'; if(typeof trocClose==='function'&&$('troc-panel').classList.contains('on')) trocClose();
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on', b.dataset.s===id));
 }
 function dt(s){ try{ return new Date(s).toLocaleString('fr-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
@@ -271,7 +302,7 @@ async function doLogout(){ try{ await sb.auth.signOut(); }catch(e){} me=null; ro
 
 async function boot(){
   const {data}=await sb.auth.getSession();
-  if(!data||!data.session){ buildTabs(null); show('auth'); return; }
+  if(!data||!data.session){ buildTabs(null); show('auth'); trocTip('Première visite ? Touche-moi, je t\'explique.','auth'); return; }
   me=data.session.user.id;
   const w=await sb.rpc('y_whoami'); role=w.data;
   if(!role){ show('auth'); return; }
@@ -280,10 +311,10 @@ async function boot(){
     const {data:p}=await sb.from('y_profiles').select('*').eq('id',me).maybeSingle(); myProfile=p;
     if(!p){ toast('Profil introuvable.'); return; }
     if(p.paused){ document.body.insertAdjacentHTML('afterbegin','<div class="wrap"><div class="card"><b>Compte suspendu</b><br>Tes parents ont suspendu ton compte. Parles-en avec eux.</div></div>'); }
-    buildTabs('jeune'); show('y-home'); loadHome();
-    if(!localStorage.getItem('yrules_'+me)){ showRules(true); }
+    buildTabs('jeune'); show('y-home'); loadHome(); celebrate(Number(p.balance));
+    if(!localStorage.getItem('yrules_'+me)){ showRules(true); } else { trocTip('Salut '+esc(p.name)+' ! Touche-moi si tu as une question.','hi_'+me); }
   } else {
-    fillYears(); buildTabs('parent'); show('p-valid'); loadParent();
+    fillYears(); buildTabs('parent'); show('p-valid'); loadParent(); trocTip('Bonjour ! Touchez-moi pour savoir comment inscrire votre enfant.','par_'+me);
   }
 }
 function buildTabs(r){
@@ -314,7 +345,7 @@ async function loadHome(){
   if(kindFilter) q=q.eq('kind',kindFilter);
   const {data,error}=await q;
   if(error){ $('y-list').innerHTML='<p class="hint">Impossible de charger les annonces.</p>'; return; }
-  $('y-list').innerHTML=(data||[]).map(s=>`<div class="card"><div class="row"><span class="chip ${s.kind==='offre'?'g':'y'}">${s.kind==='offre'?'Propose son aide':'Cherche de l\'aide'}</span><span class="chip">${esc(CATS[s.category]||s.category)}</span></div>
+  $('y-list').innerHTML=(data||[]).map(s=>`<div class="card"><div class="head">${catIcon(s.category)}<div><span class="chip ${s.kind==='offre'?'g':'y'}">${s.kind==='offre'?'Propose son aide':'Cherche de l\'aide'}</span><span class="chip">${esc(CATS[s.category]||s.category)}</span></div></div>
     <p style="margin:6px 0 2px"><b class="t">${esc(s.title)}</b></p>${s.description?`<p class="small" style="margin:0 0 4px">${esc(s.description)}</p>`:''}
     <p class="small" style="margin:0">${esc((people[s.author_id]||{}).name||'Un jeune')} · ${s.hours} h · ${esc(LIEUX[s.lieu]||'')}</p>
     <button class="btn small" onclick="respond('${s.id}')">${s.kind==='offre'?'Ça m\'intéresse':'Je peux aider'}</button></div>`).join('') || '<p class="hint">Aucune annonce pour le moment. Sois le premier à en publier une !</p>';
@@ -337,7 +368,7 @@ async function publishService(){
 }
 async function loadMine(){
   const {data}=await sb.from('y_services').select('*').eq('author_id',me).order('created_at',{ascending:false});
-  $('y-mine').innerHTML=(data||[]).map(s=>`<div class="card"><b class="t">${esc(s.title)}</b> <span class="chip ${s.active?'g':''}">${s.active?'active':'retirée'}</span><br><span class="small">${s.kind==='offre'?'Je propose':'Je cherche'} · ${esc(CATS[s.category])} · ${s.hours} h</span>
+  $('y-mine').innerHTML=(data||[]).map(s=>`<div class="card"><div class="head">${catIcon(s.category)}<div><b class="t">${esc(s.title)}</b></div></div><span class="chip ${s.active?'g':''}">${s.active?'active':'retirée'}</span><br><span class="small">${s.kind==='offre'?'Je propose':'Je cherche'} · ${esc(CATS[s.category])} · ${s.hours} h</span>
     <div><button class="btn small warn" onclick="removeService('${s.id}')">Supprimer</button></div></div>`).join('') || '<p class="hint">Tu n\'as pas encore d\'annonce.</p>';
 }
 async function removeService(id){ if(!confirm('Supprimer cette annonce ?')) return; const {error}=await sb.from('y_services').delete().eq('id',id); if(error){ toast(rpcMsg(error)); return; } loadMine(); }
@@ -357,10 +388,14 @@ async function markDone(id){ const {error}=await sb.rpc('y_mark_done',{p_exchang
 async function cancelEx(id){ if(!confirm('Annuler cet échange ?')) return; const {error}=await sb.rpc('y_cancel',{p_exchange:id}); if(error){ toast(rpcMsg(error)); return; } refresh(); }
 async function loadProfile(){
   const {data:p}=await sb.from('y_profiles').select('*').eq('id',me).maybeSingle(); if(!p) return; myProfile=p;
-  $('p-name').textContent='Bonjour '+p.name; $('p-bal').textContent=Number(p.balance).toString();
+  $('p-name').textContent='Bonjour '+p.name; $('p-bal').textContent=Number(p.balance).toString(); celebrate(Number(p.balance));
   $('p-band').textContent='Tranche d\'âge '+p.band+' ans : tu vois seulement les annonces de ta tranche d\'âge.';
 }
 
+function celebrate(b){
+  try{ const k='ybal_'+me, prev=localStorage.getItem(k); localStorage.setItem(k,String(b));
+    if(prev!==null && Number(prev)!==b){ trocMood('happy'); const d=b-Number(prev); trocTip(d>0?'Bravo ! Tu as gagné '+d+' crédit'+(d>1?'s':'')+' grâce à ton aide.':'Un crédit utilisé : tu as reçu de l\'aide. Pense à en donner aussi !'); } }catch(e){}
+}
 /* ---------- DISCUSSION ---------- */
 function openChat(id,readonly){ chatEx=id; chatReadonly=!!readonly; prevScreen=curScreen; show('chat'); $('chat-form').style.display=readonly?'none':'block'; loadChat(); }
 function closeChat(){ chatEx=null; show(prevScreen||(role==='jeune'?'y-ex':'p-chats')); refresh(); }
@@ -434,6 +469,83 @@ async function loadMod(){
   $('p-mod-list').innerHTML=(data||[]).map(r=>`<div class="card"><b class="t">Signalement</b> <span class="small">${dt(r.created_at)}</span><p style="margin:4px 0">${esc(r.reason)}</p>${r.exchange_id?`<button class="btn small sec" onclick="openChat('${r.exchange_id}',true)">Voir la discussion</button>`:''}<button class="btn small" onclick="resolveRep('${r.id}')">Classer</button></div>`).join('') || '<p class="hint">Aucun signalement.</p>';
 }
 async function resolveRep(id){ const {error}=await sb.rpc('y_admin_resolve_report',{p_id:id}); if(error){ toast(rpcMsg(error)); return; } loadMod(); }
+
+
+/* ---------- TROC, le guide (scénarisé, aucune IA, aucune donnée envoyée) ---------- */
+function mascot(mood){
+  const mouth = mood==='happy' ? '<path d="M38 60 Q50 74 62 60 Q50 66 38 60Z" fill="#7a2a1e"/>' : mood==='care' ? '<path d="M42 64 Q50 61 58 64" stroke="#16261e" stroke-width="2.4" fill="none" stroke-linecap="round"/>' : '<path d="M40 61 Q50 69 60 61" stroke="#16261e" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+  const brows = mood==='care' ? '<path d="M30 38 L40 41 M70 38 L60 41" stroke="#16261e" stroke-width="2.2" stroke-linecap="round"/>' : '';
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 4 C62 4 70 14 66 24 C58 22 50 16 50 4Z" fill="#2f7d5b"/><path d="M50 4 C38 6 32 14 36 23 C44 21 50 15 50 4Z" fill="#4aa27a"/>
+  <ellipse cx="50" cy="60" rx="34" ry="32" fill="#2f7d5b"/><ellipse cx="50" cy="66" rx="24" ry="21" fill="#cfe9dc"/>
+  <ellipse cx="14" cy="64" rx="7" ry="10" fill="#2f7d5b" transform="rotate(25 14 64)"/><ellipse cx="86" cy="64" rx="7" ry="10" fill="#2f7d5b" transform="rotate(-25 86 64)"/>
+  <g class="eye"><ellipse cx="38" cy="48" rx="7" ry="8" fill="#fff"/><circle cx="39" cy="49" r="3.6" fill="#16261e"/></g>
+  <g class="eye"><ellipse cx="62" cy="48" rx="7" ry="8" fill="#fff"/><circle cx="61" cy="49" r="3.6" fill="#16261e"/></g>
+  ${brows}<ellipse cx="27" cy="58" rx="4.5" ry="3" fill="#f2a79a" opacity=".7"/><ellipse cx="73" cy="58" rx="4.5" ry="3" fill="#f2a79a" opacity=".7"/>${mouth}
+  <ellipse cx="38" cy="92" rx="9" ry="4" fill="#1f5a43"/><ellipse cx="62" cy="92" rx="9" ry="4" fill="#1f5a43"/></svg>`;
+}
+const ICONS = {
+  soutien:'<path d="M4 5h7a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4zM20 5h-7a3 3 0 0 0-3 3v11a2 2 0 0 1 2-2h8z"/>',
+  sport:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  musique:'<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  creatif:'<path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 1.5-2-.6-1.2.2-2.5 1.6-2.5H17a4 4 0 0 0 4-4C21 6.5 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="14.5" cy="7.5" r="1"/>',
+  jeux:'<rect x="3" y="8" width="18" height="10" rx="5"/><path d="M8 11v4M6 13h4"/><circle cx="16" cy="12" r=".8"/><circle cx="18" cy="14" r=".8"/>',
+  informatique:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  autre:'<path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6L12 16.7 6.7 19.6l1.1-6L3.4 9.4l6-.8z"/>'
+};
+function catIcon(c){ return `<span class="cic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[c]||ICONS.autre}</svg></span>`; }
+
+function trocNodes(){
+  const nm = myProfile ? myProfile.name : '';
+  const bal = myProfile ? Number(myProfile.balance) : 0;
+  const back=['Retour au menu','menu'];
+  if(role==='jeune') return {
+    menu:{mood:'happy',text:[`Salut ${esc(nm)} ! Moi c'est <b>Troc</b>. Je suis là pour t'aider. Tu veux savoir quoi ?`],opts:[['Comment ça marche ?','how'],['Publier une annonce','post'],['Mes crédits','credits'],['Règles de sécurité','safe'],['Quelque chose ne va pas…','help','sos']]},
+    how:{mood:'happy',text:['C\'est simple :','<b>1.</b> Tu vois des annonces de jeunes de ton âge.','<b>2.</b> Tu touches « Ça m\'intéresse ».','<b>3.</b> Les parents des deux jeunes disent oui.','<b>4.</b> Vous discutez, vous vous retrouvez dans un lieu sûr.','<b>5.</b> Vous confirmez tous les deux « C\'est fait » et les crédits passent.'],opts:[back]},
+    post:{mood:'happy',text:['Pour proposer ton aide ou en demander :','Va dans <b>Proposer</b>, choisis « Je propose » ou « Je cherche », un titre clair (ex. « Aide en maths »), une durée et un lieu.','Pas de numéro ni de lien dans l\'annonce, je les bloque !'],opts:[['Aller à Proposer','go:y-new','main'],back]},
+    credits:{mood:'happy',text:[`Tu as <b>${bal} crédit${Math.abs(bal)>1?'s':''}</b>.`,'1 crédit = 1 heure. Tu en gagnes en aidant quelqu\'un, tu en dépenses quand on t\'aide. Ça ne vaut pas d\'argent : c\'est juste de l\'entraide !','Tu peux descendre jusqu\'à −5 au minimum.'],opts:[back]},
+    safe:{mood:'neutral',text:['Mes 4 règles d\'or :','<b>1.</b> Jamais ton numéro, ton adresse, tes réseaux ni tes photos.','<b>2.</b> On se retrouve seulement dans un lieu prévu (bibliothèque, école, maison de quartier, à la maison avec un parent).','<b>3.</b> Tes parents peuvent lire vos messages. C\'est pour te protéger.','<b>4.</b> Un doute ? Tu arrêtes et tu en parles.'],opts:[['Quelque chose ne va pas…','help','sos'],back]},
+    help:{mood:'care',text:['Merci d\'en parler, tu as bien fait. Ce n\'est pas ta faute.','<b>Tu peux :</b>','• Signaler dans la discussion (bouton « Signaler »).','• En parler à tes parents ou à un adulte de confiance.','• Appeler le <b>147</b> (Pro Juventute) : gratuit, anonyme, jour et nuit. Tu peux aussi écrire par SMS.','Si tu es en danger tout de suite : <b>117</b> (police) ou <b>144</b> (ambulance).'],opts:[['Appeler le 147','tel:147','sos'],['Retour au menu','menu']]}
+  };
+  if(role==='parent') return {
+    menu:{mood:'happy',text:['Bonjour ! Je suis <b>Troc</b>, le guide de Troctan Jeunes. Je peux vous expliquer :'],opts:[['Comment inscrire mon enfant ?','kid'],['Comment ça se passe ?','flow'],['Ce que je peux contrôler','ctrl'],['Sécurité et données','data']]},
+    kid:{mood:'happy',text:['<b>1.</b> Onglet « Enfants » : entrez son prénom et son année de naissance, cochez la case de représentant légal.','<b>2.</b> Vous obtenez un code JE-XXXXXXXX (valable 7 jours, une seule utilisation).','<b>3.</b> Votre enfant ouvre troctan.ch/jeunes, touche « Première fois ? », entre le code et choisit son identifiant et son mot de passe.'],opts:[['Aller à Enfants','go:p-kids','main'],['Retour au menu','menu']]},
+    flow:{mood:'neutral',text:['Quand un jeune répond à une annonce, <b>les deux parents</b> doivent autoriser l\'échange (onglet « À valider »). Ensuite seulement la discussion s\'ouvre.','Vous pouvez lire toutes les discussions de vos enfants dans « Discussions ».'],opts:[['Retour au menu','menu']]},
+    ctrl:{mood:'neutral',text:['Pour chaque enfant : <b>suspendre</b> le compte, <b>changer le mot de passe</b> ou <b>supprimer</b> le compte avec toutes ses données.','Vous pouvez aussi annuler n\'importe quel échange et signaler une discussion.'],opts:[['Retour au menu','menu']]},
+    data:{mood:'neutral',text:['Nous gardons : prénom, année de naissance, annonces, échanges, messages. <b>Aucune</b> photo, position ni email de l\'enfant.','Les messages bloquent numéros, liens, adresses et autres réseaux. Un jeune ne voit que sa tranche d\'âge.'],opts:[['Lire les règles complètes','rules'],['Retour au menu','menu']]}
+  };
+  return {
+    menu:{mood:'happy',text:['Salut, moi c\'est <b>Troc</b> ! Je t\'aide à démarrer.'],opts:[['Je suis jeune : comment je m\'inscris ?','young'],['Je suis parent','par']]},
+    young:{mood:'happy',text:['Demande à ton parent de créer ton code dans Troctan Jeunes (onglet « Enfants »). Puis ouvre « Première fois ? J\'ai un code de mon parent » sur l\'écran de connexion, entre le code et choisis ton identifiant et ton mot de passe.'],opts:[['Retour au menu','menu']]},
+    par:{mood:'neutral',text:['Connectez-vous avec votre compte Troctan adulte (onglet « Je suis parent »). Pas encore de compte ? Créez-le d\'abord sur troctan.ch avec un code d\'invitation, puis revenez ici.'],opts:[['Retour au menu','menu']]}
+  };
+}
+let _trocNode='menu';
+function trocOpen(node){
+  const nodes=trocNodes(); const n=nodes[node||'menu']||nodes.menu; _trocNode=node||'menu';
+  $('tp-av').innerHTML=mascot(n.mood);
+  $('tp-text').innerHTML=n.text.map(t=>'<p>'+t+'</p>').join('');
+  $('tp-opts').innerHTML=n.opts.map(o=>{
+    const [label,act,cls]=o;
+    if(act.startsWith('tel:')) return `<a class="${cls||''}" href="${act}">${label}</a>`;
+    return `<button class="${cls||''}" data-a="${act}">${label}</button>`;
+  }).join('');
+  $('tp-opts').querySelectorAll('button').forEach(b=>b.onclick=()=>trocAct(b.dataset.a));
+  $('troc-tip').style.display='none';
+  $('troc-back').style.display='block'; const pn=$('troc-panel'); pn.style.display='block'; requestAnimationFrame(()=>pn.classList.add('on'));
+}
+function trocAct(a){
+  if(a.startsWith('go:')){ trocClose(); goTab(a.slice(3)); return; }
+  if(a==='rules'){ trocClose(); showRules(); return; }
+  trocOpen(a);
+}
+function trocClose(){ const pn=$('troc-panel'); pn.classList.remove('on'); $('troc-back').style.display='none'; setTimeout(()=>{ if(!pn.classList.contains('on')) pn.style.display='none'; },260); }
+function trocTip(msg, key){
+  try{ if(key){ if(localStorage.getItem('trocTip_'+key)) return; localStorage.setItem('trocTip_'+key,'1'); } }catch(e){}
+  const t=$('troc-tip'); t.innerHTML=msg; t.style.display='block'; t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop');
+  clearTimeout(trocTip._t); trocTip._t=setTimeout(()=>t.style.display='none',7000);
+}
+function trocMood(m){ $('troc-fab').innerHTML=mascot(m||'happy'); }
+trocMood('happy');
 
 /* ---------- démarrage ---------- */
 initCaptcha();
