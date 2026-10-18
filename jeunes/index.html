@@ -199,7 +199,7 @@ const esc = x => String(x==null?'':x).replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 const $ = id => document.getElementById(id);
 
 let sb = null;
-try{ sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{flowType:'implicit'}}); }catch(e){}
+try{ sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{flowType:'implicit',storageKey:'troctan-jeunes-auth'}}); }catch(e){}
 
 let me = null, role = null, myProfile = null, isAdmin = false, loginRole = 'jeune';
 let curScreen = 'auth', prevScreen = null, kindFilter = '', newKind = 'offre';
