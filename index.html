@@ -296,6 +296,8 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <p style="font-size:12px;color:var(--text-muted);line-height:1.4;margin:6px 0;">Choisis ci-dessus un identifiant (3 à 30 caractères : minuscules, chiffres, point, tiret) et un mot de passe de 8 caractères minimum. Pas de récupération par email : note-les bien.</p>
       <label>Ton adresse email (obligatoire, jamais visible des autres)</label>
       <input type="email" id="signup-email" placeholder="toi@exemple.com" autocomplete="email">
+      <label>Code d'invitation (donné par la commune)</label>
+      <input type="text" id="signup-code" placeholder="Ex. G-B2026" autocomplete="off" autocapitalize="characters" maxlength="40">
       <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
         <input type="checkbox" id="signup-cgu" style="width:auto; margin:2px 0 0;">
         <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showScreen('legal');" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a>. Je confirme avoir 18 ans ou plus.</span>
@@ -310,7 +312,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 63</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 64</p>
     <p style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:4px;">Lancé à La Grande-Béroche · ouvert aux voisins de la région</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
@@ -585,6 +587,18 @@ body[data-screen="login"] #scene-chat{opacity:1;}
         <button id="rep-tab-done" onclick="setReportsTab('done')">Classés</button>
       </div>
       <div class="list" id="admin-reports" style="margin-top:10px;"></div>
+      <p class="section-label" style="margin-top:14px;">Codes d'invitation</p>
+      <p style="font-size:12.5px;color:var(--text-secondary);">Seules les personnes qui ont un code actif peuvent créer un compte. Lien direct : <b>troctan.ch/?code=VOTRE-CODE</b> (pré-remplit le code).</p>
+      <div class="list" id="admin-invites"></div>
+      <button class="btn secondary" onclick="adminAddInvite()">+ Nouveau code</button>
+      <div id="admin-owner-box" style="display:none;">
+        <p class="section-label" style="margin-top:14px;">Administrateurs</p>
+        <div class="list" id="admin-admins"></div>
+        <button class="btn secondary" onclick="adminAddAdmin()">+ Ajouter un administrateur (par identifiant)</button>
+        <p class="section-label" style="margin-top:14px;">Fin de la phase de test</p>
+        <p style="font-size:12.5px;color:var(--text-secondary);">Efface toutes les données et tous les comptes, sauf les comptes administrateurs, dont les compteurs repartent à zéro. Irréversible : fais d'abord une sauvegarde.</p>
+        <button class="btn secondary" style="color:var(--warn-text);" onclick="adminResetAll()">Tout remettre à zéro</button>
+      </div>
       <p class="section-label" style="margin-top:14px;">Utilisateurs</p>
       <div class="list" id="admin-users"></div>
     </section>
@@ -1241,6 +1255,7 @@ const CAPTCHA_WAIT = 'Vérification anti-robot en cours : attends 2 secondes pui
 function translateAuthError(m){
   if((m || '').toLowerCase().includes('captcha')) return 'Vérification anti-robot échouée : recharge la page et réessaie.';
   const t = (m || '').toLowerCase();
+  if(t.includes('database error saving new user') || t.includes('invitation')) return "Code d'invitation invalide ou expiré. Vérifie-le auprès de la commune.";
   if(t.includes('invalid login')) return 'Identifiant ou mot de passe incorrect.';
   if(t.includes('already registered')) return 'Cet identifiant existe déjà, choisis-en un autre.';
   if(t.includes('email not confirmed')) return "Compte non confirmé : la confirmation par email est encore activée dans Supabase.";
@@ -1312,6 +1327,8 @@ async function passwordSignup(){
     loginError("Entre une adresse email valide : elle est obligatoire pour créer un compte.");
     return;
   }
+  const inviteCode = (document.getElementById('signup-code').value || '').trim();
+  if(inviteCode.length < 4){ loginError("Entre le code d'invitation donné par la commune."); return; }
   if(!document.getElementById('signup-cgu').checked){
     loginError("Pour créer un compte, lis et accepte la politique de confidentialité et les conditions d'utilisation (case à cocher).");
     return;
@@ -1324,7 +1341,7 @@ async function passwordSignup(){
     if(bn && bn.data === true){ loginError("Cette adresse ne peut pas être utilisée sur Troctan."); return; }
   }catch(e){ /* on continue */ }
   try{
-    const { data, error } = await sb.auth.signUp({ email: toLoginEmail(id), password: pass, options: { captchaToken: takeCaptcha() } });
+    const { data, error } = await sb.auth.signUp({ email: toLoginEmail(id), password: pass, options: { captchaToken: takeCaptcha(), data: { invite_code: inviteCode } } });
     if(error){ loginError(translateAuthError(error.message)); return; }
     pendingSignupEmail = contactEmail;
     if(data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
@@ -2292,6 +2309,7 @@ async function refreshAdminBadge(){
 
 async function loadAdminPanel(){
   if(!myIsAdmin) return;
+  loadInvites(); loadAdminOwnerArea();
   const rb = document.getElementById('admin-reports');
   const ub = document.getElementById('admin-users');
   try{
@@ -2348,6 +2366,63 @@ async function adminDeleteService(){
   if(!data || !data.length){ log("Annonce non retirée : il manque une autorisation dans Supabase (lance le SQL « mise à jour 4 »)."); return; }
   log('Annonce retirée.');
   showScreen('home');
+}
+const _esc = x => String(x==null?'':x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function loadInvites(){
+  const box = document.getElementById('admin-invites'); if(!box) return;
+  const { data, error } = await sb.rpc('admin_list_invites');
+  if(error){ box.innerHTML = '<p style="font-size:12.5px;color:var(--warn-text);">Lance le SQL « mise à jour 24 ».</p>'; return; }
+  box.innerHTML = (data || []).map(i => `<div class="item-card" style="padding:.6rem .8rem;"><b>${_esc(i.code)}</b> ${i.active ? '' : '<span class="badge">désactivé</span>'}<br><span style="font-size:12.5px;color:var(--text-secondary);">${_esc(i.label||'')} · ${i.uses} inscription(s)${i.max_uses ? ' / ' + i.max_uses : ''}</span><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn secondary" style="margin:0;" data-code="${_esc(i.code)}" data-active="${i.active}" onclick="adminToggleInvite(this)">${i.active ? 'Désactiver' : 'Activer'}</button><button class="btn secondary" style="margin:0;color:var(--warn-text);" data-code="${_esc(i.code)}" onclick="adminDeleteInvite(this)">Supprimer</button></div></div>`).join('') || '<p style="font-size:12.5px;">Aucun code : personne ne peut s\'inscrire.</p>';
+}
+async function adminAddInvite(){
+  const code = prompt("Nouveau code d'invitation (4 caractères minimum) :"); if(!code) return;
+  const label = prompt("Description (ex. nom du village, de l'association) :") || '';
+  const mx = prompt("Nombre maximum d'inscriptions (laisse vide = illimité) :");
+  const { error } = await sb.rpc('admin_save_invite', {p_code: code, p_label: label, p_active: true, p_max_uses: mx ? parseInt(mx,10) : null});
+  if(error){ log('Erreur : ' + error.message); return; }
+  loadInvites();
+}
+async function adminToggleInvite(b){
+  const { data } = await sb.rpc('admin_list_invites');
+  const i = (data||[]).find(x => x.code === b.dataset.code); if(!i) return;
+  const { error } = await sb.rpc('admin_save_invite', {p_code: i.code, p_label: i.label, p_active: !i.active, p_max_uses: i.max_uses});
+  if(error){ log('Erreur : ' + error.message); return; }
+  loadInvites();
+}
+async function adminDeleteInvite(b){
+  if(!confirm('Supprimer le code ' + b.dataset.code + ' ?')) return;
+  const { error } = await sb.rpc('admin_delete_invite', {p_code: b.dataset.code});
+  if(error){ log('Erreur : ' + error.message); return; }
+  loadInvites();
+}
+let myIsOwner = false;
+async function loadAdminOwnerArea(){
+  const ob = document.getElementById('admin-owner-box'); if(!ob) return;
+  try{ const r = await sb.rpc('is_owner'); myIsOwner = r.data === true; }catch(e){ myIsOwner = false; }
+  ob.style.display = myIsOwner ? 'block' : 'none';
+  if(!myIsOwner) return;
+  const { data } = await sb.rpc('admin_list_admins');
+  document.getElementById('admin-admins').innerHTML = (data||[]).map(a => `<div class="item-card" style="padding:.6rem .8rem;"><b>${_esc(a.name)}</b> <span style="font-size:12.5px;color:var(--text-secondary);">(${_esc(a.ident)})</span> ${a.is_owner ? '<span class="badge">propriétaire</span>' : `<button class="btn secondary" style="margin:6px 0 0;color:var(--warn-text);" data-uid="${_esc(a.user_id)}" onclick="adminRemoveAdmin(this)">Retirer</button>`}</div>`).join('');
+}
+async function adminAddAdmin(){
+  const id = prompt("Identifiant du compte à nommer administrateur (la personne doit déjà avoir un compte) :"); if(!id) return;
+  if(!confirm("Cette personne pourra voir les signalements, les échanges signalés et tous les profils. Confirmer ?")) return;
+  const { error } = await sb.rpc('admin_add_admin', {p_ident: id});
+  if(error){ log('Erreur : ' + error.message); return; }
+  loadAdminOwnerArea();
+}
+async function adminRemoveAdmin(b){
+  if(!confirm('Retirer les droits d\'administrateur ?')) return;
+  const { error } = await sb.rpc('admin_remove_admin', {p_uid: b.dataset.uid});
+  if(error){ log('Erreur : ' + error.message); return; }
+  loadAdminOwnerArea();
+}
+async function adminResetAll(){
+  if(!confirm("ATTENTION : toutes les données et tous les comptes (sauf administrateurs) vont être effacés définitivement. As-tu fait une sauvegarde ?")) return;
+  const t = prompt("Pour confirmer, tape exactement : EFFACER TOUT"); if(t !== 'EFFACER TOUT') { log('Annulé.'); return; }
+  const { error } = await sb.rpc('admin_reset_all_data', {p_confirm: t});
+  if(error){ log('Erreur : ' + error.message); return; }
+  alert('Remise à zéro terminée.'); location.reload();
 }
 async function adminExportData(){
   try{
@@ -3504,6 +3579,14 @@ async function boot(){
     handleSession(session);
   });
   initCaptcha();
+  try{
+    const qp = new URLSearchParams(location.search).get('code');
+    if(qp){
+      const sc = document.getElementById('signup-code'); if(sc) sc.value = qp.slice(0,40);
+      const sb0 = document.getElementById('signup-box'); if(sb0) sb0.open = true;
+      history.replaceState(null, '', location.pathname);
+    }
+  }catch(e){}
   const wantsReset = checkResetLink();
   const { data: { session } } = await sb.auth.getSession();
   await handleSession(session);
