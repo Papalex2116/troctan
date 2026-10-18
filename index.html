@@ -312,7 +312,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 66</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 67</p>
     <p style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:4px;">Lancé à La Grande-Béroche · ouvert aux voisins de la région</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
@@ -1456,7 +1456,7 @@ function finishNameSetup(){
   }
   applyIdentity();
   showScreen('home');
-  if(!localStorage.getItem('tt_tutorial_seen')) showTutorial();
+  if(!tutSeen()) showTutorial();
   fetchServices();
   checkNotifications();
   subscribeRealtime();
@@ -2379,7 +2379,7 @@ async function loadInvites(){
   const box = document.getElementById('admin-invites'); if(!box) return;
   const { data, error } = await sb.rpc('admin_list_invites');
   if(error){ box.innerHTML = '<p style="font-size:12.5px;color:var(--warn-text);">Lance le SQL « mise à jour 24 ».</p>'; return; }
-  box.innerHTML = (data || []).map(i => `<div class="item-card" style="padding:.6rem .8rem;"><b>${_esc(i.code)}</b> ${i.active ? '' : '<span class="badge">désactivé</span>'}<br><span style="font-size:12.5px;color:var(--text-secondary);">${_esc(i.label||'')} · ${i.uses} inscription(s)${i.max_uses ? ' / ' + i.max_uses : ''}</span><div style="display:flex;gap:6px;margin-top:6px;"><button class="btn secondary" style="margin:0;" data-code="${_esc(i.code)}" data-active="${i.active}" onclick="adminToggleInvite(this)">${i.active ? 'Désactiver' : 'Activer'}</button><button class="btn secondary" style="margin:0;color:var(--warn-text);" data-code="${_esc(i.code)}" onclick="adminDeleteInvite(this)">Supprimer</button></div></div>`).join('') || '<p style="font-size:12.5px;">Aucun code : personne ne peut s\'inscrire.</p>';
+  box.innerHTML = (data || []).map(i => `<div class="item-card" style="padding:.6rem .8rem;display:block;min-width:0;overflow:hidden;"><b style="word-break:break-all;">${_esc(i.code)}</b> ${i.active ? '' : '<span class="badge">désactivé</span>'}<br><span style="font-size:12.5px;color:var(--text-secondary);">${_esc(i.label||'')} · ${i.uses} inscription(s)${i.max_uses ? ' / ' + i.max_uses : ''}</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"><button class="btn secondary" style="margin:0;flex:1 1 120px;width:auto;" data-code="${_esc(i.code)}" data-active="${i.active}" onclick="adminToggleInvite(this)">${i.active ? 'Désactiver' : 'Activer'}</button><button class="btn secondary" style="margin:0;flex:1 1 120px;width:auto;color:var(--warn-text);" data-code="${_esc(i.code)}" onclick="adminDeleteInvite(this)">Supprimer</button></div></div>`).join('') || '<p style="font-size:12.5px;">Aucun code : personne ne peut s\'inscrire.</p>';
 }
 async function adminAddInvite(){
   const code = prompt("Nouveau code d'invitation (4 caractères minimum) :"); if(!code) return;
@@ -2409,7 +2409,7 @@ async function loadAdminOwnerArea(){
   ob.style.display = myIsOwner ? 'block' : 'none';
   if(!myIsOwner) return;
   const { data } = await sb.rpc('admin_list_admins');
-  document.getElementById('admin-admins').innerHTML = (data||[]).map(a => `<div class="item-card" style="padding:.6rem .8rem;"><b>${_esc(a.name)}</b> <span style="font-size:12.5px;color:var(--text-secondary);">(${_esc(a.ident)})</span> ${a.is_owner ? '<span class="badge">propriétaire</span>' : `<button class="btn secondary" style="margin:6px 0 0;color:var(--warn-text);" data-uid="${_esc(a.user_id)}" onclick="adminRemoveAdmin(this)">Retirer</button>`}</div>`).join('');
+  document.getElementById('admin-admins').innerHTML = (data||[]).map(a => `<div class="item-card" style="padding:.6rem .8rem;display:block;min-width:0;overflow:hidden;"><b>${_esc(a.name)}</b> <span style="font-size:12.5px;color:var(--text-secondary);">(${_esc(a.ident)})</span> ${a.is_owner ? '<span class="badge">propriétaire</span>' : `<button class="btn secondary" style="margin:6px 0 0;color:var(--warn-text);" data-uid="${_esc(a.user_id)}" onclick="adminRemoveAdmin(this)">Retirer</button>`}</div>`).join('');
 }
 async function adminAddAdmin(){
   const id = prompt("Identifiant du compte à nommer administrateur (la personne doit déjà avoir un compte) :"); if(!id) return;
@@ -2925,7 +2925,7 @@ async function handleSession(session){
       applyIdentity();
       document.getElementById('balance-value').textContent = myBalanceCache + 'cr';
       showScreen('home');
-      if(!localStorage.getItem('tt_tutorial_seen')) showTutorial();
+      if(!tutSeen()) showTutorial();
       loadAdminStatus();
       updatePushBtn();
       updateIdentifierButton();
@@ -3134,6 +3134,7 @@ function tutVideoFailed(){
   const sl = document.getElementById('tut-slides'); if(sl) sl.style.display = 'block';
   const st = document.getElementById('tut-start'); if(st) st.style.display = 'none';
 }
+function tutSeen(){ try{ return !!localStorage.getItem('tt_tutorial_seen_' + myId); }catch(e){ return true; } }
 function showTutorial(){
   tutStep = 0;
   renderTutorial();
@@ -3149,7 +3150,7 @@ function tutorialNext(){
 
 function finishTutorial(){
   try{ const v = document.getElementById('tut-video'); if(v) v.pause(); }catch(e){}
-  localStorage.setItem('tt_tutorial_seen', '1');
+  try{ localStorage.setItem('tt_tutorial_seen', '1'); localStorage.setItem('tt_tutorial_seen_' + myId, '1'); }catch(e){}
   showScreen('home');
 }
 
