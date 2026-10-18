@@ -312,7 +312,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 65</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 66</p>
     <p style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:4px;">Lancé à La Grande-Béroche · ouvert aux voisins de la région</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
@@ -1233,7 +1233,14 @@ function showEmailLogin(){
 }
 function loginError(msg){
   const e = document.getElementById('login-error');
+  try{
+    const su = document.getElementById('signup-box'), fg = document.getElementById('forgot-box');
+    if(su && su.open){ document.getElementById('signup-btn').before(e); }
+    else if(fg && fg.open){ document.getElementById('forgot-btn').before(e); }
+    else { document.getElementById('login-btn').after(e); }
+  }catch(_){}
   e.textContent = msg; e.style.display = msg ? 'block' : 'none';
+  if(msg){ try{ e.scrollIntoView({block:'center', behavior:'smooth'}); }catch(_){} }
 }
 function toLoginEmail(id){
   id = (id || '').trim();
