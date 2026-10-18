@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Troctan Jeunes</title>
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#1f5a43">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
+<style>
+:root{--bg:#eaf4ef;--card:#fff;--text:#16352a;--sub:#4f6b60;--line:#cfe0d8;--acc:#1f5a43;--acc-t:#fff;--soft:#f2d9a0;--warn:#a23b2a;--ok:#1f6b3d}
+@media (prefers-color-scheme:dark){:root{--bg:#1f2d27;--card:#2c3d36;--text:#eaf4ef;--sub:#a9c3b8;--line:#42564d;--acc:#7cc9a3;--acc-t:#10261c;--soft:#f2d9a0;--warn:#ff9c88;--ok:#8fe0ab}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.4}
+#app{max-width:520px;margin:0 auto;padding:14px 16px 90px}
+h1{font-size:22px} h2{font-size:17px;margin:16px 0 8px} p{margin:6px 0}
+.sub{color:var(--sub);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{display:block;width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--acc);background:var(--acc);color:var(--acc-t);font-size:15px;font-weight:600;cursor:pointer;margin:8px 0;text-align:center}
+.btn.sec{background:transparent;color:var(--text);border-color:var(--line)}
+.btn.warn{background:transparent;color:var(--warn);border-color:var(--warn)}
+.btn.sm{width:auto;display:inline-block;padding:7px 12px;font-size:13px;margin:4px 6px 0 0}
+input,select,textarea{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:15px;margin:4px 0 10px;font-family:inherit}
+label{font-size:13px;font-weight:600;color:var(--sub)}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:5}
+.tabs button{flex:1;max-width:130px;padding:14px 4px;border:0;background:none;color:var(--sub);font-size:13px;font-weight:600;cursor:pointer;position:relative}
+.tabs button.on{color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
+.badge{display:inline-block;min-width:18px;padding:1px 6px;border-radius:9px;background:var(--warn);color:#fff;font-size:11px;font-weight:700;margin-left:4px}
+.pill{display:inline-block;padding:2px 9px;border-radius:9px;font-size:12px;font-weight:600;background:var(--soft);color:#2a3d1f}
+.pill.o{background:#cfe9dc;color:#16352a}.pill.d{background:#f2d9a0}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0}
+.seg button{flex:1;padding:10px;border:0;background:var(--card);color:var(--sub);font-weight:600;cursor:pointer}
+.seg button.on{background:var(--acc);color:var(--acc-t)}
+.msg{max-width:82%;padding:8px 11px;border-radius:12px;margin:4px 0;background:var(--card);border:1px solid var(--line);font-size:14px;word-wrap:break-word}
+.msg.me{margin-left:auto;background:var(--soft);color:#2a3d1f;border-color:transparent}
+.msg small{display:block;opacity:.7;font-size:11px}
+#toast{position:fixed;left:16px;right:16px;bottom:78px;max-width:488px;margin:0 auto;background:#16352a;color:#fff;padding:12px 14px;border-radius:12px;display:none;z-index:9;font-size:14px}
+.big{font-size:26px;font-weight:800;letter-spacing:.08em;text-align:center;padding:12px;border:2px dashed var(--acc);border-radius:12px;margin:10px 0;user-select:all}
+.hidden{display:none!important}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.chk{display:flex;gap:8px;align-items:flex-start;margin:8px 0;font-weight:400;color:var(--sub)}
+.chk input{width:auto;margin:3px 0 0}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+const SUPABASE_URL='https://bhhdzjrmxsrzoermijyu.supabase.co';
+const SUPABASE_KEY='sb_publishable_JCGZxtJauhU3GfXqzRR__w_F8RDn7m4';
+const TURNSTILE_SITEKEY='0x4AAAAAAFYxjRwFpz4VBbc3';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:'implicit'}});
+const $=id=>document.getElementById(id);
+const esc=x=>String(x==null?'':x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CATS={soutien:'Soutien scolaire',sport:'Sport',musique:'Musique',creatif:'Créatif',jeux:'Jeux',informatique:'Informatique',autre:'Autre'};
+const LIEUX={ecole:'À l\'école',bibliotheque:'À la bibliothèque',maison_quartier:'Maison de quartier',chez_parent:'Chez un parent (présent)',en_ligne:'En ligne'};
+const STATUS={pending_parents:'En attente des parents',accepted:'Validé',completed:'Terminé',refused:'Refusé',cancelled:'Annulé'};
+let role=null,me=null,tab='home',people={},openChat=null,pollT=null,authMode='jeune';
+
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>e.style.display='none',4500);}
+function fail(e){const m=(e&&e.message)||String(e);toast(/foreign key|violates/i.test(m)?'Action impossible.':m);}
+async function rpc(n,a){const r=await sb.rpc(n,a||{});if(r.error)throw r.error;return r.data;}
+
+/* ---- anti-robot ---- */
+let _tsId=null,_tsTok=null;
+function initCaptcha(){const sc=document.createElement('script');sc.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';sc.async=true;
+ sc.onload=()=>{window._tsReady=true;renderCaptcha();};document.head.appendChild(sc);}
+function renderCaptcha(){const b=$('cap');if(!b||!window.turnstile)return;b.innerHTML='';_tsTok=null;try{_tsId=turnstile.render(b,{sitekey:TURNSTILE_SITEKEY,language:'fr',callback:t=>{_tsTok=t;},'expired-callback':()=>{_tsTok=null;}});}catch(e){}}
+function takeCaptcha(){const t=_tsTok;_tsTok=null;try{if(_tsId!==null)turnstile.reset(_tsId);}catch(e){}return t||undefined;}
+function authErr(m){const t=(m||'').toLowerCase();
+ if(t.includes('captcha'))return 'Vérification anti-robot échouée : recharge la page et réessaie.';
+ if(t.includes('invalid login'))return 'Identifiant ou mot de passe incorrect.';
+ if(t.includes('already registered'))return 'Cet identifiant existe déjà, choisis-en un autre.';
+ if(t.includes('database error')||t.includes('code parent'))return 'Code parent invalide ou expiré. Demande un nouveau code à ton parent.';
+ if(t.includes('password'))return 'Mot de passe trop court (8 caractères minimum).';return m;}
+
+/* ---- écran de connexion ---- */
+function viewLogin(){
+ const jeune=authMode==='jeune';
+ $('app').innerHTML=`<div style="text-align:center;margin:18px 0 6px"><img src="/icon-192.png" width="72" height="72" style="border-radius:18px" alt=""></div>
+ <h1 style="text-align:center">Troctan Jeunes</h1><p class="sub" style="text-align:center">Entraide entre jeunes de 12 à 17 ans, avec l'accord des parents</p>
+ <div class="seg"><button id="m-j" class="${jeune?'on':''}" onclick="authMode='jeune';viewLogin()">Je suis jeune</button><button id="m-p" class="${jeune?'':'on'}" onclick="authMode='parent';viewLogin()">Je suis parent</button></div>
+ <div class="card">
+ ${jeune?'':`<p class="sub">Connecte-toi avec ton compte Troctan (adulte). Pas encore de compte ? Crée-le d'abord sur <a href="/">troctan.ch</a> avec le code d'invitation de la commune.</p>`}
+ <label>Identifiant</label><input id="li" autocapitalize="none" autocomplete="username">
+ <label>Mot de passe</label><input id="lp" type="password" autocomplete="current-password">
+ <div id="cap" style="display:flex;justify-content:center;margin:6px 0"></div>
+ <p id="lerr" class="sub" style="color:var(--warn);display:none"></p>
+ <button class="btn" onclick="doLogin()">Se connecter</button></div>
+ ${jeune?`<details class="card"><summary style="font-weight:700;cursor:pointer">J'ai un code de mon parent</summary>
+ <p class="sub" style="margin-top:8px">Ton parent crée ton accès depuis son compte et te donne un code (valable 7 jours). Choisis ensuite ton identifiant et ton mot de passe.</p>
+ <label>Code parent</label><input id="sc" placeholder="JE-XXXXXXXX" autocapitalize="characters" maxlength="14">
+ <label>Choisis ton identifiant (minuscules, chiffres, point, tiret)</label><input id="si" autocapitalize="none" maxlength="30">
+ <label>Choisis ton mot de passe (8 caractères minimum)</label><input id="sp" type="password" autocomplete="new-password">
+ <label class="chk"><input type="checkbox" id="sr"><span>J'ai lu les <a href="#" onclick="event.preventDefault();viewRules()">règles de Troctan Jeunes</a> et je les respecte.</span></label>
+ <button class="btn sec" onclick="doSignup()">Créer mon compte</button></details>`:''}
+ <p class="sub" style="text-align:center;margin-top:14px"><a href="#" onclick="event.preventDefault();viewRules()">Règles et protection des jeunes</a></p>`;
+ renderCaptcha();
+}
+function lerr(m){const e=$('lerr');if(!e)return;e.textContent=m;e.style.display=m?'block':'none';}
+function mail(id){id=(id||'').trim().toLowerCase();return id+(authMode==='jeune'?'@jeunes.troctan.ch':'@membres.troctan.ch');}
+async function doLogin(){
+ const id=$('li').value.trim(),pw=$('lp').value;if(!id||!pw){lerr('Entre ton identifiant et ton mot de passe.');return;}
+ if(!_tsTok){lerr('Vérification anti-robot en cours : attends 2 secondes puis réessaie.');return;}
+ lerr('');const {error}=await sb.auth.signInWithPassword({email:mail(id),password:pw,options:{captchaToken:takeCaptcha()}});
+ if(error){lerr(authErr(error.message));return;}
+}
+async function doSignup(){
+ const code=$('sc').value.trim(),id=$('si').value.trim().toLowerCase(),pw=$('sp').value;
+ if(code.length<6){lerr('Entre le code donné par ton parent.');return;}
+ if(!/^[a-z0-9._-]{3,30}$/.test(id)){lerr('Identifiant invalide : 3 à 30 caractères, minuscules, chiffres, point, tiret.');return;}
+ if(pw.length<8){lerr('Mot de passe : 8 caractères minimum.');return;}
+ if(!$('sr').checked){lerr('Coche la case pour accepter les règles.');return;}
+ if(!_tsTok){lerr('Vérification anti-robot en cours : attends 2 secondes puis réessaie.');return;}
+ authMode='jeune';lerr('');
+ const {data,error}=await sb.auth.signUp({email:mail(id),password:pw,options:{captchaToken:takeCaptcha(),data:{kind:'youth',parent_code:code}}});
+ if(error){lerr(authErr(error.message));return;}
+ if(!data.session){lerr('Compte créé ✓ Appuie maintenant sur « Se connecter » (en haut).');}
+}
+async function logout(){clearInterval(pollT);await sb.auth.signOut();role=null;me=null;viewLogin();}
+
+/* ---- règles ---- */
+function viewRules(){
+ $('app').innerHTML=`<div class="top"><h1>Règles</h1><button class="btn sec sm" onclick="${me?'go(tab)':'viewLogin()'}">Retour</button></div>
+ <div class="card"><h2 style="margin-top:0">Pour les jeunes</h2>
+ <p>• Troctan Jeunes est réservé aux 12 à 17 ans. Ton parent crée ton accès et valide chaque échange.</p>
+ <p>• Tu échanges seulement avec des jeunes de ta tranche d'âge (12-14 ou 15-17 ans).</p>
+ <p>• Les rendez-vous se font à l'école, à la bibliothèque, dans une maison de quartier, en ligne, ou chez un parent présent. Jamais seul(e) avec un inconnu.</p>
+ <p>• Pas de numéro de téléphone, d'adresse, de lien ou de réseau social dans les messages : ils sont refusés.</p>
+ <p>• Tes parents peuvent lire tes discussions. Si quelque chose te met mal à l'aise, utilise « Signaler » et parles-en à un adulte de confiance.</p>
+ <p>• Sois respectueux. Un compte peut être suspendu en cas d'abus.</p></div>
+ <div class="card"><h2 style="margin-top:0">Pour les parents</h2>
+ <p>• Vous créez le compte de votre enfant (prénom et année de naissance seulement) et validez chaque échange. Les deux familles doivent accepter avant que la discussion s'ouvre.</p>
+ <p>• Vous pouvez lire les discussions, suspendre, changer le mot de passe ou supprimer le compte de votre enfant à tout moment.</p>
+ <p>• Données collectées : prénom, année de naissance, annonces et messages. Pas de photo, pas de position, pas d'email du jeune. Elles sont conservées tant que le compte existe et effacées à sa suppression (les sauvegardes techniques le sont dans les 90 jours).</p>
+ <p>• Troctan Jeunes met en relation, mais n'organise ni ne surveille les rencontres : la responsabilité reste celle des familles. Contact : contact.troctan@gmail.com</p></div>`;
+}
+
+/* ---- navigation ---- */
+function tabsHtml(){
+ const items=role==='parent'?[['kids','Enfants'],['valid','Validation'],['exch','Échanges']]:[['home','Accueil'],['new','Proposer'],['exch','Échanges'],['me','Profil']];
+ if(role==='parent'&&isAdminUser)items.push(['mod','Modération']);
+ return `<div class="tabs">${items.map(([k,l])=>`<button class="${tab===k?'on':''}" onclick="go('${k}')">${l}${k==='valid'&&pendingCount?`<span class="badge">${pendingCount}</span>`:''}</button>`).join('')}</div>`;
+}
+let pendingCount=0,isAdminUser=false;
+async function go(t){openChat=null;tab=t;await render();}
+async function render(){
+ const v=$('app');
+ try{
+  if(role==='parent'){
+   if(tab==='kids')await viewKids();else if(tab==='valid')await viewValid();else if(tab==='exch')await viewExch();else if(tab==='mod')await viewMod();
+  }else{
+   if(tab==='home')await viewHome();else if(tab==='new')viewNew();else if(tab==='exch')await viewExch();else if(tab==='me')await viewMe();
+  }
+  v.insertAdjacentHTML('beforeend',tabsHtml());
+ }catch(e){fail(e);}
+}
+async function loadPeople(){const {data}=await sb.from('y_people').select('id,name,band');people={};(data||[]).forEach(p=>people[p.id]=p);}
+const nm=id=>(people[id]&&people[id].name)||'…';
+
+/* ---- JEUNE : accueil ---- */
+let fKind='',fCat='';
+async function viewHome(){
+ await loadPeople();
+ let q=sb.from('y_services').select('*').eq('active',true).order('created_at',{ascending:false}).limit(60);
+ if(fKind)q=q.eq('kind',fKind);if(fCat)q=q.eq('category',fCat);
+ const {data,error}=await q;if(error)throw error;
+ const list=(data||[]).filter(s=>s.author_id!==me);
+ $('app').innerHTML=`<div class="top"><h1>Accueil</h1><span class="pill">${esc(myBand)} ans</span></div>
+ <p class="sub">Annonces des jeunes de ta tranche d'âge. 1 heure donnée = 1 crédit.</p>
+ <div class="row"><select style="flex:1" onchange="fKind=this.value;render()"><option value="">Offres et demandes</option><option value="offre" ${fKind==='offre'?'selected':''}>Offres</option><option value="demande" ${fKind==='demande'?'selected':''}>Demandes</option></select>
+ <select style="flex:1" onchange="fCat=this.value;render()"><option value="">Toutes catégories</option>${Object.entries(CATS).map(([k,l])=>`<option value="${k}" ${fCat===k?'selected':''}>${l}</option>`).join('')}</select></div>
+ ${list.map(s=>`<div class="card"><div class="row"><span class="pill ${s.kind==='offre'?'o':'d'}">${s.kind==='offre'?'Je propose':'Besoin d\'aide'}</span><span class="sub">${esc(CATS[s.category])} · ${s.hours} h</span></div>
+ <p style="font-weight:700;margin-top:6px">${esc(s.title)}</p>${s.description?`<p class="sub">${esc(s.description)}</p>`:''}
+ <p class="sub">${esc(nm(s.author_id))} · ${esc(LIEUX[s.lieu])}</p>
+ <button class="btn sm" onclick="respond('${s.id}')">${s.kind==='offre'?'Je suis intéressé·e':'Je peux aider'}</button></div>`).join('')||'<p class="sub" style="margin-top:14px">Aucune annonce pour le moment. Sois le premier à en publier une !</p>'}`;
+}
+async function respond(id){
+ if(!confirm('Envoyer la demande ? Tes parents et ceux de l\'autre jeune devront la valider avant que vous puissiez discuter.'))return;
+ try{await rpc('y_respond',{p_service:id});toast('Demande envoyée. En attente de la validation des parents.');go('exch');}catch(e){fail(e);}
+}
+
+/* ---- JEUNE : proposer ---- */
+function viewNew(){
+ $('app').innerHTML=`<h1>Proposer</h1><div class="card">
+ <div class="seg"><button id="k-o" class="on" onclick="setK('offre')">Je propose</button><button id="k-d" onclick="setK('demande')">J'ai besoin d'aide</button></div>
+ <label>Titre</label><input id="nt" maxlength="80" placeholder="Ex. Aide en maths niveau 8H">
+ <label>Description (facultatif)</label><textarea id="nd" rows="3" maxlength="400" placeholder="Sans numéro de téléphone, adresse ni réseau social"></textarea>
+ <label>Catégorie</label><select id="nc">${Object.entries(CATS).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
+ <label>Durée</label><select id="nh">${[0.5,1,1.5,2,2.5,3].map(h=>`<option value="${h}" ${h===1?'selected':''}>${h} heure${h>1?'s':''}</option>`).join('')}</select>
+ <label>Lieu du rendez-vous</label><select id="nl">${Object.entries(LIEUX).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
+ <button class="btn" onclick="publish()">Publier</button></div>`;
+}
+let nKind='offre';function setK(k){nKind=k;$('k-o').classList.toggle('on',k==='offre');$('k-d').classList.toggle('on',k==='demande');}
+async function publish(){
+ const title=$('nt').value.trim();if(title.length<3){toast('Ajoute un titre (3 caractères minimum).');return;}
+ const txt=title+' '+$('nd').value;
+ if(/(https?:\/\/|www\.|@|\d[\d .\-]{6,}\d)/i.test(txt)||/(whatsapp|snap|insta|telegram|discord|tiktok|signal)/i.test(txt)){toast('Pas de numéro, lien, adresse ni réseau social dans l\'annonce.');return;}
+ const {error}=await sb.from('y_services').insert({author_id:me,kind:nKind,title,description:$('nd').value.trim()||null,category:$('nc').value,hours:parseFloat($('nh').value),lieu:$('nl').value,band:myBand});
+ if(error){fail(error);return;}toast('Annonce publiée ✓');go('home');
+}
+
+/* ---- JEUNE : profil ---- */
+let myName='',myBal=0,myBand='';
+async function viewMe(){
+ const {data:p}=await sb.from('y_profiles').select('*').eq('id',me).maybeSingle();
+ const {data:mine}=await sb.from('y_services').select('*').eq('author_id',me).order('created_at',{ascending:false});
+ if(p){myName=p.name;myBal=p.balance;}
+ $('app').innerHTML=`<h1>Salut ${esc(myName)}</h1><div class="card"><p class="sub">Ton solde</p><p style="font-size:28px;font-weight:800">${myBal} crédit${Math.abs(myBal)>1?'s':''}</p>
+ <p class="sub">1 heure donnée = 1 crédit gagné. Ton solde reste compris entre -5 et +10.</p></div>
+ <h2>Mes annonces</h2>${(mine||[]).map(s=>`<div class="card"><p style="font-weight:700">${esc(s.title)}</p><p class="sub">${s.kind==='offre'?'Je propose':'Besoin d\'aide'} · ${esc(CATS[s.category])}${s.active?'':' · retirée'}</p>
+ <button class="btn warn sm" onclick="delService('${s.id}')">Supprimer</button></div>`).join('')||'<p class="sub">Aucune annonce.</p>'}
+ <button class="btn sec" onclick="viewRules()">Règles</button><button class="btn sec" onclick="logout()">Se déconnecter</button>`;
+}
+async function delService(id){if(!confirm('Supprimer cette annonce ?'))return;const {error}=await sb.from('y_services').delete().eq('id',id);if(error)fail(error);else render();}
+
+/* ---- ÉCHANGES (jeune + parent) ---- */
+async function viewExch(){
+ if(openChat)return viewChat();
+ await loadPeople();
+ const {data,error}=await sb.from('y_exchanges').select('*').order('created_at',{ascending:false}).limit(60);if(error)throw error;
+ const kids=role==='parent'?await myKids():[];const kidIds=new Set(kids.map(k=>k.id));
+ $('app').innerHTML=`<h1>Échanges</h1>${(data||[]).map(e=>{
+  const other=role==='parent'?`${nm(e.requester_id)} ⇄ ${nm(e.provider_id)}`:`${e.requester_id===me?'Avec '+nm(e.provider_id):'Avec '+nm(e.requester_id)}`;
+  const mineRole=role==='parent'?'':(e.requester_id===me?'Tu reçois de l\'aide':'Tu aides');
+  return `<div class="card"><div class="row"><span class="pill">${STATUS[e.status]}</span><span class="sub">${e.hours} h · ${esc(LIEUX[e.lieu]||'')}</span></div>
+  <p style="font-weight:700;margin-top:6px">${esc(e.service_title||'Annonce supprimée')}</p><p class="sub">${esc(other)}${mineRole?' · '+mineRole:''}</p>
+  ${['accepted','completed'].includes(e.status)?`<button class="btn sm" onclick="openChat='${e.id}';render()">${role==='parent'?'Lire la discussion':'Discussion'}</button>`:''}
+  ${e.status==='accepted'||e.status==='pending_parents'?`<button class="btn warn sm" onclick="cancelEx('${e.id}')">Annuler</button>`:''}</div>`;}).join('')||'<p class="sub">Aucun échange pour le moment.</p>'}`;
+}
+async function cancelEx(id){if(!confirm('Annuler cet échange ?'))return;try{await rpc('y_cancel',{p_exchange:id});render();}catch(e){fail(e);}}
+async function viewChat(){
+ const id=openChat;
+ const {data:ex}=await sb.from('y_exchanges').select('*').eq('id',id).maybeSingle();
+ const {data:ms}=await sb.from('y_messages').select('*').eq('exchange_id',id).order('created_at',{ascending:true}).limit(300);
+ if(!ex){openChat=null;return viewExch();}
+ const done=role==='parent'?'':(ex.status==='accepted'?((ex.requester_id===me?ex.req_done:ex.prov_done)?'<p class="sub">Tu as confirmé. En attente de l\'autre jeune.</p>':'<button class="btn sm" onclick="markDone()">Échange terminé ✓</button>'):'');
+ const box=$('app');const keep=box.querySelector('#ci')?box.querySelector('#ci').value:'';
+ box.innerHTML=`<div class="top"><h1 style="font-size:18px">${esc(ex.service_title||'Échange')}</h1><button class="btn sec sm" onclick="openChat=null;render()">Retour</button></div>
+ <p class="sub">${role==='parent'?'Lecture seule : vous voyez la discussion de votre enfant.':'Tes parents peuvent lire cette discussion. Pas de numéro, lien ni adresse.'} Lieu : ${esc(LIEUX[ex.lieu]||'')}.</p>
+ <div id="msgs" style="margin:10px 0">${(ms||[]).map(m=>`<div class="msg ${m.sender_id===me?'me':''}"><small>${esc(nm(m.sender_id))}</small>${esc(m.content)}</div>`).join('')||'<p class="sub">Aucun message.</p>'}</div>
+ ${role!=='parent'&&ex.status==='accepted'?`<div class="row"><input id="ci" maxlength="500" placeholder="Ton message" style="flex:1;margin:0" value="${esc(keep)}" onkeydown="if(event.key==='Enter')sendMsg()"><button class="btn sm" style="margin:0" onclick="sendMsg()">Envoyer</button></div>`:''}
+ ${done}<button class="btn warn sm" onclick="reportEx('${ex.id}')">Signaler</button>`;
+ setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),50);
+}
+async function sendMsg(){const i=$('ci');const t=i.value.trim();if(!t)return;try{await rpc('y_send_message',{p_exchange:openChat,p_content:t});i.value='';render();}catch(e){fail(e);}}
+async function markDone(){try{await rpc('y_mark_done',{p_exchange:openChat});toast('Merci ✓');render();}catch(e){fail(e);}}
+async function reportEx(id){const r=prompt('Pourquoi signales-tu cet échange ? (quelques mots)');if(!r||r.trim().length<3)return;try{await rpc('y_report',{p_exchange:id,p_service:null,p_reason:r});toast('Signalement envoyé. Merci.');}catch(e){fail(e);}}
+
+/* ---- PARENT ---- */
+let kidsCache=[];
+async function myKids(){
+ const {data:fam}=await sb.from('y_family').select('child_id').eq('parent_id',me);
+ const ids=(fam||[]).map(f=>f.child_id);if(!ids.length){kidsCache=[];return [];}
+ const {data}=await sb.from('y_profiles').select('*').in('id',ids);kidsCache=data||[];return kidsCache;
+}
+async function viewKids(){
+ const kids=await myKids();
+ const {data:codes}=await sb.from('y_child_codes').select('*').is('used_by',null).gt('expires_at',new Date().toISOString());
+ const yr=new Date().getFullYear();
+ $('app').innerHTML=`<div class="top"><h1>Mes enfants</h1><button class="btn sec sm" onclick="logout()">Quitter</button></div>
+ <p class="sub">Vous créez l'accès de votre enfant et validez chaque échange. Vous pouvez lire ses discussions.</p>
+ ${kids.map(k=>`<div class="card"><p style="font-weight:700">${esc(k.name)} <span class="pill">${esc(k.band)} ans</span>${k.paused?' <span class="pill d">suspendu</span>':''}</p><p class="sub">Solde : ${k.balance} crédit(s)</p>
+ <button class="btn sec sm" onclick="resetPw('${k.id}')">Nouveau mot de passe</button>
+ <button class="btn sec sm" onclick="pauseKid('${k.id}',${!k.paused})">${k.paused?'Réactiver':'Suspendre'}</button>
+ <button class="btn warn sm" onclick="delKid('${k.id}')">Supprimer</button></div>`).join('')||'<p class="sub">Aucun enfant pour le moment.</p>'}
+ ${(codes||[]).map(c=>`<div class="card"><p class="sub">Code en attente pour ${esc(c.child_name)} (valable jusqu'au ${new Date(c.expires_at).toLocaleDateString('fr-CH')})</p><div class="big">${esc(c.code)}</div><button class="btn warn sm" onclick="delCode('${esc(c.code)}')">Annuler ce code</button></div>`).join('')}
+ <h2>Ajouter un enfant (12 à 17 ans)</h2><div class="card">
+ <label>Prénom de l'enfant</label><input id="kn" maxlength="30">
+ <label>Année de naissance</label><select id="ky">${Array.from({length:6},(_,i)=>yr-12-i).map(y=>`<option>${y}</option>`).join('')}</select>
+ <label class="chk"><input type="checkbox" id="kc"><span>Je suis le représentant légal de cet enfant. J'autorise son inscription, j'ai lu les <a href="#" onclick="event.preventDefault();viewRules()">règles</a> et j'accepte que ses discussions puissent être lues par les parents.</span></label>
+ <button class="btn" onclick="addKid()">Créer le code d'accès</button></div>`;
+}
+async function addKid(){
+ const n=$('kn').value.trim();if(n.length<2){toast('Entre le prénom.');return;}if(!$('kc').checked){toast('Coche la case d\'autorisation parentale.');return;}
+ try{const c=await rpc('y_create_child_code',{p_name:n,p_birth_year:parseInt($('ky').value,10)});toast('Code créé. Donnez-le à votre enfant : troctan.ch/jeunes → « J\'ai un code de mon parent ».');render();}catch(e){fail(e);}
+}
+async function delCode(c){const {error}=await sb.from('y_child_codes').delete().eq('code',c);if(error)fail(error);else render();}
+async function resetPw(id){const p=prompt('Nouveau mot de passe pour votre enfant (8 caractères minimum) :');if(!p)return;try{await rpc('y_parent_reset_password',{p_child:id,p_password:p});toast('Mot de passe changé ✓');}catch(e){fail(e);}}
+async function pauseKid(id,v){try{await rpc('y_parent_set_paused',{p_child:id,p_paused:v});render();}catch(e){fail(e);}}
+async function delKid(id){if(!confirm('Supprimer définitivement le compte de votre enfant et toutes ses données ?'))return;try{await rpc('y_parent_delete_child',{p_child:id});toast('Compte supprimé.');render();}catch(e){fail(e);}}
+
+async function viewValid(){
+ await loadPeople();const kids=await myKids();const ids=new Set(kids.map(k=>k.id));
+ const {data}=await sb.from('y_exchanges').select('*').eq('status','pending_parents').order('created_at',{ascending:false});
+ const todo=(data||[]).filter(e=>(ids.has(e.requester_id)&&!e.req_parent_ok)||(ids.has(e.provider_id)&&!e.prov_parent_ok));
+ pendingCount=todo.length;
+ $('app').innerHTML=`<h1>À valider</h1><p class="sub">Un échange s'ouvre seulement quand les parents des deux jeunes l'ont accepté.</p>
+ ${todo.map(e=>{const mineId=ids.has(e.requester_id)?e.requester_id:e.provider_id;const otherId=mineId===e.requester_id?e.provider_id:e.requester_id;
+ return `<div class="card"><p style="font-weight:700">${esc(e.service_title||'Annonce')}</p>
+ <p class="sub">${esc(nm(mineId))} ${mineId===e.requester_id?'reçoit de l\'aide de':'aide'} ${esc(nm(otherId))} · ${e.hours} h</p><p class="sub">Lieu : ${esc(LIEUX[e.lieu]||'')}</p>
+ <button class="btn sm" onclick="decide('${e.id}',true)">Accepter</button><button class="btn warn sm" onclick="decide('${e.id}',false)">Refuser</button></div>`;}).join('')||'<p class="sub">Rien à valider pour le moment.</p>'}`;
+}
+async function decide(id,ok){try{await rpc('y_parent_decide',{p_exchange:id,p_approve:ok});toast(ok?'Accepté ✓':'Refusé.');render();}catch(e){fail(e);}}
+
+/* ---- MODÉRATION (administrateurs) ---- */
+async function viewMod(){
+ const {data}=await sb.from('y_reports').select('*').is('resolved_at',null).order('created_at',{ascending:false});
+ $('app').innerHTML=`<h1>Signalements</h1>${(data||[]).map(r=>`<div class="card"><p>${esc(r.reason)}</p><p class="sub">${new Date(r.created_at).toLocaleString('fr-CH')}</p>
+ ${r.exchange_id?`<button class="btn sec sm" onclick="openChat='${r.exchange_id}';tab='exch';render()">Voir la discussion</button>`:''}
+ <button class="btn sm" onclick="resolveRep('${r.id}')">Classer</button></div>`).join('')||'<p class="sub">Aucun signalement.</p>'}`;
+}
+async function resolveRep(id){try{await rpc('y_admin_resolve_report',{p_id:id});render();}catch(e){fail(e);}}
+
+/* ---- démarrage ---- */
+async function onSession(session){
+ clearInterval(pollT);
+ if(!session){role=null;me=null;viewLogin();return;}
+ me=session.user.id;
+ try{role=await rpc('y_whoami');}catch(e){role=null;}
+ if(!role){await sb.auth.signOut();viewLogin();return;}
+ if(role==='parent'){
+  try{const a=await sb.from('admins').select('user_id').eq('user_id',me).maybeSingle();isAdminUser=!!a.data;}catch(e){}
+  tab='kids';await refreshPending();
+ }else{
+  const {data:p}=await sb.from('y_profiles').select('*').eq('id',me).maybeSingle();
+  if(p){myName=p.name;myBand=p.band;myBal=p.balance;if(p.paused){$('app').innerHTML='<h1>Compte suspendu</h1><p>Ton compte a été suspendu par tes parents ou par la modération.</p><button class="btn sec" onclick="logout()">Se déconnecter</button>';return;}}
+  tab='home';
+ }
+ await render();
+ pollT=setInterval(poll,8000);
+}
+async function refreshPending(){
+ if(role!=='parent')return;
+ try{await loadPeople();const kids=await myKids();const ids=new Set(kids.map(k=>k.id));
+ const {data}=await sb.from('y_exchanges').select('requester_id,provider_id,req_parent_ok,prov_parent_ok').eq('status','pending_parents');
+ pendingCount=(data||[]).filter(e=>(ids.has(e.requester_id)&&!e.req_parent_ok)||(ids.has(e.provider_id)&&!e.prov_parent_ok)).length;}catch(e){}
+}
+async function poll(){
+ if(document.hidden||!me)return;
+ const a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'))return;
+ if(role==='parent')await refreshPending();
+ if(openChat||tab==='exch'||tab==='valid'||tab==='home'||(role==='parent'&&tab==='mod'))await render();
+ else if(role==='parent'){const t=document.querySelector('.tabs');if(t)t.outerHTML=tabsHtml();}
+}
+initCaptcha();
+sb.auth.onAuthStateChange((ev,s)=>{ if(ev==='INITIAL_SESSION'||ev==='SIGNED_IN'||ev==='SIGNED_OUT')setTimeout(()=>onSession(s),0); });
+</script>
+</body>
+</html>
