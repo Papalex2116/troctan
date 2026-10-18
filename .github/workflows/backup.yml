@@ -1,0 +1,43 @@
+name: Sauvegarde hebdomadaire de la base
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'   # chaque dimanche, 03:00 UTC
+  workflow_dispatch:       # lancement manuel possible
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installer pg_dump 17
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Exporter et chiffrer
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test -n "$DB_URL" && test -n "$PASS"
+          F="troctan-$(date -u +%Y-%m-%d)"
+          /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" --no-owner --no-privileges --schema=public --schema=auth -Fc -f "$F.dump"
+          test -s "$F.dump"
+          printf '%s' "$PASS" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric --cipher-algo AES256 -o "$F.dump.gpg" "$F.dump"
+          rm "$F.dump"
+          ls -la
+          echo "FILE=$F.dump.gpg" >> "$GITHUB_ENV"
+
+      - name: Conserver 90 jours (fichier chiffré)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sauvegarde-troctan
+          path: ${{ env.FILE }}
+          retention-days: 90
