@@ -310,7 +310,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 61</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 62</p>
     <p style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:4px;">Lancé à La Grande-Béroche · ouvert aux voisins de la région</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
@@ -2916,7 +2916,9 @@ Hébergement du site : GitHub Pages (GitHub Inc., Etats-Unis). Nom de domaine : 
 
 Politique de confidentialité
 
-Dernière mise à jour : octobre 2026
+Dernière mise à jour : octobre 2026 (version 2)
+
+Responsable du traitement : l'éditeur de Troctan (voir « Mentions légales » ci-dessus). Cette politique est régie par la loi fédérale suisse sur la protection des données (nLPD).
 
 1. Données que nous traitons
 - Compte : ton identifiant (ou ton adresse email pour les anciens comptes) et ton mot de passe (conservé chiffré par Supabase, jamais lisible par nous), jamais visibles des autres membres ; ton adresse email de contact (stockée séparément, jamais visible des autres membres), ton prénom et, si tu le souhaites, une photo de profil (visible des autres membres).
@@ -2924,6 +2926,7 @@ Dernière mise à jour : octobre 2026
 - Contenu : tes annonces (titre, description, catégorie, photo facultative), tes demandes d'échange, les messages échangés, les avis donnés et reçus, les communautés que tu rejoins et ce que tu y publies.
 - Coordonnées facultatives : téléphone et adresse postale, stockées séparément et jamais visibles publiquement — seul un partenaire d'échange accepté peut voir les champs que tu as toi-même rendus visibles.
 - Notifications : si tu les actives, ton navigateur nous transmet une adresse technique d'abonnement (propre à ton appareil) qui sert uniquement à t'envoyer des notifications (nouveau message, demande, avis…). Tu peux les désactiver à tout moment dans « Profil ».
+- Données techniques : pour protéger l'application contre les robots et les abus, une vérification anti-robot (Cloudflare Turnstile) est effectuée à la connexion et à l'inscription ; elle analyse des informations techniques de ton navigateur et ton adresse IP. En cas de panne ou d'erreur de l'application, un court message d'erreur technique peut être enregistré (sans contenu de conversation ni mot de passe).
 - Modération : si tu bloques un membre ou signales une annonce, cette information est enregistrée pour appliquer la restriction.
 - Rangement : les échanges que tu archives ou supprimes de ta liste sont simplement masqués pour toi ; l'autre personne les conserve de son côté.
 - Ton solde de crédits et ta position ne sont lisibles que par toi-même ; les autres membres ne voient que ton prénom, ta photo et ta note.
@@ -2943,31 +2946,35 @@ Troctan n'utilise aucun cookie, ni traceur publicitaire, ni outil de mesure d'au
 - Visibles uniquement des deux personnes concernées : une demande d'échange et sa discussion.
 - Visibles uniquement d'un partenaire d'échange accepté, si tu l'as choisi : ton téléphone et/ou ton adresse postale.
 - Jamais visibles des autres membres : ton email, ton solde, ta position, la liste des personnes que tu as bloquées.
-- Accessibles à l'administrateur de Troctan : uniquement pour la modération (signalements, retrait de contenus ou de comptes, consultation des échanges et messages liés à un signalement) et pour réaliser des sauvegardes techniques de la base de données, qui contiennent l'ensemble des données ci-dessus. Ces sauvegardes ne sont ni partagées ni utilisées à d'autres fins.
+- Accessibles à l'administrateur de Troctan : uniquement pour la modération (signalements, retrait de contenus ou de comptes, consultation des échanges et messages liés à un signalement) et pour réaliser des sauvegardes techniques de la base de données, qui contiennent l'ensemble des données ci-dessus. Ces sauvegardes sont automatiques (une fois par semaine), chiffrées, conservées 90 jours sur le service GitHub, et ne sont ni partagées ni utilisées à d'autres fins.
 
 6. Prestataires techniques et pays de traitement
 - Supabase (base de données, connexion, stockage des photos) : société Supabase Inc./Pte Ltd, Etats-Unis. La région d'hébergement des données dépend de la configuration du projet (à vérifier dans les paramètres du projet) ; en tant que société américaine, Supabase peut être soumise au droit américain (CLOUD Act) même pour des données hébergées en Europe.
-- GitHub Pages (hébergement du site) : GitHub Inc. (Microsoft), Etats-Unis.
+- GitHub (hébergement du site et conservation chiffrée des sauvegardes) : GitHub Inc. (Microsoft), Etats-Unis.
+- Cloudflare Turnstile (vérification anti-robot) : Cloudflare Inc., Etats-Unis ; ton adresse IP et des informations techniques de ton navigateur lui sont transmises lors de la connexion et de l'inscription.
+- Surveillance de disponibilité (UptimeRobot) : ne reçoit aucune donnée personnelle de membre, seulement l'état du service.
 - Resend (envoi d'emails : réinitialisation de mot de passe, alertes de modération) : société basée aux Etats-Unis ; ton adresse email de contact leur est transmise uniquement pour l'envoi du message concerné.
 - Services de notification de ton navigateur (Google, Apple ou Mozilla selon ton appareil) : ils acheminent les notifications push, qui contiennent un court texte (par exemple « Nouveau message de … »).
 - Infomaniak (nom de domaine) : société suisse, Genève.
 - OpenStreetMap (fond de carte) : OpenStreetMap Foundation, Royaume-Uni ; l'affichage de la carte transmet ton adresse IP à leurs serveurs.
-Certains de ces traitements ont donc lieu en Suisse, dans l'Union européenne et aux Etats-Unis.
+Certains de ces traitements ont donc lieu en Suisse, dans l'Union européenne et aux Etats-Unis. Lorsque des données sont transmises à l'étranger, c'est à des prestataires qui offrent des garanties appropriées au sens de la nLPD (par exemple des clauses contractuelles types ou une certification au Data Privacy Framework), dans la mesure où ils les proposent.
 
 7. Mesures de sécurité techniques
 L'accès aux données est limité par des règles de sécurité au niveau de chaque ligne de la base de données (Row Level Security) : chaque membre ne peut lire ou modifier que ce qui le concerne. Aucune donnée sensible (mot de passe, email, coordonnées, conversation) n'est conservée sur ton appareil au-delà de ta session de connexion.
 
 8. Durée de conservation et suppression
-Tes données sont conservées tant que ton compte existe. « Supprimer mon compte » efface ton profil, tes annonces, tes photos, tes coordonnées privées, tes appartenances aux communautés et tes abonnements aux notifications. Ton compte de connexion est lui aussi supprimé : tu ne pourras plus te connecter avec. Les échanges, messages et avis liés à d'autres membres peuvent subsister dans leur propre historique. Les sauvegardes techniques déjà réalisées par l'administrateur sont effacées au plus tard lors de la sauvegarde suivante.
+Tes données sont conservées tant que ton compte existe. « Supprimer mon compte » efface ton profil, tes annonces, tes photos, tes coordonnées privées, tes appartenances aux communautés et tes abonnements aux notifications. Ton compte de connexion est lui aussi supprimé : tu ne pourras plus te connecter avec. Les échanges, messages et avis liés à d'autres membres peuvent subsister dans leur propre historique. Les sauvegardes techniques déjà réalisées peuvent contenir tes données jusqu'à 90 jours après la suppression, puis sont effacées automatiquement. Les données dont la conservation est exigée par la loi ou nécessaire à la défense d'un droit (par exemple un signalement pour abus) peuvent être conservées plus longtemps.
 
 9. Tes droits (nLPD)
-Accès (« Télécharger mes données »), rectification (« Modifier mon profil »), suppression (« Supprimer mon compte »). Pour toute autre demande : ${CONTACT_EMAIL}.
+Accès (« Télécharger mes données »), rectification (« Modifier mon profil »), suppression (« Supprimer mon compte »). Tu peux aussi demander la portabilité de tes données ou t'opposer à un traitement en écrivant à ${CONTACT_EMAIL} ; nous répondons en principe dans un délai de 30 jours. Tu as le droit de déposer une plainte auprès du Préposé fédéral à la protection des données et à la transparence (PFPDT, edoeb.admin.ch).
+
+Cette politique peut être adaptée ; la date de dernière mise à jour fait foi. En cas de changement important, tu en seras informé dans l'application.
 
 —
 
 Conditions d'utilisation
 
-En utilisant Troctan, tu acceptes de :
+En utilisant Troctan, tu confirmes avoir au moins 16 ans (ou l'accord de ton représentant légal) et tu acceptes de :
 - Rester respectueux envers les autres membres, dans tes annonces comme dans les communautés.
 - Ne publier que des services réels, que tu es en mesure de rendre.
 - Ne publier que des photos dont tu es l'auteur ou que tu as le droit d'utiliser, et ne pas publier de photo d'une personne sans son accord.
@@ -2975,15 +2982,29 @@ En utilisant Troctan, tu acceptes de :
 - Ne pas utiliser l'application à des fins commerciales : les crédits n'ont pas de valeur monétaire et ne peuvent pas être échangés contre de l'argent.
 - N'avoir qu'un seul compte, avec un identifiant qui t'est propre, et garder ton mot de passe secret.
 - Utiliser les avis honnêtement : ils reflètent ton expérience réelle, pas une rancune ni un échange de bons procédés.
+- Ne pas contourner les protections de l'application (robots, comptes multiples, tentative d'accès aux données d'autrui, surcharge du service).
+- Ne pas proposer de services soumis à autorisation ou réglementés (par exemple soins médicaux, travaux électriques ou gaz, conduite rémunérée de personnes, garde d'enfants à titre professionnel) ni d'objets ou substances illégaux.
 - Respecter l'équilibre des crédits : ton solde reste compris entre -10 et +20 crédits.
 
 Risques liés aux rencontres entre membres
 Troctan met des particuliers en relation mais n'organise, ne supervise et ne contrôle aucun échange ni aucune rencontre physique entre membres. Chaque rencontre se fait sous ta seule responsabilité. Prends les mêmes précautions que pour toute rencontre avec un inconnu : privilégie un premier échange dans un lieu public ou en présence d'un tiers, informe un proche de l'heure et du lieu du rendez-vous, et fie-toi à ton jugement. Troctan ne vérifie pas l'identité des membres au-delà de leur adresse email.
 
+Nature des échanges
+Les échanges sont des coups de main entre particuliers, sans lien de subordination : Troctan n'est ni ton employeur, ni celui des autres membres, ni une plateforme de travail. Chaque membre reste seul responsable de ses éventuelles obligations légales (assurances, impôts, assurances sociales, autorisations) liées aux services qu'il rend ou reçoit.
+
+Contenus que tu publies
+Tu restes titulaire de tes contenus. En les publiant, tu autorises Troctan à les afficher aux autres membres concernés, uniquement pour faire fonctionner le service. Tu garantis avoir le droit de les publier. Troctan peut retirer tout contenu contraire à ces conditions.
+
 Limitation de responsabilité
 Troctan est fourni « en l'état », actuellement en phase de test (des échanges fictifs peuvent exister), sans garantie de disponibilité, d'exactitude ou d'absence d'erreur. Dans la mesure permise par la loi, l'éditeur de Troctan décline toute responsabilité pour les dommages directs ou indirects résultant : de l'usage de l'application, d'un échange ou d'une rencontre entre membres, du contenu publié par un membre, ou d'une interruption, perte de données ou faille de sécurité, sauf faute intentionnelle ou négligence grave de sa part. Chaque membre reste seul responsable des services qu'il propose, de leur réalisation et du contenu qu'il publie.
 
-Le blocage et le signalement sont des outils mis à ta disposition pour te protéger ; en abuser pour nuire à quelqu'un sans raison légitime constitue lui-même un comportement abusif. Un compte peut être suspendu en cas de comportement abusif, notamment après signalement par d'autres membres.`;
+Le blocage et le signalement sont des outils mis à ta disposition pour te protéger ; en abuser pour nuire à quelqu'un sans raison légitime constitue lui-même un comportement abusif. Un compte peut être suspendu ou supprimé en cas de comportement abusif, notamment après signalement par d'autres membres. Tu peux quitter Troctan à tout moment en supprimant ton compte.
+
+Modification des conditions
+Ces conditions peuvent évoluer, notamment pour des raisons légales ou techniques. La version en vigueur est celle affichée dans l'application ; continuer à l'utiliser après un changement vaut acceptation.
+
+Droit applicable et for
+Les présentes conditions sont soumises au droit suisse. Sous réserve des règles impératives de protection des consommateurs, le for est celui du domicile de l'éditeur, en Suisse.`;
 
 document.getElementById('legal-text').textContent = LEGAL_TEXT;
 
