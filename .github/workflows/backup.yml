@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   backup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Installer pg_dump 17
         run: |
@@ -26,7 +26,11 @@ jobs:
           PASS: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
           set -euo pipefail
-          test -n "$DB_URL" && test -n "$PASS"
+          [ -n "$DB_URL" ] || { echo "ERREUR: le secret SUPABASE_DB_URL est vide ou mal nommé"; exit 1; }
+          [ -n "$PASS" ] || { echo "ERREUR: le secret BACKUP_PASSPHRASE est vide ou mal nommé"; exit 1; }
+          case "$DB_URL" in postgresql://*|postgres://*) ;; *) echo "ERREUR: SUPABASE_DB_URL doit commencer par postgresql://"; exit 1;; esac
+          case "$DB_URL" in *"[YOUR-PASSWORD]"*) echo "ERREUR: remplace [YOUR-PASSWORD] par le mot de passe de la base"; exit 1;; esac
+          case "$DB_URL" in *pooler.supabase.com*) ;; *) echo "ERREUR: utilise l'adresse Session pooler (elle contient pooler.supabase.com)"; exit 1;; esac
           F="troctan-$(date -u +%Y-%m-%d)"
           /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" --no-owner --no-privileges --schema=public --schema=auth -Fc -f "$F.dump"
           test -s "$F.dump"
