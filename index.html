@@ -298,7 +298,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <input type="email" id="signup-email" placeholder="toi@exemple.com" autocomplete="email">
       <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
         <input type="checkbox" id="signup-cgu" style="width:auto; margin:2px 0 0;">
-        <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showScreen('legal');" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a></span>
+        <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showScreen('legal');" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a>. Je confirme avoir 18 ans ou plus.</span>
       </label>
       <button class="btn secondary" id="signup-btn">Créer mon compte</button>
     </details>
@@ -310,7 +310,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 62</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 63</p>
     <p style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:4px;">Lancé à La Grande-Béroche · ouvert aux voisins de la région</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
@@ -345,7 +345,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
     <input type="text" id="onboard-name" placeholder="Ex. Marc">
     <label style="display:flex; align-items:flex-start; gap:8px; margin-top:10px; cursor:pointer;">
       <input type="checkbox" id="onboard-cgu" style="width:auto; margin:2px 0 0;">
-      <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="showScreen('legal'); event.stopPropagation();" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a></span>
+      <span style="font-size:12.5px; color:var(--text-secondary); font-weight:normal;">J'ai lu et j'accepte la <a href="#" onclick="showScreen('legal'); event.stopPropagation();" style="color:var(--accent-text);">politique de confidentialité et les conditions d'utilisation</a>. Je confirme avoir 18 ans ou plus.</span>
     </label>
     <button class="btn" id="onboard-btn">Continuer</button>
     <p id="onboard-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin-top:-4px;">Entre un prénom et accepte les conditions pour continuer.</p>
@@ -2974,7 +2974,7 @@ Cette politique peut être adaptée ; la date de dernière mise à jour fait foi
 
 Conditions d'utilisation
 
-En utilisant Troctan, tu confirmes avoir au moins 16 ans (ou l'accord de ton représentant légal) et tu acceptes de :
+En utilisant Troctan, tu confirmes avoir au moins 18 ans (Troctan est réservé aux adultes) et tu acceptes de :
 - Rester respectueux envers les autres membres, dans tes annonces comme dans les communautés.
 - Ne publier que des services réels, que tu es en mesure de rendre.
 - Ne publier que des photos dont tu es l'auteur ou que tu as le droit d'utiliser, et ne pas publier de photo d'une personne sans son accord.
