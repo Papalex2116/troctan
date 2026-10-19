@@ -185,6 +185,8 @@ details{margin:10px 0}summary{font-weight:700;cursor:pointer;padding:6px 0}
   <h2 id="p-name"></h2>
   <div class="card"><b class="t">Solde</b><div style="font-size:26px;font-weight:800" id="p-bal">0</div><span class="small">crédits (1 crédit = 1 heure)</span></div>
   <div class="card"><span class="small" id="p-band"></span></div>
+  <button class="btn sec push-btn" onclick="togglePush()">Notifications</button>
+  <p class="small push-hint" style="display:none"></p>
   <button class="btn sec" onclick="showRules()">Règles et protection des données</button>
   <button class="btn sec" onclick="doLogout()">Me déconnecter</button>
 </section>
@@ -206,7 +208,7 @@ details{margin:10px 0}summary{font-weight:700;cursor:pointer;padding:6px 0}
 </section>
 <section class="screen wrap" id="p-chats"><h2>Discussions de mes enfants</h2><div id="p-chats-list"></div></section>
 <section class="screen wrap" id="p-mod"><h2>Modération</h2><div id="p-mod-list"></div></section>
-<section class="screen wrap" id="p-account"><h2>Mon compte parent</h2><button class="btn sec" onclick="showRules()">Règles et protection des données</button><button class="btn sec" onclick="doLogout()">Me déconnecter</button></section>
+<section class="screen wrap" id="p-account"><h2>Mon compte parent</h2><button class="btn sec push-btn" onclick="togglePush()">Notifications</button><p class="small push-hint" style="display:none"></p><button class="btn sec" onclick="showRules()">Règles et protection des données</button><button class="btn sec" onclick="doLogout()">Me déconnecter</button></section>
 
 <!-- DISCUSSION (jeune et parent) -->
 <section class="screen wrap" id="chat">
@@ -309,7 +311,7 @@ async function doSignup(){
   if(!data.session){ toast('Compte créé ✓ Appuie maintenant sur « Se connecter » (onglet jeune).'); $('login-id').value=id; $('signup-box').open=false; return; }
   await boot();
 }
-async function doLogout(){ try{ await sb.auth.signOut(); }catch(e){} me=null; role=null; location.reload(); }
+async function doLogout(){ try{ if(pushSupported()){ const sb0=await pushGetSub(); if(sb0) await sb.rpc('unregister_push',{p_endpoint:sb0.endpoint}); } }catch(e){} try{ await sb.auth.signOut(); }catch(e){} me=null; role=null; location.reload(); }
 
 async function boot(){
   const {data}=await sb.auth.getSession();
@@ -325,7 +327,7 @@ async function boot(){
     buildTabs('jeune'); show('y-home'); loadHome(); celebrate(Number(p.balance));
     if(!localStorage.getItem('yrules_'+me)){ showRules(true); } else if(!ytSeen()){ ytStart(); } else { trocTip('Salut '+esc(p.name)+' ! Touche-moi si tu as une question.','hi_'+me); }
   } else {
-    fillYears(); buildTabs('parent'); show('p-valid'); loadParent(); trocTip('Bonjour ! Touchez-moi pour savoir comment inscrire votre enfant.','par_'+me);
+    fillYears(); buildTabs('parent'); show('p-valid'); loadParent(); trocTip('Bonjour ! Pour être prévenu quand une demande attend votre accord, activez les notifications dans l\'onglet Compte.','par_'+me);
   }
 }
 function buildTabs(r){
@@ -397,7 +399,7 @@ async function loadExchanges(){
 }
 async function markDone(id){ const {error}=await sb.rpc('y_mark_done',{p_exchange:id}); if(error){ toast(rpcMsg(error)); return; } toast('Merci ! Quand les deux ont confirmé, les crédits sont transférés.'); loadExchanges(); }
 async function cancelEx(id){ if(!confirm('Annuler cet échange ?')) return; const {error}=await sb.rpc('y_cancel',{p_exchange:id}); if(error){ toast(rpcMsg(error)); return; } refresh(); }
-async function loadProfile(){
+async function loadProfile(){ updatePushBtn();
   const {data:p}=await sb.from('y_profiles').select('*').eq('id',me).maybeSingle(); if(!p) return; myProfile=p;
   $('p-name').textContent='Bonjour '+p.name; $('p-bal').textContent=Number(p.balance).toString(); celebrate(Number(p.balance));
   $('p-band').textContent='Tranche d\'âge '+p.band+' ans : tu vois seulement les annonces de ta tranche d\'âge.';
@@ -459,6 +461,7 @@ async function loadParent(){
   const chats=(exs||[]).filter(e=>e.status==='accepted'||e.status==='completed');
   $('p-chats-list').innerHTML=chats.map(e=>`<div class="card"><b class="t">${esc(e.service_title||'Échange')}</b> <span class="chip ${e.status==='completed'?'g':'y'}">${STATUTS[e.status]}</span><p class="small" style="margin:4px 0">${esc(nm(e.requester_id))} ↔ ${esc(nm(e.provider_id))}</p><button class="btn small" onclick="openChat('${e.id}',true)">Lire la discussion</button></div>`).join('') || '<p class="hint">Aucune discussion pour le moment.</p>';
   if(isAdmin) loadMod();
+  updatePushBtn();
 }
 async function decide(id,ok){ if(!ok && !confirm('Refuser cet échange ?')) return; const {error}=await sb.rpc('y_parent_decide',{p_exchange:id,p_approve:ok}); if(error){ toast(rpcMsg(error)); return; } toast(ok?'Autorisé ✓':'Refusé'); loadParent(); }
 async function createKid(){
@@ -576,6 +579,43 @@ function ytRender(){
 }
 function ytNext(){ if(_yt<YT.length-1){ _yt++; ytRender(); } else ytEnd(); }
 function ytEnd(){ try{ localStorage.setItem('ytour_'+me,'1'); }catch(e){} $('ytour').style.display='none'; }
+
+
+/* ---------- Notifications push (même service que Troctan adultes) ---------- */
+const VAPID_PUBLIC='BCBP9JgUnMwpRzYWa_RvuEfM_Q9cAsMTS2CGS3xET2WUtCPZUWCukBNNGYVzeuy84eVx2U-ufGGpJ7XpVibzT-A';
+function pushSupported(){ return ('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window); }
+function b64ToU8(b){ const pad='='.repeat((4-b.length%4)%4); const raw=atob((b+pad).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from([...raw].map(c=>c.charCodeAt(0))); }
+async function pushGetSub(){ const reg=await navigator.serviceWorker.ready; return reg.pushManager.getSubscription(); }
+async function pushRegisterRow(sub){ const j=sub.toJSON(); const {error}=await sb.rpc('register_push',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth}); return error; }
+async function updatePushBtn(){
+  const bs=document.querySelectorAll('.push-btn'), hs=document.querySelectorAll('.push-hint');
+  let label, hint='', dis=false;
+  if(!pushSupported()){ label='Notifications indisponibles'; dis=true; hint="Sur iPhone : menu Partager de Safari > « Sur l'écran d'accueil », puis ouvre Troctan Jeunes depuis l'icône."; }
+  else {
+    let on=false;
+    try{ if(Notification.permission==='granted'){ const sub=await pushGetSub(); if(sub){ on=true; pushRegisterRow(sub); } } }catch(e){}
+    label=on?'Notifications activées (toucher pour désactiver)':'Activer les notifications';
+    if(Notification.permission==='denied') hint='Les notifications sont bloquées dans les réglages du navigateur pour ce site.';
+  }
+  bs.forEach(b=>{ b.textContent=label; b.disabled=dis; });
+  hs.forEach(h=>{ h.textContent=hint; h.style.display=hint?'block':'none'; });
+}
+async function togglePush(){
+  if(!pushSupported()) return;
+  try{
+    const ex=await pushGetSub();
+    if(ex){ await sb.rpc('unregister_push',{p_endpoint:ex.endpoint}); await ex.unsubscribe(); toast('Notifications désactivées.'); return updatePushBtn(); }
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){ toast('Notifications refusées.'); return updatePushBtn(); }
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToU8(VAPID_PUBLIC)});
+    const err=await pushRegisterRow(sub);
+    if(err){ toast('Activation impossible.'); await sub.unsubscribe(); return updatePushBtn(); }
+    toast('Notifications activées ✓');
+  }catch(e){ toast('Erreur notifications.'); }
+  updatePushBtn();
+}
+try{ if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{}); }catch(e){}
 
 /* ---------- démarrage ---------- */
 initCaptcha();
