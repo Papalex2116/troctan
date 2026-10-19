@@ -248,6 +248,25 @@ body[data-screen="login"] #scene-chat{opacity:1;}
     display:flex;align-items:center;justify-content:center;margin-right:8px;
   }
   header{gap:8px;}
+
+  #ai-fab{position:fixed;right:14px;bottom:92px;width:54px;height:54px;border-radius:50%;border:2px solid #fff;background:var(--pill-grad);color:#fff;box-shadow:0 4px 14px rgba(31,90,67,.4);z-index:50;display:none;align-items:center;justify-content:center;font-size:26px;cursor:pointer;padding:0}
+  #ai-back{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:8000;display:none}
+  #ai-panel{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;height:78vh;background:var(--card);border-radius:18px 18px 0 0;z-index:8001;display:none;flex-direction:column;box-shadow:0 -6px 24px rgba(0,0,0,.25);color:var(--text)}
+  #ai-panel .ai-h{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);font-weight:700}
+  #ai-panel .ai-h button{margin-left:auto;background:none;border:0;font-size:22px;color:var(--text-muted);cursor:pointer}
+  #ai-msgs{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+  .ai-m{max-width:88%;padding:9px 12px;border-radius:14px;font-size:14.5px;line-height:1.45;border:1px solid var(--border);white-space:pre-wrap;word-wrap:break-word}
+  .ai-m.u{align-self:flex-end;background:var(--accent-bg);color:var(--accent-text)}
+  .ai-m.b{align-self:flex-start;background:var(--bg)}
+  .ai-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 8px}
+  .ai-chips button{font:inherit;font-size:13px;padding:6px 10px;border-radius:99px;border:1px solid var(--border-strong);background:var(--card);color:var(--accent-text);cursor:pointer}
+  #ai-form{display:flex;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border)}
+  #ai-form textarea{flex:1;min-height:42px;max-height:100px;resize:none;font:inherit;padding:9px 11px;border:1px solid var(--border-strong);border-radius:12px;background:var(--card);color:var(--text)}
+  #ai-form button{border:0;border-radius:12px;padding:0 16px;background:var(--pill-grad);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+  #ai-form button:disabled{opacity:.5}
+  .ai-note{font-size:11.5px;color:var(--text-muted);padding:0 14px 6px;text-align:center}
+  .ai-consent{padding:16px;font-size:14px;line-height:1.5}
+  .ai-consent button{display:block;width:100%;margin-top:12px;padding:11px;border:0;border-radius:12px;background:var(--pill-grad);color:#fff;font:inherit;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -312,7 +331,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 68</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 69</p>
     <p style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:4px;">Lancé à La Grande-Béroche · ouvert aux voisins de la région</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
@@ -697,6 +716,22 @@ body[data-screen="login"] #scene-chat{opacity:1;}
     </section>
   </main>
 
+
+<button id="ai-fab" aria-label="Ouvrir l'assistant Troc" onclick="aiOpen()"><i class="ti ti-sparkles"></i></button>
+<div id="ai-back" onclick="aiClose()"></div>
+<div id="ai-panel" role="dialog" aria-label="Assistant Troc">
+  <div class="ai-h"><i class="ti ti-sparkles"></i> Assistant Troc <button onclick="aiClose()" aria-label="Fermer">×</button></div>
+  <div id="ai-consent" class="ai-consent" style="display:none">
+    <b>Avant de commencer</b><br>L'assistant utilise l'intelligence artificielle Claude (société Anthropic, Etats-Unis). Tes questions lui sont transmises pour générer la réponse, sans ton nom ni ton identifiant. Il peut se tromper. N'écris jamais de données sensibles (mot de passe, santé, adresse précise, numéros). Limite : 20 questions par jour.
+    <button onclick="aiConsent()">J'ai compris, continuer</button>
+  </div>
+  <div id="ai-chat" style="display:none;flex:1;flex-direction:column;min-height:0">
+    <div id="ai-msgs"></div>
+    <div class="ai-chips" id="ai-chips"></div>
+    <div class="ai-note">Réponses générées par IA, à vérifier. Pas de conseil juridique, fiscal ou médical.</div>
+    <form id="ai-form" onsubmit="aiSend(event)"><textarea id="ai-in" maxlength="600" placeholder="Pose ta question…" rows="1"></textarea><button id="ai-send" type="submit">Envoyer</button></form>
+  </div>
+</div>
   <nav class="tabbar" style="display:none;">
     <button class="tab-btn active" data-tab="home" onclick="goHome()"><i class="ti ti-home"></i>Accueil</button>
     <button class="tab-btn" data-tab="requests" onclick="openRequestsTab()"><i class="ti ti-exchange"></i>Demandes<span class="tab-badge" id="badge-requests"></span></button>
@@ -971,6 +1006,7 @@ function renderScreenOnly(id){
   if(id !== 'requests') pillHold = null;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id || (b.dataset.tab === 'profile' && (id === 'credits' || id === 'ratings'))));
 
+  const _fab=document.getElementById('ai-fab'); if(_fab) _fab.style.display=(AUTH_SCREENS.includes(id)||!myId||id==='legal')?'none':'flex';
   const hdr = document.getElementById('app-header');
   if(hdr) hdr.style.display = (AUTH_SCREENS.includes(id) || !myId) ? 'none' : 'flex';
   const nav = document.querySelector('nav.tabbar');
@@ -2902,6 +2938,56 @@ setInterval(() => {
   if(c && c.classList.contains('active') && currentChatExchangeId && !document.hidden) fetchChatMessages();
 }, 5000);
 
+
+/* ---------- Assistant IA (appelle la fonction Supabase "assistant", jamais l'API directement) ---------- */
+let _aiHist=[], _aiBusy=false;
+const AI_CHIPS=['Aide-moi à rédiger une annonce','Quels services puis-je proposer ?','Conseils pour un premier échange','Comment fonctionne Troctan ?'];
+function aiConsentKey(){ return 'tt_ai_ok_'+myId; }
+function aiOpen(){
+  if(!myId) return;
+  document.getElementById('ai-back').style.display='block'; document.getElementById('ai-panel').style.display='flex';
+  let ok=false; try{ ok=!!localStorage.getItem(aiConsentKey()); }catch(e){}
+  document.getElementById('ai-consent').style.display=ok?'none':'block';
+  document.getElementById('ai-chat').style.display=ok?'flex':'none';
+  if(ok) aiInit();
+}
+function aiClose(){ document.getElementById('ai-back').style.display='none'; document.getElementById('ai-panel').style.display='none'; }
+function aiConsent(){ try{ localStorage.setItem(aiConsentKey(),'1'); }catch(e){} aiOpen(); }
+function aiAdd(role,text){
+  const d=document.createElement('div'); d.className='ai-m '+(role==='user'?'u':'b'); d.textContent=text;
+  const box=document.getElementById('ai-msgs'); box.appendChild(d); box.scrollTop=box.scrollHeight; return d;
+}
+function aiInit(){
+  const box=document.getElementById('ai-msgs');
+  if(!box.children.length){ aiAdd('assistant','Salut ! Je suis Troc, l\'assistant de Troctan. Je peux t\'aider à rédiger une annonce, trouver des idées de services ou expliquer comment ça marche. Que veux-tu faire ?'); }
+  document.getElementById('ai-chips').innerHTML=_aiHist.length?'':AI_CHIPS.map(c=>'<button type="button" onclick="aiAsk(this.textContent)">'+esc(c)+'</button>').join('');
+}
+function aiAsk(t){ document.getElementById('ai-in').value=t; aiSend(); }
+async function aiSend(ev){
+  if(ev) ev.preventDefault();
+  const inp=document.getElementById('ai-in'); const t=inp.value.trim();
+  if(!t||_aiBusy) return;
+  _aiBusy=true; inp.value=''; document.getElementById('ai-send').disabled=true; document.getElementById('ai-chips').innerHTML='';
+  aiAdd('user',t); _aiHist.push({role:'user',content:t});
+  const wait=aiAdd('assistant','…');
+  try{
+    const {data,error}=await sb.functions.invoke('assistant',{body:{messages:_aiHist.slice(-8)}});
+    let msg=null;
+    if(error){
+      let code=''; try{ const j=await error.context.json(); code=j.error||''; }catch(e){}
+      if(code==='quota') msg='Tu as atteint la limite de 20 questions pour aujourd\'hui. Reviens demain !';
+      else if(code==='not_configured' || (error.context && error.context.status===404)) msg='L\'assistant n\'est pas encore activé. Réessaie plus tard.';
+      else if(code==='forbidden') msg='L\'assistant est réservé aux comptes adultes.';
+      else msg='Désolé, une erreur est survenue. Réessaie dans un instant.';
+    } else if(data && data.reply){ msg=data.reply; _aiHist.push({role:'assistant',content:data.reply}); }
+    else msg='Je n\'ai pas pu répondre. Réessaie.';
+    wait.textContent=msg;
+    if(error) _aiHist.pop();
+  }catch(e){ wait.textContent='Pas de connexion. Réessaie.'; _aiHist.pop(); }
+  _aiBusy=false; document.getElementById('ai-send').disabled=false;
+  document.getElementById('ai-msgs').scrollTop=document.getElementById('ai-msgs').scrollHeight;
+}
+
 async function handleSession(session){
   if(!session){
     _nsPulled = false; _nsPulling = null; lastShownSt = null;
@@ -3049,6 +3135,7 @@ Troctan n'utilise aucun cookie, ni traceur publicitaire, ni outil de mesure d'au
 - Surveillance de disponibilité (UptimeRobot) : ne reçoit aucune donnée personnelle de membre, seulement l'état du service.
 - Resend (envoi d'emails : réinitialisation de mot de passe, alertes de modération) : société basée aux Etats-Unis ; ton adresse email de contact leur est transmise uniquement pour l'envoi du message concerné.
 - Services de notification de ton navigateur (Google, Apple ou Mozilla selon ton appareil) : ils acheminent les notifications push, qui contiennent un court texte (par exemple « Nouveau message de … »).
+- Anthropic (assistant à intelligence artificielle « Claude », facultatif) : Anthropic PBC, Etats-Unis. Si tu utilises l'assistant, le texte de tes questions (et des derniers échanges de la conversation) lui est transmis pour générer la réponse, sans ton nom ni ton identifiant. N'y écris pas de données sensibles. Les conversations ne sont pas conservées par Troctan ; seul un compteur de questions par jour est enregistré pour limiter les abus. L'assistant est désactivable simplement en ne l'utilisant pas.
 - Infomaniak (nom de domaine) : société suisse, Genève.
 - OpenStreetMap (fond de carte) : OpenStreetMap Foundation, Royaume-Uni ; l'affichage de la carte transmet ton adresse IP à leurs serveurs.
 Certains de ces traitements ont donc lieu en Suisse, dans l'Union européenne et aux Etats-Unis. Lorsque des données sont transmises à l'étranger, c'est à des prestataires qui offrent des garanties appropriées au sens de la nLPD (par exemple des clauses contractuelles types ou une certification au Data Privacy Framework), dans la mesure où ils les proposent.

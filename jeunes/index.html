@@ -83,11 +83,22 @@ details{margin:10px 0}summary{font-weight:700;cursor:pointer;padding:6px 0}
 .cic svg{width:20px;height:20px}
 .card .head{display:flex;gap:10px;align-items:center;margin-bottom:6px}
 @media (prefers-reduced-motion:reduce){#troc-fab,.eye,.pop{animation:none}#troc-panel{transition:none}}
+
+#ytour{position:fixed;inset:0;background:linear-gradient(180deg,#123428,#1f5a43);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff}
+#ytour .av{width:150px;height:150px}
+#ytour h2{font-size:22px;margin:14px 0 8px}
+#ytour p{max-width:320px;font-size:16px;line-height:1.5;margin:0 0 6px;color:#e6f2ec}
+#ytour .dots{display:flex;gap:8px;margin:18px 0}
+#ytour .dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35)}
+#ytour .dots i.on{background:#f2d9a0;width:24px;border-radius:6px}
+#ytour .btn{max-width:320px;background:#f2d9a0;color:#3a2f10}
+#ytour .skip{background:none;border:0;color:#cfe9dc;font:inherit;margin-top:12px;text-decoration:underline;cursor:pointer}
 </style>
 </head>
 <body>
 <header class="top"><img src="/logo-emblem.png" alt=""><div><b>Troctan Jeunes</b><span>Entraide entre jeunes, encadrée par les parents</span></div></header>
 <div id="toast"></div>
+<div id="ytour"><div class="av pop" id="yt-av"></div><h2 id="yt-h"></h2><p id="yt-p"></p><div class="dots" id="yt-dots"></div><button class="btn" id="yt-next" onclick="ytNext()">Suivant</button><button class="skip" onclick="ytEnd()">Passer</button></div>
 
 <!-- CONNEXION -->
 <section class="screen on wrap" id="auth">
@@ -312,7 +323,7 @@ async function boot(){
     if(!p){ toast('Profil introuvable.'); return; }
     if(p.paused){ document.body.insertAdjacentHTML('afterbegin','<div class="wrap"><div class="card"><b>Compte suspendu</b><br>Tes parents ont suspendu ton compte. Parles-en avec eux.</div></div>'); }
     buildTabs('jeune'); show('y-home'); loadHome(); celebrate(Number(p.balance));
-    if(!localStorage.getItem('yrules_'+me)){ showRules(true); } else { trocTip('Salut '+esc(p.name)+' ! Touche-moi si tu as une question.','hi_'+me); }
+    if(!localStorage.getItem('yrules_'+me)){ showRules(true); } else if(!ytSeen()){ ytStart(); } else { trocTip('Salut '+esc(p.name)+' ! Touche-moi si tu as une question.','hi_'+me); }
   } else {
     fillYears(); buildTabs('parent'); show('p-valid'); loadParent(); trocTip('Bonjour ! Touchez-moi pour savoir comment inscrire votre enfant.','par_'+me);
   }
@@ -332,7 +343,7 @@ function refresh(){
 }
 let _rulesBack='auth';
 function showRules(first){ _rulesBack = first?'y-home':curScreen; if(first && me) localStorage.setItem('yrules_'+me,'1'); show('rules'); }
-function backFromRules(){ show(_rulesBack==='rules'?'auth':_rulesBack); }
+function backFromRules(){ show(_rulesBack==='rules'?'auth':_rulesBack); if(role==='jeune' && me) ytStart(); }
 
 /* ---------- JEUNE ---------- */
 async function loadPeople(){
@@ -546,6 +557,25 @@ function trocTip(msg, key){
 }
 function trocMood(m){ $('troc-fab').innerHTML=mascot(m||'happy'); }
 trocMood('happy');
+
+
+/* ---------- Mini-tutoriel (3 écrans) ---------- */
+const YT=[
+ ['Trouve ou propose de l\'aide','Soutien scolaire, sport, musique, jeux… Parcours les annonces de jeunes de ton âge, ou publie la tienne en 30 secondes.','happy'],
+ ['Tes parents sont dans la boucle','Avant de discuter, les parents des deux jeunes doivent dire oui. Vous vous retrouvez dans un lieu sûr, jamais chez un inconnu.','neutral'],
+ ['Gagne des crédits','1 crédit = 1 heure. Tu aides, tu gagnes. On t\'aide, tu dépenses. Et je suis là, en bas à droite, si tu as une question !','happy']
+];
+let _yt=0;
+function ytSeen(){ try{ return !!localStorage.getItem('ytour_'+me); }catch(e){ return true; } }
+function ytStart(){ if(ytSeen()) return; _yt=0; $('ytour').style.display='flex'; ytRender(); }
+function ytRender(){
+  const d=YT[_yt]; $('yt-av').innerHTML=mascot(d[2]); $('yt-h').textContent=d[0]; $('yt-p').textContent=d[1];
+  $('yt-dots').innerHTML=YT.map((_,i)=>'<i class="'+(i===_yt?'on':'')+'"></i>').join('');
+  $('yt-next').textContent=_yt===YT.length-1?'C\'est parti !':'Suivant';
+  const a=$('yt-av'); a.classList.remove('pop'); void a.offsetWidth; a.classList.add('pop');
+}
+function ytNext(){ if(_yt<YT.length-1){ _yt++; ytRender(); } else ytEnd(); }
+function ytEnd(){ try{ localStorage.setItem('ytour_'+me,'1'); }catch(e){} $('ytour').style.display='none'; }
 
 /* ---------- démarrage ---------- */
 initCaptcha();
