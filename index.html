@@ -260,6 +260,11 @@ body[data-screen="login"] #scene-chat{opacity:1;}
   .hx-bar{height:8px;border-radius:99px;background:var(--border);overflow:hidden;margin:6px 0 2px}
   .hx-bar i{display:block;height:100%;background:var(--pill-grad);border-radius:99px;transition:width .6s}
   .hx-mini{font:inherit;font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:99px;border:1px solid var(--border-strong);background:var(--card);color:var(--accent-text);cursor:pointer}
+  details.hx-card>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px}
+  details.hx-card>summary::-webkit-details-marker{display:none}
+  details.hx-card>summary::after{content:"\25BE";margin-left:auto;color:var(--text-muted);transition:transform .15s}
+  details.hx-card[open]>summary::after{transform:rotate(180deg)}
+  details.hx-card>.hx-body{margin-top:6px}
   .hx-thx{border-left:3px solid var(--accent-border);padding:2px 0 2px 8px;margin:6px 0;font-size:13px}
   .hx-thx small{color:var(--text-muted)}
   .badges-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:12px}
@@ -332,7 +337,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 73</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 74</p>
     <p style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:4px;">Lancé à La Grande-Béroche · ouvert aux voisins de la région</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
@@ -476,8 +481,8 @@ body[data-screen="login"] #scene-chat{opacity:1;}
         <div class="stat clickable" role="button" tabindex="0" onclick="showScreen('credits')"><i class="ti ti-chevron-right chev"></i><p class="l">Solde actuel</p><p class="n" id="profile-balance">0cr</p></div>
         <div class="stat clickable" role="button" tabindex="0" onclick="showScreen('ratings')"><i class="ti ti-chevron-right chev"></i><p class="l">Note reçue</p><p class="n" id="profile-rating">–</p></div>
       </div>
-      <p class="section-label">Mes badges</p>
-      <div class="badges-grid" id="profile-badges"></div>
+      <details class="dropdown-section" data-k="prof-badges" open><summary class="section-label">Mes badges</summary>
+      <div class="badges-grid" id="profile-badges" style="margin-top:10px"></div></details>
       <details class="dropdown-section" id="dd-profile-services">
         <summary class="section-label">Mes services publiés</summary>
         <div class="list" id="profile-services" style="margin-top:10px;"></div>
@@ -605,30 +610,28 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <p class="section-label">Administration</p>
       <p style="font-size:12.5px;color:var(--text-secondary);">Tu peux aussi retirer une publication, un commentaire ou une annonce directement depuis leur écran (bouton rouge).</p>
       <button class="btn secondary" onclick="adminExportData()">💾 Exporter une sauvegarde des données</button>
-      <p class="section-label" style="margin-top:14px;">Signalements</p>
+      <details class="dropdown-section" data-k="adm-rep" style="margin-top:10px"><summary class="section-label">Signalements</summary>
       <div class="seg">
         <button id="rep-tab-open" class="on" onclick="setReportsTab('open')">À traiter</button>
         <button id="rep-tab-done" onclick="setReportsTab('done')">Classés</button>
       </div>
-      <div class="list" id="admin-reports" style="margin-top:10px;"></div>
-      <p class="section-label" style="margin-top:14px;">Cagnotte solidaire</p>
-      <div id="admin-pot"></div>
-      <p class="section-label" style="margin-top:14px;">Défi du mois</p>
-      <div id="admin-challenge"></div>
-      <p class="section-label" style="margin-top:14px;">Codes d'invitation</p>
+      <div class="list" id="admin-reports" style="margin-top:10px;"></div></details>
+      <details class="dropdown-section" data-k="adm-pot" style="margin-top:10px"><summary class="section-label">Cagnotte solidaire</summary><div id="admin-pot"></div></details>
+      <details class="dropdown-section" data-k="adm-ch" style="margin-top:10px"><summary class="section-label">Défi du mois</summary><div id="admin-challenge"></div></details>
+      <details class="dropdown-section" data-k="adm-inv" style="margin-top:10px"><summary class="section-label">Codes d'invitation</summary>
       <p style="font-size:12.5px;color:var(--text-secondary);">Seules les personnes qui ont un code actif peuvent créer un compte. Lien direct : <b>troctan.ch/?code=VOTRE-CODE</b> (pré-remplit le code).</p>
       <div class="list" id="admin-invites"></div>
-      <button class="btn secondary" onclick="adminAddInvite()">+ Nouveau code</button>
+      <button class="btn secondary" onclick="adminAddInvite()">+ Nouveau code</button></details>
       <div id="admin-owner-box" style="display:none;">
-        <p class="section-label" style="margin-top:14px;">Administrateurs</p>
+        <details class="dropdown-section" data-k="adm-adm" style="margin-top:10px"><summary class="section-label">Administrateurs</summary>
         <div class="list" id="admin-admins"></div>
-        <button class="btn secondary" onclick="adminAddAdmin()">+ Ajouter un administrateur (par identifiant)</button>
+        <button class="btn secondary" onclick="adminAddAdmin()">+ Ajouter un administrateur (par identifiant)</button></details>
         <p class="section-label" style="margin-top:14px;">Fin de la phase de test</p>
         <p style="font-size:12.5px;color:var(--text-secondary);">Efface toutes les données et tous les comptes, sauf les comptes administrateurs, dont les compteurs repartent à zéro. Irréversible : fais d'abord une sauvegarde.</p>
         <button class="btn secondary" style="color:var(--warn-text);" onclick="adminResetAll()">Tout remettre à zéro</button>
       </div>
-      <p class="section-label" style="margin-top:14px;">Utilisateurs</p>
-      <div class="list" id="admin-users"></div>
+      <details class="dropdown-section" data-k="adm-usr" style="margin-top:10px"><summary class="section-label">Utilisateurs</summary>
+      <div class="list" id="admin-users"></div></details>
     </section>
 
     <!-- PERSONNES BLOQUEES -->
@@ -2972,20 +2975,29 @@ async function loadHomeExtras(){
   let ch = null, pot = null, thx = [];
   try{ const r = await sb.rpc('challenge_current'); ch = r.data; }catch(e){}
   try{ const r = await sb.rpc('pot_summary'); pot = r.data; }catch(e){}
-  try{ const r = await sb.from('thanks').select('*').order('created_at', {ascending:false}).limit(3); thx = r.data || []; }catch(e){}
+  try{ const r = await sb.from('thanks').select('*').order('created_at', {ascending:false}).limit(10); thx = r.data || []; }catch(e){}
+  const card = (k, icon, title, body, open) => `<details class="hx-card" data-k="${k}" ${open ? 'open' : ''}><summary><i class="ti ${icon}" style="color:var(--accent-text)"></i><span>${title}</span></summary><div class="hx-body">${body}</div></details>`;
   let h = '';
   if(ch){
     const pct = Math.min(100, Math.round(Number(ch.hours) / Number(ch.goal) * 100));
-    h += `<div class="hx-card"><div class="hx-row"><i class="ti ti-flag" style="color:var(--accent-text)"></i><b>Défi : ${esc(ch.title)}</b></div>${ch.description ? `<div style="color:var(--text-secondary);margin-top:2px">${esc(ch.description)}</div>` : ''}<div class="hx-bar"><i style="width:${pct}%"></i></div><div style="color:var(--text-muted);font-size:12px">${fmtNum(ch.hours)} h sur ${fmtNum(ch.goal)} h · ${ch.participants} participant${ch.participants > 1 ? 's' : ''} · jusqu'au ${new Date(ch.ends_on).toLocaleDateString('fr-CH',{day:'numeric',month:'short'})}</div></div>`;
+    h += card('hx-defi', 'ti-flag', 'Défi : ' + esc(ch.title), `${ch.description ? `<div style="color:var(--text-secondary)">${esc(ch.description)}</div>` : ''}<div class="hx-bar"><i style="width:${pct}%"></i></div><div style="color:var(--text-muted);font-size:12px">${fmtNum(ch.hours)} h sur ${fmtNum(ch.goal)} h · ${ch.participants} participant${ch.participants > 1 ? 's' : ''} · jusqu'au ${new Date(ch.ends_on).toLocaleDateString('fr-CH',{day:'numeric',month:'short'})}</div>`, true);
   }
   if(pot){
-    h += `<div class="hx-card"><div class="hx-row"><i class="ti ti-heart" style="color:var(--accent-text)"></i><b>Cagnotte solidaire : ${fmtNum(pot.pot)} crédit${Number(pot.pot) > 1 ? 's' : ''}</b></div><div style="color:var(--text-secondary);margin:2px 0 6px">${pot.donors} donateur${pot.donors > 1 ? 's' : ''}. Les heures données aident ceux qui n'ont rien à offrir en échange.</div><div class="hx-row"><button class="hx-mini" onclick="potDonate(1)">Donner 1 cr</button><button class="hx-mini" onclick="potDonate(2)">Donner 2 cr</button></div></div>`;
+    h += card('hx-pot', 'ti-heart', 'Cagnotte solidaire : ' + fmtNum(pot.pot) + ' crédit' + (Number(pot.pot) > 1 ? 's' : ''), `<div style="color:var(--text-secondary);margin:0 0 6px">${pot.donors} donateur${pot.donors > 1 ? 's' : ''}. Les heures données aident ceux qui n'ont rien à offrir en échange.</div><div class="hx-row"><button class="hx-mini" onclick="potDonate(1)">Donner 1 cr</button><button class="hx-mini" onclick="potDonate(2)">Donner 2 cr</button></div>`, true);
   }
   if(thx.length){
-    h += `<div class="hx-card"><div class="hx-row"><i class="ti ti-message-heart" style="color:var(--accent-text)"></i><b>Mur des merci</b></div>${thx.map(t => `<div class="hx-thx">${esc(t.message)}<br><small>${esc(t.from_name)} → ${esc(t.to_name)} · ${new Date(t.created_at).toLocaleDateString('fr-CH',{day:'numeric',month:'short'})}${(t.from_id === myId || myIsAdmin) ? ` · <a href="#" onclick="event.preventDefault();deleteThanks('${t.id}')">retirer</a>` : ''}</small></div>`).join('')}<div style="color:var(--text-muted);font-size:12px;margin-top:4px">Après un échange, ouvre « Solde » pour dire merci.</div></div>`;
+    h += card('hx-thx', 'ti-message-heart', 'Mur des merci (' + thx.length + ')', thx.map(t => `<div class="hx-thx">${esc(t.message)}<br><small>${esc(t.from_name)} → ${esc(t.to_name)} · ${new Date(t.created_at).toLocaleDateString('fr-CH',{day:'numeric',month:'short'})}${(t.from_id === myId || myIsAdmin) ? ` · <a href="#" onclick="event.preventDefault();deleteThanks('${t.id}')">retirer</a>` : ''}</small></div>`).join('') + `<div style="color:var(--text-muted);font-size:12px;margin-top:4px">Après un échange, ouvre « Solde » pour dire merci.</div>`, false);
   }
-  let closed = false; try{ closed = localStorage.getItem('tt_hx_closed') === '1'; }catch(e){}
-  box.innerHTML = h ? `<details ${closed ? '' : 'open'} ontoggle="try{localStorage.setItem('tt_hx_closed', this.open ? '0' : '1')}catch(e){}" style="margin-bottom:6px"><summary style="font-weight:600;font-size:13px;cursor:pointer;padding:4px 0">Vie de la commune</summary>${h}</details>` : '';
+  box.innerHTML = h ? `<details class="dropdown-section" data-k="hx-all" open style="margin-bottom:6px"><summary class="section-label" style="margin:0">Vie de la commune</summary><div style="margin-top:8px">${h}</div></details>` : '';
+  ddRemember(box);
+}
+/* mémorise l'état ouvert/fermé des menus déroulants (details[data-k]) */
+function ddRemember(root){
+  (root || document).querySelectorAll('details[data-k]').forEach(d => {
+    if(d._ddb) return; d._ddb = true;
+    try{ const v = localStorage.getItem('tt_dd_' + d.dataset.k); if(v === '1') d.open = true; else if(v === '0') d.open = false; }catch(e){}
+    d.addEventListener('toggle', () => { try{ localStorage.setItem('tt_dd_' + d.dataset.k, d.open ? '1' : '0'); }catch(e){} });
+  });
 }
 function fmtNum(n){ const v = Math.round(Number(n) * 100) / 100; return String(v).replace('.', ','); }
 async function potDonate(n){
@@ -3023,7 +3035,8 @@ async function loadAdminCommunity(){
     <select id="pot-user" style="margin-bottom:6px"><option value="">Choisir un membre…</option>${opts}</select>
     <div style="display:flex;gap:8px"><select id="pot-amount" style="width:90px;margin:0"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select><input type="text" id="pot-note" placeholder="Motif (obligatoire)" maxlength="200" style="margin:0"></div>
     <button class="btn secondary" onclick="adminPotAttribute()">Attribuer depuis la cagnotte</button>
-    ${logs.length ? '<div class="list" style="margin-top:8px">' + logs.slice(0, 15).map(l => `<div class="item-card" style="cursor:default"><div style="flex:1"><p class="item-title">${l.kind === 'don' ? '+' : '−'}${fmtNum(l.amount)} cr · ${esc(l.user_name)}</p><p class="item-sub">${new Date(l.created_at).toLocaleDateString('fr-CH')} · ${l.kind === 'don' ? 'don' : 'attribué par ' + esc(l.admin_name) + ' : ' + esc(l.note || '')}</p></div></div>`).join('') + '</div>' : ''}`;
+    ${logs.length ? '<details class="dropdown-section" data-k="adm-potlog" style="margin-top:8px"><summary class="section-label">Journal (' + logs.length + ')</summary><div class="list" style="margin-top:8px">' + logs.slice(0, 15).map(l => `<div class="item-card" style="cursor:default"><div style="flex:1"><p class="item-title">${l.kind === 'don' ? '+' : '−'}${fmtNum(l.amount)} cr · ${esc(l.user_name)}</p><p class="item-sub">${new Date(l.created_at).toLocaleDateString('fr-CH')} · ${l.kind === 'don' ? 'don' : 'attribué par ' + esc(l.admin_name) + ' : ' + esc(l.note || '')}</p></div></div>`).join('') + '</div></details>' : ''}`;
+  ddRemember(potBox);
   const today = new Date().toISOString().slice(0, 10), end = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
   chBox.innerHTML = `${ch ? `<p style="font-size:12.5px;color:var(--text-secondary);margin:0 0 8px">Défi en cours : <b>${esc(ch.title)}</b> (${fmtNum(ch.hours)} h sur ${fmtNum(ch.goal)} h).</p><button class="btn secondary" style="margin-top:0" onclick="adminEndChallenge()">Terminer ce défi</button>` : '<p style="font-size:12.5px;color:var(--text-secondary);margin:0 0 8px">Aucun défi en cours.</p>'}
     <input type="text" id="ch-title" placeholder="Titre (ex. Un coup de main à un voisin de plus de 70 ans)" maxlength="80">
@@ -3033,6 +3046,7 @@ async function loadAdminCommunity(){
     <label style="font-size:12.5px;color:var(--text-secondary)">Début et fin du défi</label>
     <div style="display:flex;gap:8px"><input type="date" id="ch-start" value="${today}" style="margin:0;min-width:0"><input type="date" id="ch-end" value="${end}" style="margin:0;min-width:0"></div>
     <button class="btn secondary" onclick="adminSaveChallenge()">Lancer ce défi (remplace le précédent)</button>`;
+  ddRemember(chBox);
 }
 async function adminPotAttribute(){
   const uid = document.getElementById('pot-user').value, amt = Number(document.getElementById('pot-amount').value), note = document.getElementById('pot-note').value.trim();
@@ -3057,6 +3071,7 @@ async function adminEndChallenge(){
   loadAdminCommunity(); loadHomeExtras();
 }
 
+try{ ddRemember(document); }catch(e){}
 async function handleSession(session){
   if(!session){
     _nsPulled = false; _nsPulling = null; lastShownSt = null;
