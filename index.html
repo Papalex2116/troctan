@@ -337,7 +337,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 74</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 75</p>
     <p style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:4px;">Lancé à La Grande-Béroche · ouvert aux voisins de la région</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
@@ -2975,12 +2975,20 @@ async function loadHomeExtras(){
   let ch = null, pot = null, thx = [];
   try{ const r = await sb.rpc('challenge_current'); ch = r.data; }catch(e){}
   try{ const r = await sb.rpc('pot_summary'); pot = r.data; }catch(e){}
+  let myH = 0;
+  if(ch){ try{
+    const r = await sb.from('exchanges').select('hours,status,created_at').or(`requester_id.eq.${myId},provider_id.eq.${myId}`).in('status', ['accepted','completed']).gte('created_at', ch.starts_on + 'T00:00:00').lte('created_at', ch.ends_on + 'T23:59:59');
+    (r.data || []).forEach(x => { myH += Number(x.hours) || 0; });
+  }catch(e){} }
   try{ const r = await sb.from('thanks').select('*').order('created_at', {ascending:false}).limit(10); thx = r.data || []; }catch(e){}
   const card = (k, icon, title, body, open) => `<details class="hx-card" data-k="${k}" ${open ? 'open' : ''}><summary><i class="ti ${icon}" style="color:var(--accent-text)"></i><span>${title}</span></summary><div class="hx-body">${body}</div></details>`;
   let h = '';
   if(ch){
     const pct = Math.min(100, Math.round(Number(ch.hours) / Number(ch.goal) * 100));
-    h += card('hx-defi', 'ti-flag', 'Défi : ' + esc(ch.title), `${ch.description ? `<div style="color:var(--text-secondary)">${esc(ch.description)}</div>` : ''}<div class="hx-bar"><i style="width:${pct}%"></i></div><div style="color:var(--text-muted);font-size:12px">${fmtNum(ch.hours)} h sur ${fmtNum(ch.goal)} h · ${ch.participants} participant${ch.participants > 1 ? 's' : ''} · jusqu'au ${new Date(ch.ends_on).toLocaleDateString('fr-CH',{day:'numeric',month:'short'})}</div>`, true);
+    h += card('hx-defi', 'ti-flag', 'Défi : ' + esc(ch.title), `${ch.description ? `<div style="color:var(--text-secondary)">${esc(ch.description)}</div>` : ''}<div class="hx-bar"><i style="width:${pct}%"></i></div><div style="color:var(--text-muted);font-size:12px">${fmtNum(ch.hours)} h sur ${fmtNum(ch.goal)} h · ${ch.participants} participant${ch.participants > 1 ? 's' : ''} · jusqu'au ${new Date(ch.ends_on).toLocaleDateString('fr-CH',{day:'numeric',month:'short'})}</div>
+      <div style="margin-top:8px"><b>Ta contribution : ${fmtNum(myH)} h</b></div>
+      <div style="color:var(--text-secondary);margin:4px 0 8px">Comment participer : chaque heure d'échange réalisée pendant le défi (que tu donnes ou que tu reçoives) fait avancer la barre. Aide un voisin, ou demande un coup de main.</div>
+      <div class="hx-row"><button class="hx-mini" onclick="challengeGo('list')">Voir les annonces</button><button class="hx-mini" onclick="challengeGo('propose')">Proposer un service</button></div>`, true);
   }
   if(pot){
     h += card('hx-pot', 'ti-heart', 'Cagnotte solidaire : ' + fmtNum(pot.pot) + ' crédit' + (Number(pot.pot) > 1 ? 's' : ''), `<div style="color:var(--text-secondary);margin:0 0 6px">${pot.donors} donateur${pot.donors > 1 ? 's' : ''}. Les heures données aident ceux qui n'ont rien à offrir en échange.</div><div class="hx-row"><button class="hx-mini" onclick="potDonate(1)">Donner 1 cr</button><button class="hx-mini" onclick="potDonate(2)">Donner 2 cr</button></div>`, true);
@@ -2998,6 +3006,10 @@ function ddRemember(root){
     try{ const v = localStorage.getItem('tt_dd_' + d.dataset.k); if(v === '1') d.open = true; else if(v === '0') d.open = false; }catch(e){}
     d.addEventListener('toggle', () => { try{ localStorage.setItem('tt_dd_' + d.dataset.k, d.open ? '1' : '0'); }catch(e){} });
   });
+}
+function challengeGo(w){
+  if(w === 'propose'){ showScreen('propose'); return; }
+  const el = document.getElementById('home-search'); if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); setTimeout(() => { try{ el.focus({preventScroll:true}); }catch(e){} }, 400); }
 }
 function fmtNum(n){ const v = Math.round(Number(n) * 100) / 100; return String(v).replace('.', ','); }
 async function potDonate(n){
