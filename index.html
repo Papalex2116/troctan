@@ -284,7 +284,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
     <div class="avatar" id="hdr-avatar">··</div>
   </header>
 
-  <div id="toast" style="display:none; margin:0 1.1rem 8px; font-size:12.5px; padding:8px 10px; border-radius:8px; background:var(--accent-bg); color:var(--accent-text);"></div>
+  <div id="toast" role="status" aria-live="polite" style="display:none; position:fixed; top:max(10px, env(safe-area-inset-top)); left:1.1rem; right:1.1rem; z-index:9500; font-size:13.5px; padding:11px 14px; border-radius:12px; background:var(--accent-bg); color:var(--accent-text); border:1px solid var(--accent-border); box-shadow:0 6px 20px rgba(0,0,0,.28); text-align:center;"></div>
 
   <div id="bulk-delete-bar" style="display:none; margin:0 1.1rem 10px; padding:10px 14px; border-radius:12px; background:var(--text); color:var(--bg); align-items:center; justify-content:space-between; box-shadow:0 4px 14px rgba(0,0,0,0.15);">
     <span id="bulk-delete-count" style="font-size:13.5px; font-weight:600;"></span>
@@ -332,7 +332,7 @@ body[data-screen="login"] #scene-chat{opacity:1;}
       <button class="btn secondary" id="forgot-btn">Recevoir le lien</button>
     </details>
     <p id="login-error" style="font-size:12.5px;color:var(--warn-text);display:none;margin:6px 0 0;"></p>
-    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 72</p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;">Troctan · version 73</p>
     <p style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:4px;">Lancé à La Grande-Béroche · ouvert aux voisins de la région</p>
     <div id="debug-panel" style="display:none;margin-top:16px;font-size:11.5px;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">Diagnostic : en attente...</div>
   </section>
